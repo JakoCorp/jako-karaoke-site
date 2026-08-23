@@ -19,7 +19,6 @@ id = "check-merge-conflict"
 
 [[repos.hooks]]
 id = "mixed-line-ending"
-args = ["--fix=lf"]
 
 [[repos]]
 repo = "local"
