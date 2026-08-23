@@ -1781,7 +1781,14 @@
         },
         "responses": {
           "200": {
-            "description": "Logged in, session cookie set"
+            "description": "Logged in, session cookie set",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResponse"
+                }
+              }
+            }
           },
           "401": {
             "description": "Invalid credentials"
@@ -1850,7 +1857,14 @@
         },
         "responses": {
           "201": {
-            "description": "Registered, session cookie set"
+            "description": "Registered, session cookie set",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResponse"
+                }
+              }
+            }
           },
           "400": {
             "description": "Invalid username or password"
