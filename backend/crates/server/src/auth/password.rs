@@ -7,7 +7,7 @@ use argon2::{
 use axum::{Json, extract::State, http::StatusCode};
 use axum_extra::extract::CookieJar;
 
-use api_types::auth::{LoginRequest, RegisterRequest};
+use api_types::auth::{LoginRequest, MeResponse, RegisterRequest};
 use db::{error::DbError, models::NewUser, queries};
 
 use crate::{error::ApiError, state::AppState};
@@ -17,7 +17,7 @@ use crate::{error::ApiError, state::AppState};
     path = "/auth/register",
     request_body = RegisterRequest,
     responses(
-        (status = 201, description = "Registered, session cookie set"),
+        (status = 201, description = "Registered, session cookie set", body = MeResponse),
         (status = 400, description = "Invalid username or password"),
         (status = 409, description = "Username already taken"),
     ),
@@ -27,7 +27,7 @@ pub(crate) async fn register(
     State(state): State<AppState>,
     jar: CookieJar,
     Json(req): Json<RegisterRequest>,
-) -> Result<(CookieJar, StatusCode), ApiError> {
+) -> Result<(CookieJar, (StatusCode, Json<MeResponse>)), ApiError> {
     validate_username(&req.username)?;
     validate_password(&req.password)?;
 
@@ -58,7 +58,14 @@ pub(crate) async fn register(
 
     Ok((
         jar.add(super::session::session_cookie(token)),
-        StatusCode::CREATED,
+        (
+            StatusCode::CREATED,
+            Json(MeResponse {
+                id: user.id,
+                username: user.username,
+                capabilities: vec![],
+            }),
+        ),
     ))
 }
 
@@ -67,7 +74,7 @@ pub(crate) async fn register(
     path = "/auth/login",
     request_body = LoginRequest,
     responses(
-        (status = 200, description = "Logged in, session cookie set"),
+        (status = 200, description = "Logged in, session cookie set", body = MeResponse),
         (status = 401, description = "Invalid credentials"),
     ),
     tag = "auth"
@@ -76,7 +83,7 @@ pub(crate) async fn login(
     State(state): State<AppState>,
     jar: CookieJar,
     Json(req): Json<LoginRequest>,
-) -> Result<(CookieJar, StatusCode), ApiError> {
+) -> Result<(CookieJar, Json<MeResponse>), ApiError> {
     let user = queries::users::get_by_username(&state.pool, &req.username)
         .await?
         .ok_or(ApiError::Unauthorized)?;
@@ -88,10 +95,19 @@ pub(crate) async fn login(
     verify_password(&req.password, &cred.password_hash)?;
 
     let token = super::session::issue(&state.pool, user.id).await?;
+    let capabilities = queries::capabilities::list_for_user(&state.pool, user.id)
+        .await?
+        .into_iter()
+        .map(|capability| capability.title)
+        .collect();
 
     Ok((
         jar.add(super::session::session_cookie(token)),
-        StatusCode::OK,
+        Json(MeResponse {
+            id: user.id,
+            username: user.username,
+            capabilities,
+        }),
     ))
 }
 
