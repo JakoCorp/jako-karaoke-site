@@ -3,7 +3,7 @@
   "ignorePatterns": [],
   "sortImports": true,
   "sortTailwindcss": {
-    "stylesheet": "./src/index.css",
+    "stylesheet": "./frontend/src/index.css",
     "functions": ["clsx", "cn"]
   }
 }

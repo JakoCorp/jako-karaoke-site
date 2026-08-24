@@ -1,8 +1,8 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "ignorePatterns": ["src/api/generated.ts"],
   "options": {
-    "typeAware": true
+    "typeAware": true,
+    "typeCheck": true
   },
   "plugins": [
     "react",
@@ -17,8 +17,7 @@
   ],
   "categories": {
     "correctness": "error",
-    "suspicious": "error",
-    "pedantic": "warn"
+    "suspicious": "error"
   },
   "rules": {
     "max-lines-per-function": "off",
