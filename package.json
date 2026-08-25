@@ -14,6 +14,9 @@
     "api:gen": "pnpm spec:export && pnpm --filter jako-karaoke-frontend api:gen"
   },
   "devDependencies": {
-    "@j178/prek": "^0.4.13"
+    "@j178/prek": "^0.4.13",
+    "oxfmt": "^0.63.0",
+    "oxlint": "^1.78.0",
+    "oxlint-tsgolint": "^7.0.2001"
   }
 }
