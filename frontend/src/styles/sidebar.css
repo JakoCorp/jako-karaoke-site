@@ -10,7 +10,16 @@
   }
 
   .sidebar-header {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
     padding: 1.25rem 1rem;
+  }
+
+  .sidebar-logo {
+    height: 1.75rem;
+    width: auto;
+    flex-shrink: 0;
   }
 
   .sidebar-brand {

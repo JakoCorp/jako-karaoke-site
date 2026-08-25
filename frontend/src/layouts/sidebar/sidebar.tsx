@@ -1,3 +1,4 @@
+import logoUrl from "@/assets/Baji.factions.Industry.svg";
 import { AccountPopover } from "@/components/auth/account-popover";
 import { AuthDialog } from "@/components/auth/auth-dialog";
 import { useAuthStore } from "@/store/auth";
@@ -10,6 +11,7 @@ export function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
+        <img src={logoUrl} alt="" aria-hidden className="sidebar-logo" />
         <span className="sidebar-brand">Karaoke Player</span>
       </div>
       <nav className="sidebar-nav">
