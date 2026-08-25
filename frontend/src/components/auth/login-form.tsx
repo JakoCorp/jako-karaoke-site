@@ -5,7 +5,7 @@ import { auth } from "@/api/auth";
 import { useAuthStore } from "@/store/auth";
 
 interface LoginFormProps {
-  readonly onSuccess: () => void;
+  onSuccess: () => void;
 }
 
 export function LoginForm({ onSuccess }: LoginFormProps) {

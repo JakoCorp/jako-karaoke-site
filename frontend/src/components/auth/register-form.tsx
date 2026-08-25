@@ -5,7 +5,7 @@ import { auth } from "@/api/auth";
 import { useAuthStore } from "@/store/auth";
 
 interface RegisterFormProps {
-  readonly onSuccess: () => void;
+  onSuccess: () => void;
 }
 
 export function RegisterForm({ onSuccess }: RegisterFormProps) {
