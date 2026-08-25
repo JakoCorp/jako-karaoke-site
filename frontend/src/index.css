@@ -1,3 +1,19 @@
 @import "tailwindcss";
+@import "./styles/components.css";
 
-/* removed base React Index CSS */
+:root {
+  --sidebar-width: 20rem;
+
+  --color-surface: #ffffff;
+  --color-text: #111111;
+  --color-text-muted: #6b7280;
+  --color-border: #e5e7eb;
+  --color-overlay: rgba(0, 0, 0, 0.5);
+  --color-input-bg: #ffffff;
+  --color-btn-primary-bg: #111827;
+  --color-btn-primary-text: #ffffff;
+  --color-btn-secondary-bg: #f3f4f6;
+  --color-btn-secondary-text: #111827;
+  --color-error-bg: rgba(239, 68, 68, 0.1);
+  --color-error-text: #dc2626;
+}

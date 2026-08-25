@@ -1,8 +1,17 @@
+import { AccountPopover } from "@/components/auth/account-popover";
+import { AuthDialog } from "@/components/auth/auth-dialog";
+import { useAuthStore } from "@/store/auth";
+
 import { NavItem } from "./nav-item";
 
 export function Sidebar() {
+  const user = useAuthStore((state) => state.user);
+
   return (
-    <aside className="flex h-full w-80 shrink-0 flex-col bg-neutral-700 text-white">
+    <aside
+      className="flex h-full shrink-0 flex-col bg-neutral-700 text-white"
+      style={{ width: "var(--sidebar-width)" }}
+    >
       <div className="px-4 py-5">
         <span className="text-lg font-bold text-neutral-100"> Karaoke Player</span>
       </div>
@@ -26,6 +35,9 @@ export function Sidebar() {
 
         <div className="my-5 border-t border-white/50" />
       </nav>
+      <div className="border-t border-neutral-600">
+        {user ? <AccountPopover /> : <AuthDialog />}
+      </div>
     </aside>
   );
 }
