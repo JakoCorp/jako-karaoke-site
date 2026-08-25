@@ -8,14 +8,11 @@ export function Sidebar() {
   const user = useAuthStore((state) => state.user);
 
   return (
-    <aside
-      className="flex h-full shrink-0 flex-col bg-neutral-700 text-white"
-      style={{ width: "var(--sidebar-width)" }}
-    >
-      <div className="px-4 py-5">
-        <span className="text-lg font-bold text-neutral-100"> Karaoke Player</span>
+    <aside className="sidebar">
+      <div className="sidebar-header">
+        <span className="sidebar-brand">Karaoke Player</span>
       </div>
-      <nav className="flex-1 space-y-1 overflow-y-auto px-2 pb-4">
+      <nav className="sidebar-nav">
         <NavItem to="/" label="Home" />
         <NavItem to="/search" label="Search" />
         <NavItem to="/randomsong" label="Random Songs" />
@@ -23,21 +20,17 @@ export function Sidebar() {
         <NavItem to="/artists" label="Artists" />
         <NavItem to="/playlists" label="Playlists" />
         <NavItem to="/dashboard" label="Dashboard" />
-        <div className="my-5 border-t border-white/50" />
+        <div className="nav-divider" />
 
-        <p className="text-s px-3 pb-2 font-semibold tracking-wider text-neutral-100 uppercase">
-          Your Library
-        </p>
+        <p className="sidebar-section-label">Your Library</p>
 
         <NavItem to="/favorites" label="Favorites" />
         <NavItem to="/download" label="Download" />
         <NavItem to="/playlists" label="Playlists" />
 
-        <div className="my-5 border-t border-white/50" />
+        <div className="nav-divider" />
       </nav>
-      <div className="border-t border-neutral-600">
-        {user ? <AccountPopover /> : <AuthDialog />}
-      </div>
+      <div className="sidebar-footer">{user ? <AccountPopover /> : <AuthDialog />}</div>
     </aside>
   );
 }

@@ -1,0 +1,37 @@
+@layer components {
+  .form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .form-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-text-muted);
+  }
+
+  .form-input {
+    width: 100%;
+    border-radius: 0.375rem;
+    border: 1px solid var(--color-border);
+    background-color: var(--color-input-bg);
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    color: var(--color-text);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .form-input:focus {
+    border-color: var(--color-text);
+  }
+
+  .form-error {
+    border-radius: 0.375rem;
+    background-color: var(--color-error-bg);
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    color: var(--color-error-text);
+  }
+}
