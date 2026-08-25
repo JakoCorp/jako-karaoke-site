@@ -1,5 +1,6 @@
 import { create } from "zustand";
 
+/** The currently authenticated user. Properties are readonly, update via `setUser`. */
 export interface AuthUser {
   readonly id: string;
   readonly username: string;
@@ -12,6 +13,7 @@ interface AuthState {
   hasCapability: (capability: string) => boolean;
 }
 
+/** Global auth store. Holds the current user and exposes capability checks. */
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   setUser: (user) => {
