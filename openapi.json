@@ -1714,6 +1714,42 @@
         }
       }
     },
+    "/auth/claim": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "operationId": "claim",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClaimRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Account created, session cookie set",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid username or no pending signup"
+          },
+          "409": {
+            "description": "Username already taken"
+          }
+        }
+      }
+    },
     "/auth/discord": {
       "get": {
         "tags": [
@@ -1755,43 +1791,10 @@
         ],
         "responses": {
           "302": {
-            "description": "Redirect to frontend, session cookie set"
+            "description": "Redirect to frontend on success"
           },
           "400": {
             "description": "Missing or invalid OAuth state"
-          }
-        }
-      }
-    },
-    "/auth/login": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "operationId": "login",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/LoginRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Logged in, session cookie set",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MeResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Invalid credentials"
           }
         }
       }
@@ -1839,38 +1842,18 @@
         }
       }
     },
-    "/auth/register": {
-      "post": {
+    "/auth/pending": {
+      "get": {
         "tags": [
           "auth"
         ],
-        "operationId": "register",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RegisterRequest"
-              }
-            }
-          },
-          "required": true
-        },
+        "operationId": "pending_check",
         "responses": {
-          "201": {
-            "description": "Registered, session cookie set",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MeResponse"
-                }
-              }
-            }
+          "204": {
+            "description": "Valid pending signup session exists"
           },
-          "400": {
-            "description": "Invalid username or password"
-          },
-          "409": {
-            "description": "Username already taken"
+          "404": {
+            "description": "No pending signup or session expired"
           }
         }
       }
@@ -1916,7 +1899,7 @@
         ],
         "responses": {
           "302": {
-            "description": "Redirect to frontend, session cookie set"
+            "description": "Redirect to frontend on success"
           },
           "400": {
             "description": "Missing or invalid OAuth state"
@@ -1986,6 +1969,19 @@
           },
           "name": {
             "type": "string"
+          }
+        }
+      },
+      "ClaimRequest": {
+        "type": "object",
+        "description": "Request body for `POST /auth/claim`.\n\nCompletes a new OAuth signup by finalizing the username. Requires an active\n`oauth_pending` cookie set during the OAuth callback.",
+        "required": [
+          "username"
+        ],
+        "properties": {
+          "username": {
+            "type": "string",
+            "description": "Alphanumeric with `_` and `.` allowed, max 64 chars, case insensitive unique."
           }
         }
       },
@@ -2193,22 +2189,6 @@
             "format": "uuid"
           },
           "public_url": {
-            "type": "string"
-          }
-        }
-      },
-      "LoginRequest": {
-        "type": "object",
-        "description": "Request body for `POST /auth/login`.",
-        "required": [
-          "username",
-          "password"
-        ],
-        "properties": {
-          "password": {
-            "type": "string"
-          },
-          "username": {
             "type": "string"
           }
         }
@@ -2651,24 +2631,6 @@
           },
           "title": {
             "type": "string"
-          }
-        }
-      },
-      "RegisterRequest": {
-        "type": "object",
-        "description": "Request body for `POST /auth/register`.",
-        "required": [
-          "username",
-          "password"
-        ],
-        "properties": {
-          "password": {
-            "type": "string",
-            "description": "Minimum 8 characters."
-          },
-          "username": {
-            "type": "string",
-            "description": "Alphanumeric with `_` and `.` allowed, max 64 chars, case insensitive unique."
           }
         }
       },

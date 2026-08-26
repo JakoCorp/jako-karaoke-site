@@ -11,13 +11,15 @@ CREATE TABLE IF NOT EXISTS users (
     UNIQUE INDEX (discord_id)
 ) ENGINE = InnoDB;
 
--- Credentials
--- Contains credentials for user/pass auth
-CREATE TABLE IF NOT EXISTS user_credentials (
-    user_id BINARY(16) NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
-    PRIMARY KEY (user_id),
-    CONSTRAINT FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+-- Pending OAuth claims awaiting username selection
+CREATE TABLE IF NOT EXISTS pending_oauth (
+    token CHAR(64) NOT NULL,
+    provider VARCHAR(16) NOT NULL,
+    provider_id BIGINT UNSIGNED NOT NULL,
+    suggested_username VARCHAR(64) NOT NULL,
+    expires_at DATETIME NOT NULL,
+    PRIMARY KEY (token),
+    INDEX (expires_at)
 ) ENGINE = InnoDB;
 
 -- Capabilities

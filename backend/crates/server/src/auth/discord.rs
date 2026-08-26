@@ -9,12 +9,14 @@ use cookie::{Cookie, SameSite};
 use oauth2::{CsrfToken, Scope};
 use serde::Deserialize;
 
-use db::{error::DbError, models::NewUser, queries};
+use db::queries;
 
 use crate::{error::ApiError, state::AppState};
 
 const DISCORD_TOKEN_URL: &str = "https://discord.com/api/v10/oauth2/token";
 const DISCORD_USERS_URL: &str = "https://discord.com/api/v10/users/@me";
+
+const PENDING_MINUTES: i64 = 15;
 
 #[derive(Deserialize)]
 pub struct CallbackParams {
@@ -69,7 +71,7 @@ pub(crate) async fn initiate(
         ("state" = String, Query, description = "CSRF state token"),
     ),
     responses(
-        (status = 302, description = "Redirect to frontend, session cookie set"),
+        (status = 302, description = "Redirect to frontend on success"),
         (status = 400, description = "Missing or invalid OAuth state"),
     ),
     tag = "auth"
@@ -121,29 +123,45 @@ pub(crate) async fn callback(
         .parse()
         .map_err(|_| ApiError::Internal("invalid Discord user ID".to_string()))?;
 
-    let mut tx = state.pool.begin().await.map_err(DbError::Sqlx)?;
-    let (user, is_new) = queries::users::upsert_by_discord(
-        &mut tx,
-        &NewUser {
-            username: discord_user.username,
-            twitch_id: None,
-            discord_id: Some(discord_id),
-        },
-    )
-    .await?;
-    if is_new {
-        queries::playlists::create_favorites(&mut tx, user.id).await?;
-    }
-    tx.commit().await.map_err(DbError::Sqlx)?;
-
-    let token = super::session::issue(&state.pool, user.id).await?;
-
     let mut rm_csrf = Cookie::new("oauth_csrf_discord", "");
     rm_csrf.set_path("/");
 
+    if let Some(user) = queries::users::get_by_discord_id(&state.pool, discord_id).await? {
+        let session_token = super::session::issue(&state.pool, user.id).await?;
+        return Ok((
+            jar.remove(rm_csrf)
+                .add(super::session::session_cookie(session_token)),
+            Redirect::to(&state.config.frontend_url),
+        ));
+    }
+
+    let pending_token = super::session::generate_token();
+    let expires_at = chrono::Utc::now() + chrono::Duration::minutes(PENDING_MINUTES);
+    queries::pending_oauth::create(
+        &state.pool,
+        &pending_token,
+        "discord",
+        discord_id,
+        &discord_user.username,
+        expires_at,
+    )
+    .await?;
+
+    let mut pending_cookie = Cookie::new("oauth_pending", pending_token);
+    pending_cookie.set_http_only(true);
+    pending_cookie.set_same_site(SameSite::Lax);
+    pending_cookie.set_path("/");
+    pending_cookie.set_secure(true);
+    pending_cookie.set_max_age(time::Duration::minutes(PENDING_MINUTES));
+
+    let redirect_url = format!(
+        "{}/?username={}",
+        state.config.frontend_url.trim_end_matches('/'),
+        discord_user.username
+    );
+
     Ok((
-        jar.remove(rm_csrf)
-            .add(super::session::session_cookie(token)),
-        Redirect::to(&state.config.frontend_url),
+        jar.remove(rm_csrf).add(pending_cookie),
+        Redirect::to(&redirect_url),
     ))
 }
