@@ -4,20 +4,14 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-/// Request body for `POST /auth/register`.
+/// Request body for `POST /auth/claim`.
+///
+/// Completes a new OAuth signup by finalizing the username. Requires an active
+/// `oauth_pending` cookie set during the OAuth callback.
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
-pub struct RegisterRequest {
+pub struct ClaimRequest {
     /// Alphanumeric with `_` and `.` allowed, max 64 chars, case insensitive unique.
     pub username: String,
-    /// Minimum 8 characters.
-    pub password: String,
-}
-
-/// Request body for `POST /auth/login`.
-#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
-pub struct LoginRequest {
-    pub username: String,
-    pub password: String,
 }
 
 /// Response body for `GET /auth/me`.
