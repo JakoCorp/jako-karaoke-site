@@ -15,7 +15,6 @@ path = "src/bin/export_spec.rs"
 
 [dependencies]
 api-types = { workspace = true }
-argon2 = { workspace = true }
 axum = { workspace = true }
 axum-extra = { workspace = true }
 chrono = { workspace = true }
