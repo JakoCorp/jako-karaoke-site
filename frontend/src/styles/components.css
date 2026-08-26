@@ -1,0 +1,230 @@
+@layer components {
+  .form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .form-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-text-muted);
+  }
+
+  .form-input {
+    width: 100%;
+    border-radius: 0.375rem;
+    border: 1px solid var(--color-border);
+    background-color: var(--color-input-bg);
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    color: var(--color-text);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .form-input:focus {
+    border-color: var(--color-text);
+  }
+
+  .form-error {
+    border-radius: 0.375rem;
+    background-color: var(--color-error-bg);
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    color: var(--color-error-text);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: none;
+    border-radius: 0.375rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: opacity 0.15s;
+  }
+
+  .btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .btn:focus-visible {
+    outline: 2px solid var(--color-text);
+    outline-offset: 2px;
+  }
+
+  .btn-primary {
+    background-color: var(--color-btn-primary-bg);
+    color: var(--color-btn-primary-text);
+  }
+
+  .btn-primary:not(:disabled):hover {
+    opacity: 0.85;
+  }
+
+  .btn-secondary {
+    background-color: var(--color-btn-secondary-bg);
+    color: var(--color-btn-secondary-text);
+  }
+
+  .btn-secondary:not(:disabled):hover {
+    opacity: 0.85;
+  }
+
+  .dialog-backdrop {
+    position: fixed;
+    inset: 0;
+    background-color: var(--color-overlay);
+  }
+
+  .dialog-popup {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    max-width: 24rem;
+    border-radius: 0.5rem;
+    background-color: var(--color-surface);
+    padding: 1.5rem;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    outline: none;
+    color: var(--color-text);
+  }
+
+  .dialog-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    cursor: pointer;
+    border: none;
+    background: none;
+    padding: 0;
+    line-height: 1;
+    color: var(--color-text-muted);
+    transition: color 0.15s;
+  }
+
+  .dialog-close:hover {
+    color: var(--color-text);
+  }
+
+  .dialog-close:focus-visible {
+    outline: 2px solid var(--color-text);
+    outline-offset: 2px;
+    border-radius: 0.25rem;
+  }
+
+  .auth-tabs {
+    display: flex;
+    gap: 1rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .auth-tab {
+    margin-bottom: -1px;
+    padding-bottom: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    border-bottom: 2px solid transparent;
+    background: none;
+    color: var(--color-text-muted);
+    transition: color 0.15s;
+  }
+
+  .auth-tab:hover {
+    color: var(--color-text);
+  }
+
+  .auth-tab--active {
+    color: var(--color-text);
+    border-bottom-color: var(--color-text);
+  }
+
+  .oauth-divider {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+  }
+
+  .oauth-divider::before,
+  .oauth-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background-color: var(--color-border);
+  }
+
+  .oauth-btn {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.375rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: opacity 0.15s;
+  }
+
+  .oauth-btn:hover {
+    opacity: 0.85;
+  }
+
+  .account-popup {
+    width: calc(var(--sidebar-width) - 2rem);
+    border-radius: 0.5rem;
+    background-color: var(--color-surface);
+    padding: 0.75rem;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+    outline: none;
+    color: var(--color-text);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .account-popup-user {
+    font-size: 0.875rem;
+    font-weight: 500;
+    padding: 0.25rem 0.25rem 0.5rem;
+    border-bottom: 1px solid var(--color-border);
+    margin-bottom: 0.25rem;
+    color: var(--color-text-muted);
+  }
+
+  .auth-trigger {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-align: left;
+    cursor: pointer;
+    border: none;
+    background: none;
+    color: inherit;
+    transition: background-color 0.15s;
+  }
+
+  .auth-trigger:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .auth-trigger:focus-visible {
+    outline: 2px solid var(--color-text);
+    outline-offset: -2px;
+  }
+}
