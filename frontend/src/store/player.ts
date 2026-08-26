@@ -1,5 +1,6 @@
 import { create } from "zustand";
 
+/** A performance queued for playback. Properties are readonly, update via store actions. */
 export interface QueuedPerformance {
   readonly id: string;
   readonly title: string | null;
@@ -19,6 +20,7 @@ interface PlayerState {
   setVolume: (volume: number) => void;
 }
 
+/** Global player store. Manages the currently playing performance and playback state. */
 export const usePlayerStore = create<PlayerState>((set) => ({
   current: null,
   isPlaying: false,

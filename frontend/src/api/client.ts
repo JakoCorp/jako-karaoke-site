@@ -2,9 +2,10 @@ import createClient from "openapi-fetch";
 
 import type { paths } from "./generated";
 
-// OpenAPI spec from generated schema
+/** Typed OpenAPI client bound to the app's backend spec. */
 export const api = createClient<paths>({ baseUrl: "" });
 
+/** Represents a failed API response with an HTTP status and detail payload. */
 export class ApiError extends Error {
   readonly status: number;
   readonly detail: unknown;
