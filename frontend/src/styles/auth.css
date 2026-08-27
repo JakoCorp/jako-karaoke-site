@@ -43,50 +43,6 @@
     border-radius: 0.25rem;
   }
 
-  .auth-tabs {
-    display: flex;
-    gap: 1rem;
-    border-bottom: 1px solid var(--color-border);
-  }
-
-  .auth-tab {
-    margin-bottom: -1px;
-    padding-bottom: 0.5rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    border: none;
-    border-bottom: 2px solid transparent;
-    background: none;
-    color: var(--color-text-muted);
-    transition: color 0.15s;
-  }
-
-  .auth-tab:hover {
-    color: var(--color-text);
-  }
-
-  .auth-tab--active {
-    color: var(--color-text);
-    border-bottom-color: var(--color-text);
-  }
-
-  .oauth-divider {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.75rem;
-    color: var(--color-text-muted);
-  }
-
-  .oauth-divider::before,
-  .oauth-divider::after {
-    content: "";
-    flex: 1;
-    height: 1px;
-    background-color: var(--color-border);
-  }
-
   .oauth-btn {
     width: 100%;
     gap: 0.5rem;
