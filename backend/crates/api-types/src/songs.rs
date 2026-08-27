@@ -41,6 +41,13 @@ pub struct UpdateSongRequest {
     pub image_ids: Vec<Uuid>,
 }
 
+/// Minimal song identity used when only the ID and title are needed.
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct SongRef {
+    pub id: Uuid,
+    pub title: String,
+}
+
 /// Lean song representation returned by list endpoints.
 ///
 /// Contains enough to render a song card without a follow up request.

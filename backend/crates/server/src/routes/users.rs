@@ -8,7 +8,7 @@ use axum::{
 use uuid::Uuid;
 
 use api_types::{
-    common::{ArtistInfo, ErrorResponse},
+    common::ErrorResponse,
     performances::PerformanceSummary,
     playlists::{PlaylistKind, PlaylistResponse},
 };
@@ -99,33 +99,8 @@ pub(crate) async fn get_user_favorites(
 
     let performances =
         queries::playlists::get_performances_in_playlist(&state.pool, playlist.id).await?;
-    let perf_ids: Vec<Uuid> = performances.iter().map(|p| p.id).collect();
-    let mut singers_by_perf =
-        queries::performances::get_singers_batch(&state.pool, &perf_ids).await?;
-
-    let items = performances
-        .into_iter()
-        .map(|p| {
-            let singers = singers_by_perf
-                .remove(&p.id)
-                .unwrap_or_default()
-                .into_iter()
-                .map(|a| ArtistInfo {
-                    id: a.id,
-                    name: a.name,
-                    description: a.description,
-                })
-                .collect();
-            PerformanceSummary {
-                id: p.id,
-                title: p.title,
-                play_count: p.play_count,
-                duration: p.duration,
-                performance_date: p.performance_date,
-                singers,
-            }
-        })
-        .collect();
+    let items =
+        crate::routes::performances::build_performance_summaries(&state.pool, performances).await?;
 
     Ok(Json(items))
 }

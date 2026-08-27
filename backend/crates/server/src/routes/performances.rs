@@ -14,12 +14,12 @@ use uuid::Uuid;
 use api_types::{
     common::{ArtistInfo, ErrorResponse, MediaInfo, TagInfo},
     lyrics::{LyricsResponse, UpdateLyricsRequest},
-    pagination::{PagedResponse, PaginationParams},
+    pagination::PagedResponse,
     performances::{
         CreatePerformanceRequest, PerformanceResponse, PerformanceSummary,
         PerformanceTagAssignment, UpdatePerformanceRequest,
     },
-    songs::SongSummary,
+    songs::{SongRef, SongSummary},
     tags::PerformanceTagKind,
 };
 
@@ -46,6 +46,9 @@ use api_types::{
         UpdatePerformanceRequest,
         PerformanceTagAssignment,
         PerformanceTagKind,
+        PerformanceSort,
+        SortDir,
+        SongRef,
         SongSummary,
         ArtistInfo,
         TagInfo,
@@ -63,11 +66,124 @@ use db::{
     error::DbError,
     models::{
         NewLyrics, NewPerformance, NewPerformanceAudio, NewPerformanceVideo, UpdatePerformance,
+        performance::Performance,
     },
     queries,
 };
 
 use crate::{error::ApiError, media, pagination, state::AppState};
+
+/// Query parameters for `GET /api/performances`.
+#[derive(Debug, Clone, serde::Deserialize, utoipa::IntoParams)]
+#[into_params(parameter_in = Query)]
+pub(crate) struct PerformanceListParams {
+    /// Page number, 1-indexed. Defaults to 1.
+    #[serde(default = "default_page")]
+    pub page: u32,
+    /// Items per page. Defaults to 20. The server enforces a maximum.
+    #[serde(default = "default_per_page")]
+    pub per_page: u32,
+    /// Text search across performance title, song title, and singer names.
+    pub q: Option<String>,
+    /// Field to sort by. Defaults to `performance_date`.
+    pub sort: Option<PerformanceSort>,
+    /// Sort direction. Defaults to `desc`.
+    pub sort_dir: Option<SortDir>,
+}
+
+fn default_page() -> u32 {
+    1
+}
+
+fn default_per_page() -> u32 {
+    20
+}
+
+impl PerformanceListParams {
+    fn limit_offset(&self) -> (u32, u32) {
+        let per_page = self.per_page.min(pagination::MAX_PER_PAGE);
+        let offset = self.page.saturating_sub(1).saturating_mul(per_page);
+        (per_page, offset)
+    }
+
+    fn sort_col(&self) -> &'static str {
+        match &self.sort {
+            Some(PerformanceSort::PlayCount) => "play_count",
+            _ => "performance_date",
+        }
+    }
+
+    fn sort_dir_str(&self) -> &'static str {
+        match &self.sort_dir {
+            Some(SortDir::Asc) => "ASC",
+            _ => "DESC",
+        }
+    }
+}
+
+/// Field to sort performances by in list endpoints.
+#[derive(Debug, Clone, serde::Deserialize, utoipa::ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub(crate) enum PerformanceSort {
+    PerformanceDate,
+    PlayCount,
+}
+
+/// Sort direction for list endpoints.
+#[derive(Debug, Clone, serde::Deserialize, utoipa::ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub(crate) enum SortDir {
+    Asc,
+    Desc,
+}
+
+/// Hydrates a list of performances with singers and songs for use in summary responses.
+pub(crate) async fn build_performance_summaries(
+    pool: &MySqlPool,
+    performances: Vec<Performance>,
+) -> Result<Vec<PerformanceSummary>, ApiError> {
+    let perf_ids: Vec<Uuid> = performances.iter().map(|p| p.id).collect();
+
+    let (mut singers_by_perf, mut songs_by_perf) = tokio::try_join!(
+        queries::performances::get_singers_batch(pool, &perf_ids),
+        queries::performances::get_songs_batch(pool, &perf_ids),
+    )?;
+
+    let items = performances
+        .into_iter()
+        .map(|p| {
+            let singers = singers_by_perf
+                .remove(&p.id)
+                .unwrap_or_default()
+                .into_iter()
+                .map(|a| ArtistInfo {
+                    id: a.id,
+                    name: a.name,
+                    description: a.description,
+                })
+                .collect();
+
+            let songs = songs_by_perf
+                .remove(&p.id)
+                .unwrap_or_default()
+                .into_iter()
+                .map(|(id, title)| SongRef { id, title })
+                .collect();
+
+            PerformanceSummary {
+                id: p.id,
+                title: p.title,
+                play_count: p.play_count,
+                duration: p.duration,
+                performance_date: p.performance_date,
+                singers,
+                songs,
+            }
+        })
+        .collect();
+
+    Ok(items)
+}
 
 /// Placeholder schema for multipart file upload bodies.
 #[derive(utoipa::ToSchema)]
@@ -178,7 +294,7 @@ async fn hydrate(
 #[utoipa::path(
     get,
     path = "/api/performances",
-    params(PaginationParams),
+    params(PerformanceListParams),
     responses(
         (status = 200, description = "Paged list of performances", body = PagedResponse<PerformanceSummary>),
     ),
@@ -186,42 +302,24 @@ async fn hydrate(
 )]
 pub(crate) async fn list_performances(
     State(state): State<AppState>,
-    Query(params): Query<PaginationParams>,
+    Query(params): Query<PerformanceListParams>,
 ) -> Result<Json<PagedResponse<PerformanceSummary>>, ApiError> {
-    let (limit, offset) = pagination::limit_offset(&params);
+    let (limit, offset) = params.limit_offset();
+    let q = params.q.as_deref().filter(|s| !s.is_empty());
 
     let (total, perfs) = tokio::try_join!(
-        queries::performances::count(&state.pool),
-        queries::performances::list(&state.pool, limit, offset),
+        queries::performances::search_count(&state.pool, q),
+        queries::performances::search(
+            &state.pool,
+            q,
+            params.sort_col(),
+            params.sort_dir_str(),
+            limit,
+            offset,
+        ),
     )?;
 
-    let perf_ids: Vec<Uuid> = perfs.iter().map(|p| p.id).collect();
-    let mut singers_by_perf =
-        queries::performances::get_singers_batch(&state.pool, &perf_ids).await?;
-
-    let items = perfs
-        .into_iter()
-        .map(|p| {
-            let singers = singers_by_perf
-                .remove(&p.id)
-                .unwrap_or_default()
-                .into_iter()
-                .map(|a| ArtistInfo {
-                    id: a.id,
-                    name: a.name,
-                    description: a.description,
-                })
-                .collect();
-            PerformanceSummary {
-                id: p.id,
-                title: p.title,
-                play_count: p.play_count,
-                duration: p.duration,
-                performance_date: p.performance_date,
-                singers,
-            }
-        })
-        .collect();
+    let items = build_performance_summaries(&state.pool, perfs).await?;
 
     Ok(Json(PagedResponse {
         items,
