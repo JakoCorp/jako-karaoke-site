@@ -6,7 +6,7 @@ export type PerformanceListParams = PaginationParams & {
   /** Text search across performance title, song title, and singer names. */
   q?: string;
   /** Field to sort by. Defaults to performance_date. */
-  sort?: "performance_date" | "play_count";
+  sort?: "performance_date" | "play_count" | "duration";
   /** Sort direction. Defaults to desc. */
   sort_dir?: "asc" | "desc";
 };

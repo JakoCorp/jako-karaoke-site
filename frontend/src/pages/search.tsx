@@ -6,13 +6,15 @@ import { useSearchParams } from "react-router";
 import { performances } from "@/api/performances";
 import { PerformanceRow } from "@/components/search/performance-row";
 
+type SortField = "performance_date" | "play_count" | "duration";
+
 /**
  * All active search and filter parameters, stored as a single ?query= URL param.
  * Extend this interface as new filter dimensions (tags, artists, date range) are added.
  */
 interface SearchState {
   q?: string;
-  sort?: "performance_date" | "play_count";
+  sort?: SortField;
   sort_dir?: "asc" | "desc";
   page?: number;
   per_page?: number;
@@ -44,7 +46,11 @@ function decodeSearchState(encoded: string): SearchState {
     if (!isRecord(parsed)) return {};
     const state: SearchState = {};
     if (typeof parsed.q === "string" && parsed.q) state.q = parsed.q;
-    if (parsed.sort === "performance_date" || parsed.sort === "play_count")
+    if (
+      parsed.sort === "performance_date" ||
+      parsed.sort === "play_count" ||
+      parsed.sort === "duration"
+    )
       state.sort = parsed.sort;
     if (parsed.sort_dir === "asc" || parsed.sort_dir === "desc") state.sort_dir = parsed.sort_dir;
     if (typeof parsed.page === "number" && parsed.page >= 1) state.page = Math.floor(parsed.page);
@@ -142,7 +148,7 @@ export function SearchPage() {
     },
   });
 
-  function handleSortChange(field: "performance_date" | "play_count") {
+  function handleSortChange(field: SortField) {
     if (sort === field) {
       updateSearch({ sort_dir: sortDir === "desc" ? "asc" : "desc", page: undefined });
     } else {
@@ -213,7 +219,13 @@ export function SearchPage() {
             sortDir={sortDir}
             onSort={handleSortChange}
           />
-          <div className="perf-header-label perf-header-label--right">Duration</div>
+          <SortHeader
+            label="Duration"
+            field="duration"
+            sort={sort}
+            sortDir={sortDir}
+            onSort={handleSortChange}
+          />
           <SortHeader
             label="Date"
             field="performance_date"
@@ -276,10 +288,10 @@ export function SearchPage() {
 
 interface SortHeaderProps {
   label: string;
-  field: "performance_date" | "play_count";
-  sort: "performance_date" | "play_count";
+  field: SortField;
+  sort: SortField;
   sortDir: "asc" | "desc";
-  onSort: (field: "performance_date" | "play_count") => void;
+  onSort: (field: SortField) => void;
 }
 
 function SortHeader({ label, field, sort, sortDir, onSort }: SortHeaderProps) {

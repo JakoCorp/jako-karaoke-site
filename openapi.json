@@ -2555,7 +2555,8 @@
         "description": "Field to sort performances by in list endpoints.",
         "enum": [
           "performance_date",
-          "play_count"
+          "play_count",
+          "duration"
         ]
       },
       "PerformanceSummary": {

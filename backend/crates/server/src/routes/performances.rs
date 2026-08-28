@@ -109,6 +109,7 @@ impl PerformanceListParams {
     fn sort_col(&self) -> &'static str {
         match &self.sort {
             Some(PerformanceSort::PlayCount) => "play_count",
+            Some(PerformanceSort::Duration) => "duration",
             _ => "performance_date",
         }
     }
@@ -127,6 +128,7 @@ impl PerformanceListParams {
 pub(crate) enum PerformanceSort {
     PerformanceDate,
     PlayCount,
+    Duration,
 }
 
 /// Sort direction for list endpoints.
