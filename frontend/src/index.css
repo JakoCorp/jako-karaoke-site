@@ -3,6 +3,7 @@
 @import "./styles/buttons.css";
 @import "./styles/auth.css";
 @import "./styles/sidebar.css";
+@import "./styles/search.css";
 
 :root {
   --sidebar-width: 20rem;

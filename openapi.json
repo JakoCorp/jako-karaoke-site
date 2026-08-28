@@ -295,6 +295,33 @@
               "format": "int32",
               "minimum": 0
             }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Text search across performance title, song title, and singer names.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Field to sort by. Defaults to `performance_date`.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/PerformanceSort"
+            }
+          },
+          {
+            "name": "sort_dir",
+            "in": "query",
+            "description": "Sort direction. Defaults to `desc`.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/SortDir"
+            }
           }
         ],
         "responses": {
@@ -2322,7 +2349,8 @@
                 "id",
                 "play_count",
                 "performance_date",
-                "singers"
+                "singers",
+                "songs"
               ],
               "properties": {
                 "duration": {
@@ -2350,6 +2378,12 @@
                   "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/ArtistInfo"
+                  }
+                },
+                "songs": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SongRef"
                   }
                 },
                 "title": {
@@ -2516,6 +2550,15 @@
           }
         }
       },
+      "PerformanceSort": {
+        "type": "string",
+        "description": "Field to sort performances by in list endpoints.",
+        "enum": [
+          "performance_date",
+          "play_count",
+          "duration"
+        ]
+      },
       "PerformanceSummary": {
         "type": "object",
         "description": "Lean performance representation returned by list endpoints.\n\nContains enough to render a performance card without a follow up request.",
@@ -2523,7 +2566,8 @@
           "id",
           "play_count",
           "performance_date",
-          "singers"
+          "singers",
+          "songs"
         ],
         "properties": {
           "duration": {
@@ -2551,6 +2595,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ArtistInfo"
+            }
+          },
+          "songs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SongRef"
             }
           },
           "title": {
@@ -2647,6 +2697,23 @@
               "type": "string",
               "format": "uuid"
             }
+          }
+        }
+      },
+      "SongRef": {
+        "type": "object",
+        "description": "Minimal song identity used when only the ID and title are needed.",
+        "required": [
+          "id",
+          "title"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
           }
         }
       },
@@ -2747,6 +2814,14 @@
           "source",
           "language",
           "misc"
+        ]
+      },
+      "SortDir": {
+        "type": "string",
+        "description": "Sort direction for list endpoints.",
+        "enum": [
+          "asc",
+          "desc"
         ]
       },
       "TagInfo": {

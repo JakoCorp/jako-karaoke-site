@@ -40,21 +40,132 @@ pub async fn count(executor: impl Executor<'_, Database = MySql>) -> Result<u64>
         .map_err(DbError::from)
 }
 
-/// Returns a page of performances ordered by performance date descending.
-pub async fn list(
+/// Returns a filtered, sorted page of performances.
+///
+/// When `q` is `Some`, results are filtered by a case-insensitive substring match
+/// against the performance title, any linked song title, or any linked singer name.
+/// `sort_col` and `sort_dir` must be derived from validated enums to prevent injection.
+pub async fn search(
     executor: impl Executor<'_, Database = MySql>,
+    q: Option<&str>,
+    sort_col: &str,
+    sort_dir: &str,
     limit: u32,
     offset: u32,
 ) -> Result<Vec<Performance>> {
-    sqlx::query_as::<_, Performance>(
-        "SELECT id, created_by, title, lyrics_id, play_count, duration, performance_date \
-         FROM performances ORDER BY performance_date DESC LIMIT ? OFFSET ?",
-    )
-    .bind(limit)
-    .bind(offset)
-    .fetch_all(executor)
-    .await
-    .map_err(DbError::from)
+    let sql = if q.is_some() {
+        format!(
+            "SELECT id, created_by, title, lyrics_id, play_count, duration, performance_date \
+             FROM performances WHERE id IN ( \
+               SELECT id FROM performances WHERE title LIKE ? \
+               UNION \
+               SELECT ps.performance_id FROM performance_songs ps \
+               JOIN songs s ON s.id = ps.song_id WHERE s.title LIKE ? \
+               UNION \
+               SELECT ps.performance_id FROM performance_singers ps \
+               JOIN artists a ON a.id = ps.artist_id WHERE a.name LIKE ? \
+             ) ORDER BY {sort_col} {sort_dir} LIMIT ? OFFSET ?"
+        )
+    } else {
+        format!(
+            "SELECT id, created_by, title, lyrics_id, play_count, duration, performance_date \
+             FROM performances ORDER BY {sort_col} {sort_dir} LIMIT ? OFFSET ?"
+        )
+    };
+
+    let query = sqlx::query_as::<_, Performance>(sqlx::AssertSqlSafe(sql.as_str()));
+    let query = if let Some(pattern) = q.map(|q| format!("%{q}%")) {
+        query
+            .bind(pattern.clone())
+            .bind(pattern.clone())
+            .bind(pattern)
+    } else {
+        query
+    };
+
+    query
+        .bind(limit)
+        .bind(offset)
+        .fetch_all(executor)
+        .await
+        .map_err(DbError::from)
+}
+
+/// Returns the total number of performances matching the optional text query.
+pub async fn search_count(
+    executor: impl Executor<'_, Database = MySql>,
+    q: Option<&str>,
+) -> Result<u64> {
+    if let Some(q) = q {
+        let pattern = format!("%{q}%");
+        sqlx::query_scalar::<_, i64>(
+            "SELECT COUNT(*) FROM ( \
+               SELECT id FROM performances WHERE title LIKE ? \
+               UNION \
+               SELECT ps.performance_id FROM performance_songs ps \
+               JOIN songs s ON s.id = ps.song_id WHERE s.title LIKE ? \
+               UNION \
+               SELECT ps.performance_id FROM performance_singers ps \
+               JOIN artists a ON a.id = ps.artist_id WHERE a.name LIKE ? \
+             ) AS matched",
+        )
+        .bind(&pattern)
+        .bind(&pattern)
+        .bind(&pattern)
+        .fetch_one(executor)
+        .await
+        .map(|n| n as u64)
+        .map_err(DbError::from)
+    } else {
+        count(executor).await
+    }
+}
+
+/// Returns songs for multiple performances, keyed by performance ID.
+///
+/// Each value is a vec of `(song_id, song_title)` tuples.
+/// Performances with no linked songs are absent from the map.
+pub async fn get_songs_batch(
+    executor: impl Executor<'_, Database = MySql>,
+    performance_ids: &[Uuid],
+) -> Result<HashMap<Uuid, Vec<(Uuid, String)>>> {
+    if performance_ids.is_empty() {
+        return Ok(HashMap::new());
+    }
+
+    #[derive(sqlx::FromRow)]
+    struct Row {
+        performance_id: Uuid,
+        id: Uuid,
+        title: String,
+    }
+
+    let mut builder = sqlx::QueryBuilder::new(
+        "SELECT ps.performance_id, s.id, s.title \
+         FROM songs s \
+         JOIN performance_songs ps ON ps.song_id = s.id \
+         WHERE ps.performance_id IN (",
+    );
+    let mut separated = builder.separated(", ");
+    for performance_id in performance_ids {
+        separated.push_bind(performance_id);
+    }
+    builder.push(")");
+
+    let rows: Vec<Row> = builder
+        .build_query_as()
+        .fetch_all(executor)
+        .await
+        .map_err(DbError::from)?;
+
+    let mut by_performance: HashMap<Uuid, Vec<(Uuid, String)>> = HashMap::new();
+    for row in rows {
+        by_performance
+            .entry(row.performance_id)
+            .or_default()
+            .push((row.id, row.title));
+    }
+    Ok(by_performance)
 }
 
 /// Inserts a new performance and returns the created row.

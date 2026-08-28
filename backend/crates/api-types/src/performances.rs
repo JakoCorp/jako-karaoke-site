@@ -10,7 +10,7 @@ use utoipa::ToSchema;
 use uuid::Uuid;
 
 use crate::common::{ArtistInfo, MediaInfo, TagInfo};
-use crate::songs::SongSummary;
+use crate::songs::{SongRef, SongSummary};
 use crate::tags::PerformanceTagKind;
 
 /// A tag paired with its kind for application to a performance.
@@ -60,6 +60,7 @@ pub struct PerformanceSummary {
     pub duration: Option<u32>,
     pub performance_date: DateTime<Utc>,
     pub singers: Vec<ArtistInfo>,
+    pub songs: Vec<SongRef>,
 }
 
 /// Full performance metadata returned by detail endpoints.
