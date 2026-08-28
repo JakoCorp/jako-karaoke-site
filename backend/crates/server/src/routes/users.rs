@@ -1,16 +1,19 @@
-//! User scoped playlist handlers and the `UsersApi` OpenAPI spec struct.
+//! User endpoints and the `UsersApi` OpenAPI spec struct.
 
 use axum::{
     Json, Router,
-    extract::{Path, State},
+    extract::{Path, Query, State},
+    http::StatusCode,
     routing::get,
 };
+use serde::Deserialize;
 use uuid::Uuid;
 
 use api_types::{
     common::ErrorResponse,
     performances::PerformanceSummary,
     playlists::{PlaylistKind, PlaylistResponse},
+    users::{GrantCapabilityRequest, UserSummary},
 };
 use db::queries;
 
@@ -18,15 +21,38 @@ use crate::{auth::middleware::AuthUser, capabilities, convert, error::ApiError, 
 
 #[derive(utoipa::OpenApi)]
 #[openapi(
-    paths(list_user_playlists, get_user_favorites),
-    components(schemas(PlaylistResponse, PlaylistKind, PerformanceSummary, ErrorResponse))
+    paths(
+        search_users,
+        list_user_playlists,
+        get_user_favorites,
+        list_user_capabilities,
+        grant_capability,
+        revoke_capability,
+    ),
+    components(schemas(
+        UserSummary,
+        GrantCapabilityRequest,
+        PlaylistResponse,
+        PlaylistKind,
+        PerformanceSummary,
+        ErrorResponse,
+    ))
 )]
 pub(crate) struct UsersApi;
 
 pub fn router() -> Router<AppState> {
     Router::new()
+        .route("/", get(search_users))
         .route("/{id}/playlists", get(list_user_playlists))
         .route("/{id}/favorites", get(get_user_favorites))
+        .route(
+            "/{id}/capabilities",
+            get(list_user_capabilities).post(grant_capability),
+        )
+        .route(
+            "/{id}/capabilities/{capability}",
+            axum::routing::delete(revoke_capability),
+        )
 }
 
 fn can_view_private(auth: &Option<AuthUser>, user_id: Uuid) -> bool {
@@ -35,6 +61,46 @@ fn can_view_private(auth: &Option<AuthUser>, user_id: Uuid) -> bool {
             || u.capabilities
                 .contains(capabilities::PLAYLISTS_VIEW_PRIVATE)
     })
+}
+
+#[derive(Deserialize, utoipa::IntoParams)]
+pub(crate) struct UserSearchParams {
+    /// Optional username substring filter.
+    q: Option<String>,
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/users",
+    params(UserSearchParams),
+    responses(
+        (status = 200, description = "Users matching the search query, or all users when `q` is omitted", body = Vec<UserSummary>),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden", body = ErrorResponse),
+    ),
+    tag = "users"
+)]
+pub(crate) async fn search_users(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Query(params): Query<UserSearchParams>,
+) -> Result<Json<Vec<UserSummary>>, ApiError> {
+    if !auth
+        .capabilities
+        .contains(capabilities::CAPABILITIES_MANAGE)
+    {
+        return Err(ApiError::Forbidden);
+    }
+    let results = queries::users::search(&state.pool, params.q.as_deref()).await?;
+    Ok(Json(
+        results
+            .into_iter()
+            .map(|u| UserSummary {
+                id: u.id,
+                username: u.username,
+            })
+            .collect(),
+    ))
 }
 
 #[utoipa::path(
@@ -103,4 +169,111 @@ pub(crate) async fn get_user_favorites(
         crate::routes::performances::build_performance_summaries(&state.pool, performances).await?;
 
     Ok(Json(items))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/users/{id}/capabilities",
+    params(("id" = Uuid, Path, description = "User ID")),
+    responses(
+        (status = 200, description = "Capabilities assigned to this user", body = Vec<String>),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden", body = ErrorResponse),
+        (status = 404, description = "User not found", body = ErrorResponse),
+    ),
+    tag = "users"
+)]
+pub(crate) async fn list_user_capabilities(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Path(id): Path<Uuid>,
+) -> Result<Json<Vec<String>>, ApiError> {
+    if !auth
+        .capabilities
+        .contains(capabilities::CAPABILITIES_MANAGE)
+    {
+        return Err(ApiError::Forbidden);
+    }
+    queries::users::get_by_id(&state.pool, id)
+        .await?
+        .ok_or(ApiError::NotFound)?;
+    let caps = queries::capabilities::list_for_user(&state.pool, id).await?;
+    Ok(Json(caps))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/users/{id}/capabilities",
+    params(("id" = Uuid, Path, description = "User ID")),
+    request_body = GrantCapabilityRequest,
+    responses(
+        (status = 204, description = "Capability granted"),
+        (status = 400, description = "Unknown capability", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden", body = ErrorResponse),
+        (status = 404, description = "User not found", body = ErrorResponse),
+    ),
+    tag = "users"
+)]
+pub(crate) async fn grant_capability(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Path(id): Path<Uuid>,
+    Json(req): Json<GrantCapabilityRequest>,
+) -> Result<StatusCode, ApiError> {
+    if !auth
+        .capabilities
+        .contains(capabilities::CAPABILITIES_MANAGE)
+    {
+        return Err(ApiError::Forbidden);
+    }
+    if !capabilities::ALL_CAPABILITIES.contains(&req.capability.as_str()) {
+        return Err(ApiError::BadRequest(format!(
+            "unknown capability: {}",
+            req.capability
+        )));
+    }
+    queries::users::get_by_id(&state.pool, id)
+        .await?
+        .ok_or(ApiError::NotFound)?;
+    let mut conn = state
+        .pool
+        .acquire()
+        .await
+        .map_err(db::error::DbError::Sqlx)?;
+    queries::capabilities::add_to_user(&mut conn, id, &req.capability).await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+#[utoipa::path(
+    delete,
+    path = "/api/users/{id}/capabilities/{capability}",
+    params(
+        ("id" = Uuid, Path, description = "User ID"),
+        ("capability" = String, Path, description = "Capability string to revoke"),
+    ),
+    responses(
+        (status = 204, description = "Capability revoked"),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden", body = ErrorResponse),
+        (status = 404, description = "User not found", body = ErrorResponse),
+    ),
+    tag = "users"
+)]
+pub(crate) async fn revoke_capability(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Path((id, capability)): Path<(Uuid, String)>,
+) -> Result<StatusCode, ApiError> {
+    if !auth
+        .capabilities
+        .contains(capabilities::CAPABILITIES_MANAGE)
+    {
+        return Err(ApiError::Forbidden);
+    }
+    queries::users::get_by_id(&state.pool, id)
+        .await?
+        .ok_or(ApiError::NotFound)?;
+    queries::capabilities::remove_from_user(&state.pool, id, &capability).await?;
+    Ok(StatusCode::NO_CONTENT)
 }

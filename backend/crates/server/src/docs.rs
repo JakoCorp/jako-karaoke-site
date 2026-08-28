@@ -7,8 +7,8 @@ use utoipa_swagger_ui::SwaggerUi;
 use crate::{
     auth::AuthApi,
     routes::{
-        artists::ArtistsApi, performances::PerformancesApi, playlists::PlaylistsApi,
-        songs::SongsApi, tags::TagsApi, users::UsersApi,
+        artists::ArtistsApi, capabilities::CapabilitiesApi, performances::PerformancesApi,
+        playlists::PlaylistsApi, songs::SongsApi, tags::TagsApi, users::UsersApi,
     },
     state::AppState,
 };
@@ -16,6 +16,7 @@ use crate::{
 /// Assembles the merged OpenAPI spec from all API groups.
 pub fn openapi_spec() -> utoipa::openapi::OpenApi {
     let mut spec = ArtistsApi::openapi();
+    spec.merge(CapabilitiesApi::openapi());
     spec.merge(SongsApi::openapi());
     spec.merge(PerformancesApi::openapi());
     spec.merge(PlaylistsApi::openapi());

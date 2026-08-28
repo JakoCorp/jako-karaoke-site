@@ -4,7 +4,7 @@ use sqlx::{Executor, MySql, MySqlConnection};
 use uuid::Uuid;
 
 use crate::error::DbError;
-use crate::models::user::{NewUser, UpdateUser, User};
+use crate::models::user::{NewUser, UpdateUser, User, UserSummary};
 
 type Result<T> = std::result::Result<T, DbError>;
 
@@ -68,6 +68,31 @@ pub async fn list(executor: impl Executor<'_, Database = MySql>) -> Result<Vec<U
         .fetch_all(executor)
         .await
         .map_err(DbError::from)
+}
+
+/// Searches users by optional username substring. Returns all users when `q` is `None`.
+pub async fn search(
+    executor: impl Executor<'_, Database = MySql>,
+    q: Option<&str>,
+) -> Result<Vec<UserSummary>> {
+    match q {
+        Some(term) => {
+            let pattern = format!("%{term}%");
+            sqlx::query_as::<_, UserSummary>(
+                "SELECT id, username FROM users WHERE username LIKE ? ORDER BY username",
+            )
+            .bind(pattern)
+            .fetch_all(executor)
+            .await
+            .map_err(DbError::from)
+        }
+        None => {
+            sqlx::query_as::<_, UserSummary>("SELECT id, username FROM users ORDER BY username")
+                .fetch_all(executor)
+                .await
+                .map_err(DbError::from)
+        }
+    }
 }
 
 /// Inserts a new user and returns the created row.

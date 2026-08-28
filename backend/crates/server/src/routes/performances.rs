@@ -71,7 +71,9 @@ use db::{
     queries,
 };
 
-use crate::{error::ApiError, media, pagination, state::AppState};
+use crate::{
+    auth::middleware::AuthUser, capabilities, error::ApiError, media, pagination, state::AppState,
+};
 
 /// Query parameters for `GET /api/performances`.
 #[derive(Debug, Clone, serde::Deserialize, utoipa::IntoParams)]
@@ -357,13 +359,22 @@ pub(crate) async fn get_performance(
     request_body = CreatePerformanceRequest,
     responses(
         (status = 201, description = "Created performance", body = PerformanceResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden", body = ErrorResponse),
     ),
     tag = "performances"
 )]
 pub(crate) async fn create_performance(
     State(state): State<AppState>,
+    auth: AuthUser,
     Json(req): Json<CreatePerformanceRequest>,
 ) -> Result<(StatusCode, Json<PerformanceResponse>), ApiError> {
+    if !auth
+        .capabilities
+        .contains(capabilities::PERFORMANCES_MANAGE_ANY)
+    {
+        return Err(ApiError::Forbidden);
+    }
     let mut tx = state.pool.begin().await.map_err(DbError::Sqlx)?;
 
     let lyrics_id = match req.lyrics {
@@ -403,15 +414,24 @@ pub(crate) async fn create_performance(
     request_body = UpdatePerformanceRequest,
     responses(
         (status = 200, description = "Updated performance", body = PerformanceResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden", body = ErrorResponse),
         (status = 404, description = "Not found", body = ErrorResponse),
     ),
     tag = "performances"
 )]
 pub(crate) async fn update_performance(
     State(state): State<AppState>,
+    auth: AuthUser,
     Path(id): Path<Uuid>,
     Json(req): Json<UpdatePerformanceRequest>,
 ) -> Result<Json<PerformanceResponse>, ApiError> {
+    if !auth
+        .capabilities
+        .contains(capabilities::PERFORMANCES_MANAGE_ANY)
+    {
+        return Err(ApiError::Forbidden);
+    }
     let mut tx = state.pool.begin().await.map_err(DbError::Sqlx)?;
 
     let perf = queries::performances::update(
@@ -442,14 +462,23 @@ pub(crate) async fn update_performance(
     params(("id" = Uuid, Path, description = "Performance ID")),
     responses(
         (status = 204, description = "Deleted"),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden", body = ErrorResponse),
         (status = 404, description = "Not found", body = ErrorResponse),
     ),
     tag = "performances"
 )]
 pub(crate) async fn delete_performance(
     State(state): State<AppState>,
+    auth: AuthUser,
     Path(id): Path<Uuid>,
 ) -> Result<StatusCode, ApiError> {
+    if !auth
+        .capabilities
+        .contains(capabilities::PERFORMANCES_MANAGE_ANY)
+    {
+        return Err(ApiError::Forbidden);
+    }
     let found = queries::performances::delete(&state.pool, id).await?;
     if found {
         Ok(StatusCode::NO_CONTENT)
@@ -501,15 +530,24 @@ async fn read_file_field(
     responses(
         (status = 201, description = "Audio uploaded", body = MediaInfo),
         (status = 400, description = "Bad request", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden", body = ErrorResponse),
         (status = 404, description = "Performance not found", body = ErrorResponse),
     ),
     tag = "performances"
 )]
 pub(crate) async fn upload_audio(
     State(state): State<AppState>,
+    auth: AuthUser,
     Path(id): Path<Uuid>,
     mut multipart: Multipart,
 ) -> Result<(StatusCode, Json<MediaInfo>), ApiError> {
+    if !auth
+        .capabilities
+        .contains(capabilities::PERFORMANCES_MANAGE_ANY)
+    {
+        return Err(ApiError::Forbidden);
+    }
     queries::performances::get_by_id(&state.pool, id)
         .await?
         .ok_or(ApiError::NotFound)?;
@@ -547,14 +585,23 @@ pub(crate) async fn upload_audio(
     ),
     responses(
         (status = 204, description = "Deleted"),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden", body = ErrorResponse),
         (status = 404, description = "Not found", body = ErrorResponse),
     ),
     tag = "performances"
 )]
 pub(crate) async fn delete_audio(
     State(state): State<AppState>,
+    auth: AuthUser,
     Path((id, audio_id)): Path<(Uuid, Uuid)>,
 ) -> Result<StatusCode, ApiError> {
+    if !auth
+        .capabilities
+        .contains(capabilities::PERFORMANCES_MANAGE_ANY)
+    {
+        return Err(ApiError::Forbidden);
+    }
     let audio = queries::performance_audios::get_by_id(&state.pool, audio_id)
         .await?
         .ok_or(ApiError::NotFound)?;
@@ -578,15 +625,24 @@ pub(crate) async fn delete_audio(
     responses(
         (status = 201, description = "Video uploaded", body = MediaInfo),
         (status = 400, description = "Bad request", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden", body = ErrorResponse),
         (status = 404, description = "Performance not found", body = ErrorResponse),
     ),
     tag = "performances"
 )]
 pub(crate) async fn upload_video(
     State(state): State<AppState>,
+    auth: AuthUser,
     Path(id): Path<Uuid>,
     mut multipart: Multipart,
 ) -> Result<(StatusCode, Json<MediaInfo>), ApiError> {
+    if !auth
+        .capabilities
+        .contains(capabilities::PERFORMANCES_MANAGE_ANY)
+    {
+        return Err(ApiError::Forbidden);
+    }
     queries::performances::get_by_id(&state.pool, id)
         .await?
         .ok_or(ApiError::NotFound)?;
@@ -624,14 +680,23 @@ pub(crate) async fn upload_video(
     ),
     responses(
         (status = 204, description = "Deleted"),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden", body = ErrorResponse),
         (status = 404, description = "Not found", body = ErrorResponse),
     ),
     tag = "performances"
 )]
 pub(crate) async fn delete_video(
     State(state): State<AppState>,
+    auth: AuthUser,
     Path((id, video_id)): Path<(Uuid, Uuid)>,
 ) -> Result<StatusCode, ApiError> {
+    if !auth
+        .capabilities
+        .contains(capabilities::PERFORMANCES_MANAGE_ANY)
+    {
+        return Err(ApiError::Forbidden);
+    }
     let video = queries::performance_videos::get_by_id(&state.pool, video_id)
         .await?
         .ok_or(ApiError::NotFound)?;
