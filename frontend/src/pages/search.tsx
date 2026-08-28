@@ -6,54 +6,104 @@ import { useSearchParams } from "react-router";
 import { performances } from "@/api/performances";
 import { PerformanceRow } from "@/components/search/performance-row";
 
-function usePage(searchParams: URLSearchParams) {
-  const raw = searchParams.get("page");
-  const parsed = raw ? parseInt(raw, 10) : 1;
-  return Number.isFinite(parsed) && parsed >= 1 ? parsed : 1;
+/**
+ * All active search and filter parameters, stored as a single ?query= URL param.
+ * Extend this interface as new filter dimensions (tags, artists, date range) are added.
+ */
+interface SearchState {
+  q?: string;
+  sort?: "performance_date" | "play_count";
+  sort_dir?: "asc" | "desc";
+  page?: number;
+  per_page?: number;
 }
 
-function useSort(searchParams: URLSearchParams): "performance_date" | "play_count" {
-  const raw = searchParams.get("sort");
-  return raw === "play_count" ? "play_count" : "performance_date";
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }
 
-function useSortDir(searchParams: URLSearchParams): "asc" | "desc" {
-  const raw = searchParams.get("sort_dir");
-  return raw === "asc" ? "asc" : "desc";
+/**
+ * Serializes state to URL-safe base64 (RFC 4648 §5), substituting + and / so the
+ * result can appear in a query string without percent-encoding.
+ */
+function encodeSearchState(state: SearchState): string {
+  return btoa(JSON.stringify(state)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-function usePerPage(searchParams: URLSearchParams): number {
-  const raw = searchParams.get("per_page");
-  const parsed = raw ? parseInt(raw, 10) : 20;
-  return parsed === 50 || parsed === 100 ? parsed : 20;
+/**
+ * Deserializes and validates a ?query= value. Fields are checked individually so a
+ * corrupted or manually edited URL degrades gracefully to defaults rather than throwing.
+ */
+function decodeSearchState(encoded: string): SearchState {
+  if (!encoded) return {};
+  try {
+    const padded = encoded.replace(/-/g, "+").replace(/_/g, "/");
+    const remainder = padded.length % 4;
+    const normalized = remainder > 0 ? padded + "=".repeat(4 - remainder) : padded;
+    const parsed: unknown = JSON.parse(atob(normalized));
+    if (!isRecord(parsed)) return {};
+    const state: SearchState = {};
+    if (typeof parsed.q === "string" && parsed.q) state.q = parsed.q;
+    if (parsed.sort === "performance_date" || parsed.sort === "play_count")
+      state.sort = parsed.sort;
+    if (parsed.sort_dir === "asc" || parsed.sort_dir === "desc") state.sort_dir = parsed.sort_dir;
+    if (typeof parsed.page === "number" && parsed.page >= 1) state.page = Math.floor(parsed.page);
+    if (parsed.per_page === 50 || parsed.per_page === 100) state.per_page = parsed.per_page;
+    return state;
+  } catch {
+    return {};
+  }
+}
+
+/** Omits fields that match their defaults so the encoded blob stays short. */
+function compactState(state: SearchState): SearchState {
+  const compact: SearchState = {};
+  if (state.q) compact.q = state.q;
+  if (state.sort && state.sort !== "performance_date") compact.sort = state.sort;
+  if (state.sort_dir && state.sort_dir !== "desc") compact.sort_dir = state.sort_dir;
+  if (state.page && state.page > 1) compact.page = state.page;
+  if (state.per_page && state.per_page !== 20) compact.per_page = state.per_page;
+  return compact;
+}
+
+function stateToParam(state: SearchState): string | null {
+  const compact = compactState(state);
+  return Object.keys(compact).length > 0 ? encodeSearchState(compact) : null;
 }
 
 export function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const q = searchParams.get("q") ?? "";
-  const page = usePage(searchParams);
-  const sort = useSort(searchParams);
-  const sortDir = useSortDir(searchParams);
-  const perPage = usePerPage(searchParams);
+  const searchState = decodeSearchState(searchParams.get("query") ?? "");
+
+  const q = searchState.q ?? "";
+  const sort = searchState.sort ?? "performance_date";
+  const sortDir = searchState.sort_dir ?? "desc";
+  const page = searchState.page ?? 1;
+  const perPage = searchState.per_page ?? 20;
 
   const [inputValue, setInputValue] = useState(q);
 
   useEffect(() => {
-    setInputValue(searchParams.get("q") ?? "");
+    setInputValue(decodeSearchState(searchParams.get("query") ?? "").q ?? "");
   }, [searchParams]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setSearchParams(
         (prev) => {
-          const next = new URLSearchParams(prev);
-          if (inputValue.trim()) {
-            next.set("q", inputValue.trim());
+          const current = decodeSearchState(prev.get("query") ?? "");
+          const next = stateToParam({
+            ...current,
+            q: inputValue.trim() || undefined,
+            page: undefined,
+          });
+          const params = new URLSearchParams(prev);
+          if (next) {
+            params.set("query", next);
           } else {
-            next.delete("q");
+            params.delete("query");
           }
-          next.delete("page");
-          return next;
+          return params;
         },
         { replace: true },
       );
@@ -63,11 +113,25 @@ export function SearchPage() {
     };
   }, [inputValue, setSearchParams]);
 
+  function updateSearch(partial: Partial<SearchState>) {
+    setSearchParams((prev) => {
+      const current = decodeSearchState(prev.get("query") ?? "");
+      const next = stateToParam({ ...current, ...partial });
+      const params = new URLSearchParams(prev);
+      if (next) {
+        params.set("query", next);
+      } else {
+        params.delete("query");
+      }
+      return params;
+    });
+  }
+
   const { data, isLoading } = useQuery({
-    queryKey: ["performances", { q: q.trim() || undefined, page, sort, sortDir, perPage }],
+    queryKey: ["performances", { q, page, sort, sortDir, perPage }],
     queryFn: async () => {
       const { data: result, error } = await performances.list({
-        q: q.trim() || undefined,
+        q: q || undefined,
         page,
         per_page: perPage,
         sort,
@@ -78,37 +142,12 @@ export function SearchPage() {
     },
   });
 
-  function setPage(next: number) {
-    setSearchParams((prev) => {
-      const params = new URLSearchParams(prev);
-      params.set("page", String(next));
-      return params;
-    });
-  }
-
-  function setPerPage(next: number) {
-    setSearchParams((prev) => {
-      const params = new URLSearchParams(prev);
-      params.set("per_page", String(next));
-      params.delete("page");
-      return params;
-    });
-  }
-
   function handleSortChange(field: "performance_date" | "play_count") {
-    setSearchParams((prev) => {
-      const params = new URLSearchParams(prev);
-      const currentSort = params.get("sort") ?? "performance_date";
-      const currentDir = params.get("sort_dir") ?? "desc";
-      if (currentSort === field) {
-        params.set("sort_dir", currentDir === "desc" ? "asc" : "desc");
-      } else {
-        params.set("sort", field);
-        params.delete("sort_dir");
-      }
-      params.delete("page");
-      return params;
-    });
+    if (sort === field) {
+      updateSearch({ sort_dir: sortDir === "desc" ? "asc" : "desc", page: undefined });
+    } else {
+      updateSearch({ sort: field, sort_dir: undefined, page: undefined });
+    }
   }
 
   const total = data?.total ?? 0;
@@ -139,7 +178,7 @@ export function SearchPage() {
           ) : (
             <>
               {total.toLocaleString()} result{total !== 1 ? "s" : ""}
-              {q.trim() && <> for &ldquo;{q.trim()}&rdquo;</>}
+              {q && <> for &ldquo;{q}&rdquo;</>}
             </>
           )}
         </span>
@@ -150,7 +189,9 @@ export function SearchPage() {
             value={perPage}
             onChange={(e) => {
               const val = parseInt(e.target.value, 10);
-              if (val === 20 || val === 50 || val === 100) setPerPage(val);
+              if (val === 20 || val === 50 || val === 100) {
+                updateSearch({ per_page: val, page: undefined });
+              }
             }}
             aria-label="Results per page"
           >
@@ -195,7 +236,7 @@ export function SearchPage() {
             className="page-btn"
             disabled={page <= 1}
             onClick={() => {
-              setPage(page - 1);
+              updateSearch({ page: page - 1 });
             }}
             aria-label="Previous page"
           >
@@ -209,7 +250,7 @@ export function SearchPage() {
                 key={pageNum}
                 className={`page-btn${pageNum === page ? " page-btn--active" : ""}`}
                 onClick={() => {
-                  setPage(pageNum);
+                  updateSearch({ page: pageNum });
                 }}
                 aria-current={pageNum === page ? "page" : undefined}
               >
@@ -221,7 +262,7 @@ export function SearchPage() {
             className="page-btn"
             disabled={page >= totalPages}
             onClick={() => {
-              setPage(page + 1);
+              updateSearch({ page: page + 1 });
             }}
             aria-label="Next page"
           >
