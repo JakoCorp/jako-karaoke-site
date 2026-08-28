@@ -21,7 +21,7 @@ use api_types::{
 };
 use db::{error::DbError, models::NewLyrics, queries};
 
-use crate::{error::ApiError, state::AppState};
+use crate::{auth::middleware::AuthUser, capabilities, error::ApiError, state::AppState};
 
 #[utoipa::path(
     get,
@@ -68,15 +68,24 @@ pub(crate) async fn get_performance_lyrics(
     request_body = UpdateLyricsRequest,
     responses(
         (status = 204, description = "Lyrics saved"),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden", body = ErrorResponse),
         (status = 404, description = "Performance not found", body = ErrorResponse),
     ),
     tag = "performances"
 )]
 pub(crate) async fn put_performance_lyrics(
     State(state): State<AppState>,
+    auth: AuthUser,
     Path(id): Path<Uuid>,
     Json(req): Json<UpdateLyricsRequest>,
 ) -> Result<StatusCode, ApiError> {
+    if !auth
+        .capabilities
+        .contains(capabilities::PERFORMANCES_MANAGE_ANY)
+    {
+        return Err(ApiError::Forbidden);
+    }
     let perf = queries::performances::get_by_id(&state.pool, id)
         .await?
         .ok_or(ApiError::NotFound)?;
@@ -109,14 +118,23 @@ pub(crate) async fn put_performance_lyrics(
     params(("id" = Uuid, Path, description = "Performance ID")),
     responses(
         (status = 204, description = "Performance lyrics override removed"),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden", body = ErrorResponse),
         (status = 404, description = "Not found", body = ErrorResponse),
     ),
     tag = "performances"
 )]
 pub(crate) async fn delete_performance_lyrics(
     State(state): State<AppState>,
+    auth: AuthUser,
     Path(id): Path<Uuid>,
 ) -> Result<StatusCode, ApiError> {
+    if !auth
+        .capabilities
+        .contains(capabilities::PERFORMANCES_MANAGE_ANY)
+    {
+        return Err(ApiError::Forbidden);
+    }
     let perf = queries::performances::get_by_id(&state.pool, id)
         .await?
         .ok_or(ApiError::NotFound)?;
