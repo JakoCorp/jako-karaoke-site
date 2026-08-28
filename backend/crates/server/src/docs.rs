@@ -17,9 +17,9 @@ use crate::{
 pub fn openapi_spec() -> utoipa::openapi::OpenApi {
     let mut spec = ArtistsApi::openapi();
     spec.merge(CapabilitiesApi::openapi());
-    spec.merge(SongsApi::openapi());
     spec.merge(PerformancesApi::openapi());
     spec.merge(PlaylistsApi::openapi());
+    spec.merge(SongsApi::openapi());
     spec.merge(TagsApi::openapi());
     spec.merge(UsersApi::openapi());
     spec.merge(AuthApi::openapi());

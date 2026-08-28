@@ -134,7 +134,7 @@ pub(crate) async fn get_playlist(
     request_body = CreatePlaylistRequest,
     responses(
         (status = 201, description = "Created playlist", body = PlaylistResponse),
-        (status = 401, description = "Not authenticated", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
         (status = 403, description = "Forbidden", body = ErrorResponse),
     ),
     tag = "playlists"
@@ -175,7 +175,7 @@ pub(crate) async fn create_playlist(
     request_body = UpdatePlaylistRequest,
     responses(
         (status = 200, description = "Updated playlist", body = PlaylistResponse),
-        (status = 401, description = "Not authenticated", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
         (status = 403, description = "Forbidden", body = ErrorResponse),
         (status = 404, description = "Not found", body = ErrorResponse),
     ),
@@ -183,8 +183,8 @@ pub(crate) async fn create_playlist(
 )]
 pub(crate) async fn update_playlist(
     State(state): State<AppState>,
-    Path(id): Path<Uuid>,
     auth: AuthUser,
+    Path(id): Path<Uuid>,
     Json(req): Json<UpdatePlaylistRequest>,
 ) -> Result<Json<PlaylistResponse>, ApiError> {
     let existing = queries::playlists::get_by_id(&state.pool, id)
@@ -221,7 +221,7 @@ pub(crate) async fn update_playlist(
     params(("id" = Uuid, Path, description = "Playlist ID")),
     responses(
         (status = 204, description = "Deleted"),
-        (status = 401, description = "Not authenticated", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
         (status = 403, description = "Forbidden", body = ErrorResponse),
         (status = 404, description = "Not found", body = ErrorResponse),
     ),
@@ -229,8 +229,8 @@ pub(crate) async fn update_playlist(
 )]
 pub(crate) async fn delete_playlist(
     State(state): State<AppState>,
-    Path(id): Path<Uuid>,
     auth: AuthUser,
+    Path(id): Path<Uuid>,
 ) -> Result<StatusCode, ApiError> {
     let playlist = queries::playlists::get_by_id(&state.pool, id)
         .await?

@@ -17,6 +17,16 @@ use api_types::{
     songs::{CreateSongRequest, SongResponse, SongSummary, SongTagAssignment, UpdateSongRequest},
     tags::SongTagKind,
 };
+use db::{
+    MySqlPool,
+    error::DbError,
+    models::{NewLyrics, NewSong, UpdateSong},
+    queries,
+};
+
+use crate::{
+    auth::middleware::AuthUser, capabilities, error::ApiError, pagination, state::AppState,
+};
 
 #[derive(utoipa::OpenApi)]
 #[openapi(
@@ -47,16 +57,6 @@ use api_types::{
     ))
 )]
 pub(crate) struct SongsApi;
-use db::{
-    MySqlPool,
-    error::DbError,
-    models::{NewLyrics, NewSong, UpdateSong},
-    queries,
-};
-
-use crate::{
-    auth::middleware::AuthUser, capabilities, error::ApiError, pagination, state::AppState,
-};
 
 pub fn router() -> Router<AppState> {
     Router::new()
@@ -113,6 +113,13 @@ async fn hydrate(pool: &MySqlPool, song: db::models::Song) -> Result<SongRespons
         tags,
         images,
     })
+}
+
+fn tag_pairs(assignments: &[SongTagAssignment]) -> Vec<(Uuid, &str)> {
+    assignments
+        .iter()
+        .map(|a| (a.tag_id, a.kind.as_str()))
+        .collect()
 }
 
 #[utoipa::path(
@@ -274,13 +281,6 @@ pub(crate) async fn update_song(
     tx.commit().await.map_err(DbError::Sqlx)?;
 
     Ok(Json(hydrate(&state.pool, song).await?))
-}
-
-fn tag_pairs(assignments: &[SongTagAssignment]) -> Vec<(Uuid, &str)> {
-    assignments
-        .iter()
-        .map(|a| (a.tag_id, a.kind.as_str()))
-        .collect()
 }
 
 #[utoipa::path(
