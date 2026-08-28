@@ -1,0 +1,12 @@
+{
+  "recommendations": [
+    // Languages
+    "biomejs.biome",
+    "oxc.oxc-vscode",
+    "bradlc.vscode-tailwindcss",
+    "rust-lang.rust-analyzer",
+
+    // Misc
+    "DavidAnson.vscode-markdownlint",
+  ],
+}
