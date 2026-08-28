@@ -97,7 +97,7 @@ pub(crate) async fn get_artist(
     request_body = CreateArtistRequest,
     responses(
         (status = 201, description = "Created artist", body = ArtistResponse),
-        (status = 401, description = "Not authenticated", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
         (status = 403, description = "Forbidden", body = ErrorResponse),
     ),
     tag = "artists"
@@ -129,7 +129,7 @@ pub(crate) async fn create_artist(
     request_body = UpdateArtistRequest,
     responses(
         (status = 200, description = "Updated artist", body = ArtistResponse),
-        (status = 401, description = "Not authenticated", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
         (status = 403, description = "Forbidden", body = ErrorResponse),
         (status = 404, description = "Not found", body = ErrorResponse),
     ),
@@ -137,8 +137,8 @@ pub(crate) async fn create_artist(
 )]
 pub(crate) async fn update_artist(
     State(state): State<AppState>,
-    Path(id): Path<Uuid>,
     auth: AuthUser,
+    Path(id): Path<Uuid>,
     Json(req): Json<UpdateArtistRequest>,
 ) -> Result<Json<ArtistResponse>, ApiError> {
     if !auth.capabilities.contains(capabilities::ARTISTS_MANAGE_ANY) {
@@ -164,7 +164,7 @@ pub(crate) async fn update_artist(
     params(("id" = Uuid, Path, description = "Artist ID")),
     responses(
         (status = 204, description = "Deleted"),
-        (status = 401, description = "Not authenticated", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
         (status = 403, description = "Forbidden", body = ErrorResponse),
         (status = 404, description = "Not found", body = ErrorResponse),
     ),
@@ -172,8 +172,8 @@ pub(crate) async fn update_artist(
 )]
 pub(crate) async fn delete_artist(
     State(state): State<AppState>,
-    Path(id): Path<Uuid>,
     auth: AuthUser,
+    Path(id): Path<Uuid>,
 ) -> Result<StatusCode, ApiError> {
     if !auth.capabilities.contains(capabilities::ARTISTS_MANAGE_ANY) {
         return Err(ApiError::Forbidden);

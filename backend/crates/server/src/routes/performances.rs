@@ -22,6 +22,19 @@ use api_types::{
     songs::{SongRef, SongSummary},
     tags::PerformanceTagKind,
 };
+use db::{
+    MySqlPool,
+    error::DbError,
+    models::{
+        NewLyrics, NewPerformance, NewPerformanceAudio, NewPerformanceVideo, UpdatePerformance,
+        performance::Performance,
+    },
+    queries,
+};
+
+use crate::{
+    auth::middleware::AuthUser, capabilities, error::ApiError, media, pagination, state::AppState,
+};
 
 #[derive(utoipa::OpenApi)]
 #[openapi(
@@ -61,19 +74,6 @@ use api_types::{
     ))
 )]
 pub(crate) struct PerformancesApi;
-use db::{
-    MySqlPool,
-    error::DbError,
-    models::{
-        NewLyrics, NewPerformance, NewPerformanceAudio, NewPerformanceVideo, UpdatePerformance,
-        performance::Performance,
-    },
-    queries,
-};
-
-use crate::{
-    auth::middleware::AuthUser, capabilities, error::ApiError, media, pagination, state::AppState,
-};
 
 /// Query parameters for `GET /api/performances`.
 #[derive(Debug, Clone, serde::Deserialize, utoipa::IntoParams)]
@@ -295,6 +295,41 @@ async fn hydrate(
     })
 }
 
+fn tag_pairs(assignments: &[PerformanceTagAssignment]) -> Vec<(Uuid, &str)> {
+    assignments
+        .iter()
+        .map(|a| (a.tag_id, a.kind.as_str()))
+        .collect()
+}
+
+/// Reads the `file` field from a multipart body and returns its bytes, content type, and filename.
+async fn read_file_field(
+    multipart: &mut Multipart,
+) -> Result<(Vec<u8>, String, Option<String>), ApiError> {
+    while let Some(field) = multipart.next_field().await.map_err(|e| {
+        error!("multipart field error: {e:?}");
+        ApiError::BadRequest(e.to_string())
+    })? {
+        if field.name() == Some("file") {
+            let content_type = field
+                .content_type()
+                .unwrap_or("application/octet-stream")
+                .to_string();
+            let filename = field.file_name().map(str::to_string);
+            let data = field
+                .bytes()
+                .await
+                .map_err(|e| {
+                    error!("multipart read error: {e:?}");
+                    ApiError::BadRequest(e.to_string())
+                })?
+                .to_vec();
+            return Ok((data, content_type, filename));
+        }
+    }
+    Err(ApiError::BadRequest("missing 'file' field".into()))
+}
+
 #[utoipa::path(
     get,
     path = "/api/performances",
@@ -485,41 +520,6 @@ pub(crate) async fn delete_performance(
     } else {
         Err(ApiError::NotFound)
     }
-}
-
-fn tag_pairs(assignments: &[PerformanceTagAssignment]) -> Vec<(Uuid, &str)> {
-    assignments
-        .iter()
-        .map(|a| (a.tag_id, a.kind.as_str()))
-        .collect()
-}
-
-/// Reads the `file` field from a multipart body and returns its bytes, content type, and filename.
-async fn read_file_field(
-    multipart: &mut Multipart,
-) -> Result<(Vec<u8>, String, Option<String>), ApiError> {
-    while let Some(field) = multipart.next_field().await.map_err(|e| {
-        error!("multipart field error: {e:?}");
-        ApiError::BadRequest(e.to_string())
-    })? {
-        if field.name() == Some("file") {
-            let content_type = field
-                .content_type()
-                .unwrap_or("application/octet-stream")
-                .to_string();
-            let filename = field.file_name().map(str::to_string);
-            let data = field
-                .bytes()
-                .await
-                .map_err(|e| {
-                    error!("multipart read error: {e:?}");
-                    ApiError::BadRequest(e.to_string())
-                })?
-                .to_vec();
-            return Ok((data, content_type, filename));
-        }
-    }
-    Err(ApiError::BadRequest("missing 'file' field".into()))
 }
 
 #[utoipa::path(

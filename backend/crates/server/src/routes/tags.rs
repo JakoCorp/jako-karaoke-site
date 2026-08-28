@@ -12,6 +12,9 @@ use api_types::{
     common::ErrorResponse,
     tags::{CreateTagRequest, TagResponse},
 };
+use db::{error::DbError, models::NewTag, queries};
+
+use crate::{convert, error::ApiError, state::AppState};
 
 #[derive(utoipa::OpenApi)]
 #[openapi(
@@ -19,10 +22,6 @@ use api_types::{
     components(schemas(TagResponse, CreateTagRequest, ErrorResponse))
 )]
 pub(crate) struct TagsApi;
-
-use db::{error::DbError, models::NewTag, queries};
-
-use crate::{convert, error::ApiError, state::AppState};
 
 pub fn router() -> Router<AppState> {
     Router::new()
