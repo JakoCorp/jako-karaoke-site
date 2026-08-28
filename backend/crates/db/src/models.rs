@@ -1,7 +1,6 @@
 //! Database model types: row structs and their `New`/`Update` input counterparts.
 
 pub mod artist;
-pub mod capability;
 pub mod image;
 pub mod lyrics;
 pub mod pending_oauth;
@@ -15,7 +14,6 @@ pub mod tag;
 pub mod user;
 
 pub use artist::{Artist, NewArtist, UpdateArtist};
-pub use capability::{Capability, NewCapability};
 pub use image::{Image, NewImage, UpdateImage};
 pub use lyrics::{Lyrics, NewLyrics};
 pub use pending_oauth::PendingOAuth;

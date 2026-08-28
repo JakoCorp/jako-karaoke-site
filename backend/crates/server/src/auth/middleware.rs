@@ -42,7 +42,6 @@ impl OptionalFromRequestParts<AppState> for AuthUser {
         let capabilities = queries::capabilities::list_for_user(&state.pool, user_id)
             .await?
             .into_iter()
-            .map(|c| c.title)
             .collect();
         Ok(Some(AuthUser {
             user_id,
@@ -69,7 +68,6 @@ impl FromRequestParts<AppState> for AuthUser {
         let capabilities = queries::capabilities::list_for_user(&state.pool, user_id)
             .await?
             .into_iter()
-            .map(|c| c.title)
             .collect();
         Ok(AuthUser {
             user_id,

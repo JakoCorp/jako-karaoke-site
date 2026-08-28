@@ -157,7 +157,6 @@ async fn claim(
     let capabilities = queries::capabilities::list_for_user(&state.pool, user.id)
         .await?
         .into_iter()
-        .map(|c| c.title)
         .collect();
 
     let mut rm_pending = Cookie::new("oauth_pending", "");

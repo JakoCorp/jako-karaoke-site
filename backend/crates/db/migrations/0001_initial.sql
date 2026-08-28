@@ -22,19 +22,11 @@ CREATE TABLE IF NOT EXISTS pending_oauth (
     INDEX (expires_at)
 ) ENGINE = InnoDB;
 
--- Capabilities
-CREATE TABLE IF NOT EXISTS capabilities (
-    id BINARY(16) NOT NULL DEFAULT (UNHEX(REPLACE(UUID_V7(), '-', ''))),
-    title VARCHAR(64) NOT NULL,
-    PRIMARY KEY (id),
-    UNIQUE INDEX (title)
-) ENGINE = InnoDB;
-
--- User <-> Capability (M2M)
+-- User Capabilities
 CREATE TABLE IF NOT EXISTS user_capabilities (
     user_id BINARY(16) NOT NULL REFERENCES users (id) ON DELETE CASCADE,
-    capability_id BINARY(16) NOT NULL REFERENCES capabilities (id) ON DELETE CASCADE,
-    PRIMARY KEY (user_id, capability_id)
+    capability VARCHAR(64) NOT NULL,
+    PRIMARY KEY (user_id, capability)
 ) ENGINE = InnoDB;
 
 -- Sessions
