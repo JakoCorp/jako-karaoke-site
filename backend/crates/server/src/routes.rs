@@ -1,6 +1,7 @@
 //! Top level router composition and middleware stack.
 
 pub(crate) mod artists;
+pub(crate) mod capabilities;
 pub(crate) mod performances;
 pub(crate) mod playlists;
 pub(crate) mod songs;
@@ -29,11 +30,12 @@ pub fn build_router(state: AppState) -> Router {
         .allow_headers([CONTENT_TYPE]);
     Router::new()
         .nest("/api/artists", artists::router())
-        .nest("/api/songs", songs::router())
+        .nest("/api/capabilities", capabilities::router())
         .nest("/api/performances", performances::router())
         .nest("/api/playlists", playlists::router())
-        .nest("/api/users", users::router())
+        .nest("/api/songs", songs::router())
         .nest("/api/tags", tags::router())
+        .nest("/api/users", users::router())
         .nest("/auth", auth::router())
         .merge(docs::router())
         .layer(TraceLayer::new_for_http())
