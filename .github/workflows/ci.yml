@@ -19,6 +19,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      - name: Setup pnpm
+        background: true
+        uses: pnpm/setup@84cb39b217b10273981911c288cd62326dc7c6d2 # v2.0.2
+        with:
+          cache: ${{ github.ref_name == github.event.repository.default_branch }}
+
       - name: Setup Rust
         background: true
         uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772
@@ -29,22 +35,10 @@ jobs:
       - wait-all: true
 
       - name: Rust cache
-        background: true
         uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
           save-if: ${{ github.ref_name == github.event.repository.default_branch }}
           workspaces: backend
-
-      - name: Setup pnpm
-        background: true
-        uses: pnpm/setup@84cb39b217b10273981911c288cd62326dc7c6d2 # v2.0.2
-        with:
-          cache: ${{ github.ref_name == github.event.repository.default_branch }}
-
-      - wait-all: true
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
 
       - name: Prek
         run: |
