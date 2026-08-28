@@ -54,7 +54,9 @@ use db::{
     queries,
 };
 
-use crate::{error::ApiError, pagination, state::AppState};
+use crate::{
+    auth::middleware::AuthUser, capabilities, error::ApiError, pagination, state::AppState,
+};
 
 pub fn router() -> Router<AppState> {
     Router::new()
@@ -193,13 +195,19 @@ pub(crate) async fn get_song(
     request_body = CreateSongRequest,
     responses(
         (status = 201, description = "Created song", body = SongResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden", body = ErrorResponse),
     ),
     tag = "songs"
 )]
 pub(crate) async fn create_song(
     State(state): State<AppState>,
+    auth: AuthUser,
     Json(req): Json<CreateSongRequest>,
 ) -> Result<(StatusCode, Json<SongResponse>), ApiError> {
+    if !auth.capabilities.contains(capabilities::SONGS_MANAGE_ANY) {
+        return Err(ApiError::Forbidden);
+    }
     let mut tx = state.pool.begin().await.map_err(DbError::Sqlx)?;
 
     let lyrics_id = match req.lyrics {
@@ -237,15 +245,21 @@ pub(crate) async fn create_song(
     request_body = UpdateSongRequest,
     responses(
         (status = 200, description = "Updated song", body = SongResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden", body = ErrorResponse),
         (status = 404, description = "Not found", body = ErrorResponse),
     ),
     tag = "songs"
 )]
 pub(crate) async fn update_song(
     State(state): State<AppState>,
+    auth: AuthUser,
     Path(id): Path<Uuid>,
     Json(req): Json<UpdateSongRequest>,
 ) -> Result<Json<SongResponse>, ApiError> {
+    if !auth.capabilities.contains(capabilities::SONGS_MANAGE_ANY) {
+        return Err(ApiError::Forbidden);
+    }
     let mut tx = state.pool.begin().await.map_err(DbError::Sqlx)?;
 
     let song = queries::songs::update(&mut tx, id, &UpdateSong { title: req.title })
@@ -275,14 +289,20 @@ fn tag_pairs(assignments: &[SongTagAssignment]) -> Vec<(Uuid, &str)> {
     params(("id" = Uuid, Path, description = "Song ID")),
     responses(
         (status = 204, description = "Deleted"),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden", body = ErrorResponse),
         (status = 404, description = "Not found", body = ErrorResponse),
     ),
     tag = "songs"
 )]
 pub(crate) async fn delete_song(
     State(state): State<AppState>,
+    auth: AuthUser,
     Path(id): Path<Uuid>,
 ) -> Result<StatusCode, ApiError> {
+    if !auth.capabilities.contains(capabilities::SONGS_MANAGE_ANY) {
+        return Err(ApiError::Forbidden);
+    }
     let found = queries::songs::delete(&state.pool, id).await?;
     if found {
         Ok(StatusCode::NO_CONTENT)
