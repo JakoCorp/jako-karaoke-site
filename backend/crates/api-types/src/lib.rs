@@ -12,3 +12,4 @@ pub mod performances;
 pub mod playlists;
 pub mod songs;
 pub mod tags;
+pub mod users;

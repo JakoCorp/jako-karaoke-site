@@ -23,6 +23,13 @@ pub struct NewUser {
     pub discord_id: Option<u64>,
 }
 
+/// A minimal user projection used for search results.
+#[derive(Debug, Clone, sqlx::FromRow, Serialize, Deserialize)]
+pub struct UserSummary {
+    pub id: Uuid,
+    pub username: String,
+}
+
 /// Input for replacing a user's mutable fields.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UpdateUser {
