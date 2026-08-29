@@ -73,7 +73,8 @@ pub(crate) async fn get_tag(
         (status = 401, description = "Unauthorized", body = ErrorResponse),
         (status = 403, description = "Forbidden", body = ErrorResponse),
     ),
-    tag = "tags"
+    tag = "tags",
+    security(("session" = []))
 )]
 pub(crate) async fn create_tag(
     State(state): State<AppState>,
@@ -98,7 +99,8 @@ pub(crate) async fn create_tag(
         (status = 403, description = "Forbidden", body = ErrorResponse),
         (status = 404, description = "Not found", body = ErrorResponse),
     ),
-    tag = "tags"
+    tag = "tags",
+    security(("session" = []))
 )]
 pub(crate) async fn delete_tag(
     State(state): State<AppState>,

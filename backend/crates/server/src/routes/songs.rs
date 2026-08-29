@@ -205,7 +205,8 @@ pub(crate) async fn get_song(
         (status = 401, description = "Unauthorized", body = ErrorResponse),
         (status = 403, description = "Forbidden", body = ErrorResponse),
     ),
-    tag = "songs"
+    tag = "songs",
+    security(("session" = []))
 )]
 pub(crate) async fn create_song(
     State(state): State<AppState>,
@@ -256,7 +257,8 @@ pub(crate) async fn create_song(
         (status = 403, description = "Forbidden", body = ErrorResponse),
         (status = 404, description = "Not found", body = ErrorResponse),
     ),
-    tag = "songs"
+    tag = "songs",
+    security(("session" = []))
 )]
 pub(crate) async fn update_song(
     State(state): State<AppState>,
@@ -293,7 +295,8 @@ pub(crate) async fn update_song(
         (status = 403, description = "Forbidden", body = ErrorResponse),
         (status = 404, description = "Not found", body = ErrorResponse),
     ),
-    tag = "songs"
+    tag = "songs",
+    security(("session" = []))
 )]
 pub(crate) async fn delete_song(
     State(state): State<AppState>,

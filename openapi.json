@@ -99,7 +99,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
       }
     },
     "/api/artists/{id}": {
@@ -211,7 +216,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
       },
       "delete": {
         "tags": [
@@ -264,7 +274,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
       }
     },
     "/api/capabilities": {
@@ -307,7 +322,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
       }
     },
     "/api/performances": {
@@ -426,7 +446,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
       }
     },
     "/api/performances/{id}": {
@@ -538,7 +563,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
       },
       "delete": {
         "tags": [
@@ -591,7 +621,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
       }
     },
     "/api/performances/{id}/audio": {
@@ -673,7 +708,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
       }
     },
     "/api/performances/{id}/audio/{audio_id}": {
@@ -738,7 +778,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
       }
     },
     "/api/performances/{id}/lyrics": {
@@ -843,7 +888,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
       },
       "delete": {
         "tags": [
@@ -896,7 +946,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
       }
     },
     "/api/performances/{id}/video": {
@@ -978,7 +1033,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
       }
     },
     "/api/performances/{id}/video/{video_id}": {
@@ -1043,7 +1103,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
       }
     },
     "/api/playlists": {
@@ -1114,7 +1179,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
       }
     },
     "/api/playlists/{id}": {
@@ -1236,7 +1306,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
       },
       "delete": {
         "tags": [
@@ -1289,7 +1364,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
       }
     },
     "/api/playlists/{id}/performances": {
@@ -1512,7 +1592,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
       }
     },
     "/api/songs/{id}": {
@@ -1624,7 +1709,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
       },
       "delete": {
         "tags": [
@@ -1677,7 +1767,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
       }
     },
     "/api/songs/{id}/lyrics": {
@@ -1782,7 +1877,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
       },
       "delete": {
         "tags": [
@@ -1835,7 +1935,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
       }
     },
     "/api/tags": {
@@ -1906,7 +2011,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
       }
     },
     "/api/tags/{id}": {
@@ -2001,7 +2111,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
       }
     },
     "/api/users": {
@@ -2055,7 +2170,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
       }
     },
     "/api/users/{id}/capabilities": {
@@ -2120,7 +2240,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
       },
       "post": {
         "tags": [
@@ -2193,7 +2318,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
       }
     },
     "/api/users/{id}/capabilities/{capability}": {
@@ -2257,7 +2387,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
       }
     },
     "/api/users/{id}/favorites": {
@@ -2485,7 +2620,12 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
       }
     },
     "/auth/pending": {
@@ -3652,6 +3792,13 @@
             "type": "string"
           }
         }
+      }
+    },
+    "securitySchemes": {
+      "session": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "session"
       }
     }
   }

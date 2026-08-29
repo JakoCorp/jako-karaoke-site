@@ -22,7 +22,8 @@ pub fn router() -> Router<AppState> {
         (status = 401, description = "Unauthorized", body = ErrorResponse),
         (status = 403, description = "Forbidden", body = ErrorResponse),
     ),
-    tag = "capabilities"
+    tag = "capabilities",
+    security(("session" = []))
 )]
 pub(crate) async fn list_capabilities(auth: AuthUser) -> Result<Json<Vec<String>>, ApiError> {
     if !auth
