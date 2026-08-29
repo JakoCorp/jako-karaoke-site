@@ -1,0 +1,167 @@
+@layer components {
+  .admin-page {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .admin-tabs {
+    display: flex;
+    gap: 0.125rem;
+    padding: 1rem 1.5rem 0;
+    border-bottom: 1px solid var(--color-border);
+    flex-shrink: 0;
+  }
+
+  .admin-tab {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    cursor: pointer;
+    transition:
+      color 0.1s,
+      border-color 0.1s;
+  }
+
+  .admin-tab:hover {
+    color: var(--color-text);
+  }
+
+  .admin-tab--active {
+    color: var(--color-text);
+    border-bottom-color: var(--color-text);
+  }
+
+  .admin-content {
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .admin-layout {
+    display: flex;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .admin-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1.5rem;
+    overflow: hidden;
+  }
+
+  .admin-panel:first-child {
+    width: 18rem;
+    flex-shrink: 0;
+    border-right: 1px solid var(--color-border);
+  }
+
+  .admin-panel:last-child {
+    flex: 1;
+  }
+
+  .admin-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .admin-panel-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-text);
+  }
+
+  .admin-user-list {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .admin-user-item {
+    width: 100%;
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.375rem;
+    border: none;
+    background: none;
+    font-size: 0.875rem;
+    color: var(--color-text);
+    cursor: pointer;
+    transition: background-color 0.1s;
+  }
+
+  .admin-user-item:hover {
+    background-color: var(--color-btn-secondary-bg);
+  }
+
+  .admin-user-item--active {
+    background-color: var(--color-btn-primary-bg);
+    color: var(--color-btn-primary-text);
+  }
+
+  .admin-user-item--active:hover {
+    opacity: 0.9;
+  }
+
+  .admin-cap-list {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .admin-cap-item {
+    border-radius: 0.375rem;
+    transition: background-color 0.1s;
+  }
+
+  .admin-cap-item:hover {
+    background-color: var(--color-btn-secondary-bg);
+  }
+
+  .admin-cap-label {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    color: var(--color-text);
+    cursor: pointer;
+    font-family: monospace;
+  }
+
+  .admin-cap-label input[type="checkbox"] {
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+    cursor: pointer;
+    accent-color: var(--color-btn-primary-bg);
+  }
+
+  .admin-cap-label input[type="checkbox"]:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  .admin-empty {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+  }
+}

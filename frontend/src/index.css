@@ -1,7 +1,8 @@
 @import "tailwindcss";
-@import "./styles/forms.css";
-@import "./styles/buttons.css";
+@import "./styles/admin.css";
 @import "./styles/auth.css";
+@import "./styles/buttons.css";
+@import "./styles/forms.css";
 @import "./styles/sidebar.css";
 @import "./styles/search.css";
 
