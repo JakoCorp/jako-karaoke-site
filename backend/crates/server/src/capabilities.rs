@@ -11,6 +11,8 @@ pub const ARTISTS_MANAGE_ANY: &str = "artists:manage_any";
 
 pub const SONGS_MANAGE_ANY: &str = "songs:manage_any";
 
+pub const TAGS_MANAGE_ANY: &str = "tags:manage_any";
+
 pub const PERFORMANCES_MANAGE_ANY: &str = "performances:manage_any";
 
 pub const PLAYLISTS_VIEW_PRIVATE: &str = "playlists:view_private";
@@ -23,6 +25,7 @@ pub const ALL_CAPABILITIES: &[&str] = &[
     CAPABILITIES_MANAGE,
     ARTISTS_MANAGE_ANY,
     SONGS_MANAGE_ANY,
+    TAGS_MANAGE_ANY,
     PERFORMANCES_MANAGE_ANY,
     PLAYLISTS_VIEW_PRIVATE,
     PLAYLISTS_CREATE_OFFICIAL,
