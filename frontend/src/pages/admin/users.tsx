@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
-import { users as usersApi, type UserSummary } from "@/api/users";
+import { usersApi, type UserSummary } from "@/api/users";
 import { useCapabilities } from "@/hooks/api/capabilities";
 import { useUserCapabilities, userKeys, useUsers } from "@/hooks/api/users";
 import { useDebounced } from "@/hooks/use-debounced";

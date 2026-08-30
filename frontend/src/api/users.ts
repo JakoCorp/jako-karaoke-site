@@ -4,7 +4,7 @@ import type { components } from "./generated";
 export type UserSummary = components["schemas"]["UserSummary"];
 
 /** User endpoints. */
-export const users = {
+export const usersApi = {
   /** Searches users by optional username substring. */
   search: (q?: string) => api.GET("/api/users", { params: { query: { q } } }),
 

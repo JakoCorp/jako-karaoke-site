@@ -3,11 +3,11 @@ import { useState } from "react";
 
 import {
   PERFORMANCE_TAG_KINDS,
-  performances as performancesApi,
+  performancesApi,
   type PerformanceSummary,
   type PerformanceTagKind,
 } from "@/api/performances";
-import { tags as tagsApi } from "@/api/tags";
+import { tagsApi } from "@/api/tags";
 import { useArtists } from "@/hooks/api/artists";
 import { performanceKeys, usePerformance } from "@/hooks/api/performances";
 import { useSongs } from "@/hooks/api/songs";

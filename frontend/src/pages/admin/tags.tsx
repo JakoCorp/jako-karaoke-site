@@ -2,7 +2,7 @@ import { Dialog } from "@base-ui/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
-import { tags as tagsApi } from "@/api/tags";
+import { tagsApi } from "@/api/tags";
 import { tagKeys, useTags } from "@/hooks/api/tags";
 
 export function TagsAdminTab() {

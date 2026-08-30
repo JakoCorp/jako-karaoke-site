@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { users } from "@/api/users";
+import { usersApi } from "@/api/users";
 
 export const userKeys = {
   all: () => ["users"] as const,
@@ -12,7 +12,7 @@ export function useUsers(q?: string) {
   return useQuery({
     queryKey: userKeys.list(q),
     queryFn: async () => {
-      const { data, error } = await users.search(q);
+      const { data, error } = await usersApi.search(q);
       if (error) throw error;
       return data ?? [];
     },
@@ -23,7 +23,7 @@ export function useUserCapabilities(userId: string | undefined) {
   return useQuery({
     queryKey: userKeys.capabilities(userId ?? ""),
     queryFn: async () => {
-      const { data, error } = await users.listCapabilities(userId!);
+      const { data, error } = await usersApi.listCapabilities(userId!);
       if (error) throw error;
       return data ?? [];
     },

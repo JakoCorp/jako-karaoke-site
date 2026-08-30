@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { performances as performancesApi } from "@/api/performances";
+import { performancesApi } from "@/api/performances";
 import type { PerformanceListParams } from "@/api/performances";
 
 export const performanceKeys = {

@@ -20,7 +20,7 @@ export type SongListParams = PaginationParams & {
 };
 
 /** Song endpoints. */
-export const songs = {
+export const songsApi = {
   /** Returns a paginated list of songs. */
   list: (params?: SongListParams) => api.GET("/api/songs", { params: { query: params } }),
 

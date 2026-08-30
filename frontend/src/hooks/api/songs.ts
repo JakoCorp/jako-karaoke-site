@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { songs as songsApi } from "@/api/songs";
+import { songsApi } from "@/api/songs";
 import type { SongListParams } from "@/api/songs";
 
 export const songKeys = {

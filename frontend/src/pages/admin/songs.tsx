@@ -3,8 +3,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { type ArtistResponse } from "@/api/artists";
-import { SONG_TAG_KINDS, songs as songsApi, type SongSummary, type SongTagKind } from "@/api/songs";
-import { tags as tagsApi, type TagResponse } from "@/api/tags";
+import { SONG_TAG_KINDS, songsApi, type SongSummary, type SongTagKind } from "@/api/songs";
+import { tagsApi, type TagResponse } from "@/api/tags";
 import { useArtists } from "@/hooks/api/artists";
 import { songKeys, useSongs } from "@/hooks/api/songs";
 import { tagKeys, useTags } from "@/hooks/api/tags";

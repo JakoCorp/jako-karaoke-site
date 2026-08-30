@@ -23,7 +23,7 @@ export type PerformanceListParams = PaginationParams & {
 };
 
 /** Performance endpoints. */
-export const performances = {
+export const performancesApi = {
   /** Returns a paginated, optionally filtered list of performances. */
   list: (params?: PerformanceListParams) =>
     api.GET("/api/performances", { params: { query: params } }),

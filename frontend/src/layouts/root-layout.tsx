@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { Outlet } from "react-router";
 
-import { auth } from "@/api/auth";
+import { authApi } from "@/api/auth";
 import { useAuthStore } from "@/store/auth";
 
 import { Sidebar } from "./sidebar/sidebar";
@@ -11,7 +11,7 @@ export function RootLayout() {
 
   useEffect(() => {
     void (async () => {
-      const { data } = await auth.me();
+      const { data } = await authApi.me();
       if (data) {
         setUser({ id: data.id, username: data.username, capabilities: data.capabilities });
       }

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { tags as tagsApi } from "@/api/tags";
+import { tagsApi } from "@/api/tags";
 
 export const tagKeys = {
   all: () => ["tags"] as const,

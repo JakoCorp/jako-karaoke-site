@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { artists as artistsApi } from "@/api/artists";
+import { artistsApi } from "@/api/artists";
 import type { PaginationParams } from "@/api/types";
 
 export const artistKeys = {

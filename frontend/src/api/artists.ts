@@ -5,7 +5,7 @@ import type { PaginationParams } from "./types";
 export type ArtistResponse = components["schemas"]["ArtistResponse"];
 
 /** Artist endpoints. */
-export const artists = {
+export const artistsApi = {
   /** Returns a paginated list of artists. */
   list: (params?: PaginationParams) => api.GET("/api/artists", { params: { query: params } }),
 

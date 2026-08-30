@@ -2,7 +2,7 @@ import { api } from "./client";
 import type { components } from "./generated";
 
 /** Auth endpoints: session management and OAuth claim. */
-export const auth = {
+export const authApi = {
   /** Returns the currently authenticated user, or null if no session is active. */
   me: () => api.GET("/auth/me", {}),
 

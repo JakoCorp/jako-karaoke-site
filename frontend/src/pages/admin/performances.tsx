@@ -5,12 +5,12 @@ import { useState } from "react";
 import { type ArtistResponse } from "@/api/artists";
 import {
   PERFORMANCE_TAG_KINDS,
-  performances as performancesApi,
+  performancesApi,
   type PerformanceSummary,
   type PerformanceTagKind,
 } from "@/api/performances";
 import { type SongSummary } from "@/api/songs";
-import { tags as tagsApi, type TagResponse } from "@/api/tags";
+import { tagsApi, type TagResponse } from "@/api/tags";
 import { useArtists } from "@/hooks/api/artists";
 import { performanceKeys, usePerformances } from "@/hooks/api/performances";
 import { useSongs } from "@/hooks/api/songs";
