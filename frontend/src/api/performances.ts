@@ -1,4 +1,5 @@
 import { api } from "./client";
+import type { components } from "./generated";
 import type { PaginationParams } from "./types";
 
 /** Query parameters accepted by the performances list endpoint. */
@@ -26,4 +27,11 @@ export const performances = {
    * Returns 404 if neither the performance nor the song has lyrics.
    */
   getLyrics: (id: string) => api.GET("/api/performances/{id}/lyrics", { params: { path: { id } } }),
+
+  /** Creates a new performance. */
+  create: (body: components["schemas"]["CreatePerformanceRequest"]) =>
+    api.POST("/api/performances", { body }),
+
+  /** Deletes a performance by ID. */
+  delete: (id: string) => api.DELETE("/api/performances/{id}", { params: { path: { id } } }),
 };
