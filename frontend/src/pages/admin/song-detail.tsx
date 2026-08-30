@@ -1,8 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
-import type { components } from "@/api/generated";
-import { songs as songsApi } from "@/api/songs";
+import { songs as songsApi, type SongSummary, type SongTagKind } from "@/api/songs";
 import { tags as tagsApi } from "@/api/tags";
 import { useArtists } from "@/hooks/api/artists";
 import { songKeys, useSong } from "@/hooks/api/songs";
@@ -10,9 +9,6 @@ import { tagKeys, useTags } from "@/hooks/api/tags";
 
 import { ItemPicker, TagPicker, type TagAssignment } from "./pickers";
 import { resolveTagAssignments } from "./tag-utils";
-
-type SongSummary = components["schemas"]["SongSummary"];
-type SongTagKind = components["schemas"]["SongTagKind"];
 
 const SONG_TAG_KINDS: readonly SongTagKind[] = ["genre", "source", "language", "misc"];
 

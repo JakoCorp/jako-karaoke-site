@@ -1,5 +1,8 @@
 import { api } from "./client";
+import type { components } from "./generated";
 import type { PaginationParams } from "./types";
+
+export type ArtistResponse = components["schemas"]["ArtistResponse"];
 
 /** Artist endpoints. */
 export const artists = {

@@ -2,9 +2,14 @@ import { Dialog } from "@base-ui/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
-import type { components } from "@/api/generated";
-import { performances as performancesApi } from "@/api/performances";
-import { tags as tagsApi } from "@/api/tags";
+import { type ArtistResponse } from "@/api/artists";
+import {
+  performances as performancesApi,
+  type PerformanceSummary,
+  type PerformanceTagKind,
+} from "@/api/performances";
+import { type SongSummary } from "@/api/songs";
+import { tags as tagsApi, type TagResponse } from "@/api/tags";
 import { useArtists } from "@/hooks/api/artists";
 import { performanceKeys, usePerformances } from "@/hooks/api/performances";
 import { useSongs } from "@/hooks/api/songs";
@@ -15,12 +20,6 @@ import { formatDate } from "@/lib/format";
 import { PerformanceDetailPanel } from "./performance-detail";
 import { ItemPicker, TagPicker, type TagAssignment } from "./pickers";
 import { resolveTagAssignments } from "./tag-utils";
-
-type PerformanceSummary = components["schemas"]["PerformanceSummary"];
-type ArtistResponse = components["schemas"]["ArtistResponse"];
-type SongSummary = components["schemas"]["SongSummary"];
-type TagResponse = components["schemas"]["TagResponse"];
-type PerformanceTagKind = components["schemas"]["PerformanceTagKind"];
 
 const PERFORMANCE_TAG_KINDS: readonly PerformanceTagKind[] = ["instrument", "modifier", "misc"];
 

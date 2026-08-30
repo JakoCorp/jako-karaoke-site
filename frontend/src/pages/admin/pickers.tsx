@@ -1,9 +1,7 @@
 import type { ReactNode } from "react";
 import { useState } from "react";
 
-import type { components } from "@/api/generated";
-
-type TagResponse = components["schemas"]["TagResponse"];
+import type { TagResponse } from "@/api/tags";
 
 export type TagAssignment<K extends string> =
   | { type: "existing"; tagId: string; kind: K }

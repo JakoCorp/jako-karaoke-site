@@ -1,4 +1,7 @@
 import { api } from "./client";
+import type { components } from "./generated";
+
+export type UserSummary = components["schemas"]["UserSummary"];
 
 /** User endpoints. */
 export const users = {

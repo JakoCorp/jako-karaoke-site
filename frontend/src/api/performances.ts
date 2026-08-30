@@ -2,6 +2,10 @@ import { api } from "./client";
 import type { components } from "./generated";
 import type { PaginationParams } from "./types";
 
+export type PerformanceSummary = components["schemas"]["PerformanceSummary"];
+export type PerformanceResponse = components["schemas"]["PerformanceResponse"];
+export type PerformanceTagKind = components["schemas"]["PerformanceTagKind"];
+
 /** Query parameters accepted by the performances list endpoint. */
 export type PerformanceListParams = PaginationParams & {
   /** Text search across performance title, song title, and singer names. */

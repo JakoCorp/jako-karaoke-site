@@ -1,8 +1,11 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
-import type { components } from "@/api/generated";
-import { performances as performancesApi } from "@/api/performances";
+import {
+  performances as performancesApi,
+  type PerformanceSummary,
+  type PerformanceTagKind,
+} from "@/api/performances";
 import { tags as tagsApi } from "@/api/tags";
 import { useArtists } from "@/hooks/api/artists";
 import { performanceKeys, usePerformance } from "@/hooks/api/performances";
@@ -12,9 +15,6 @@ import { formatDate, isoToDatetimeLocal } from "@/lib/format";
 
 import { ItemPicker, TagPicker, type TagAssignment } from "./pickers";
 import { resolveTagAssignments } from "./tag-utils";
-
-type PerformanceSummary = components["schemas"]["PerformanceSummary"];
-type PerformanceTagKind = components["schemas"]["PerformanceTagKind"];
 
 const PERFORMANCE_TAG_KINDS: readonly PerformanceTagKind[] = ["instrument", "modifier", "misc"];
 

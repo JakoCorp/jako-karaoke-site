@@ -1,6 +1,8 @@
 import { api } from "./client";
 import type { components } from "./generated";
 
+export type TagResponse = components["schemas"]["TagResponse"];
+
 /** Tag endpoints. */
 export const tags = {
   /** Returns all tags. */

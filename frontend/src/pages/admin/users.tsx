@@ -2,11 +2,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { capabilities as capabilitiesApi } from "@/api/capabilities";
-import type { components } from "@/api/generated";
-import { users as usersApi } from "@/api/users";
+import { users as usersApi, type UserSummary } from "@/api/users";
 import { useDebounced } from "@/hooks/use-debounced";
-
-type UserSummary = components["schemas"]["UserSummary"];
 
 export function UsersAdminTab() {
   const [searchInput, setSearchInput] = useState("");
