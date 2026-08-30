@@ -23,6 +23,7 @@ export function SongDetailPanel({ song, onDeleted }: { song: SongSummary; onDele
   const [editArtistIds, setEditArtistIds] = useState<string[]>([]);
   const [editTags, setEditTags] = useState<TagAssignment<SongTagKind>[]>([]);
   const [updateError, setUpdateError] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -84,12 +85,15 @@ export function SongDetailPanel({ song, onDeleted }: { song: SongSummary; onDele
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      const { error: deleteError } = await songsApi.delete(song.id);
-      if (deleteError) throw deleteError;
+      const { error: apiError } = await songsApi.delete(song.id);
+      if (apiError) throw apiError;
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["admin", "songs"] });
       onDeleted();
+    },
+    onError: () => {
+      setDeleteError("Failed to delete song.");
     },
   });
 
@@ -224,6 +228,7 @@ export function SongDetailPanel({ song, onDeleted }: { song: SongSummary; onDele
               className="btn btn-secondary"
               onClick={() => {
                 setConfirmDelete(false);
+                setDeleteError(null);
               }}
             >
               No
@@ -245,6 +250,8 @@ export function SongDetailPanel({ song, onDeleted }: { song: SongSummary; onDele
           </div>
         )}
       </div>
+
+      {deleteError !== null && <p className="form-error">{deleteError}</p>}
 
       {songDetail && (
         <div className="admin-panel-scroll">

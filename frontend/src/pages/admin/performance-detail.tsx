@@ -50,6 +50,7 @@ export function PerformanceDetailPanel({
   const [editSingerIds, setEditSingerIds] = useState<string[]>([]);
   const [editTags, setEditTags] = useState<TagAssignment<PerformanceTagKind>[]>([]);
   const [updateError, setUpdateError] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -122,12 +123,15 @@ export function PerformanceDetailPanel({
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      const { error: deleteError } = await performancesApi.delete(performance.id);
-      if (deleteError) throw deleteError;
+      const { error: apiError } = await performancesApi.delete(performance.id);
+      if (apiError) throw apiError;
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["admin", "performances"] });
       onDeleted();
+    },
+    onError: () => {
+      setDeleteError("Failed to delete performance.");
     },
   });
 
@@ -306,6 +310,7 @@ export function PerformanceDetailPanel({
               className="btn btn-secondary"
               onClick={() => {
                 setConfirmDelete(false);
+                setDeleteError(null);
               }}
             >
               No
@@ -331,6 +336,8 @@ export function PerformanceDetailPanel({
           </div>
         )}
       </div>
+
+      {deleteError !== null && <p className="form-error">{deleteError}</p>}
 
       {performanceDetail && (
         <div className="admin-panel-scroll">
