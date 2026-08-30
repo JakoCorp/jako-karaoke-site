@@ -8,6 +8,7 @@ import { performances as performancesApi } from "@/api/performances";
 import { songs as songsApi } from "@/api/songs";
 import { tags as tagsApi } from "@/api/tags";
 
+import { PerformanceDetailPanel } from "./performance-detail";
 import { ItemPicker, TagPicker, type TagAssignment } from "./pickers";
 import { resolveTagAssignments } from "./tag-utils";
 
@@ -254,9 +255,6 @@ export function PerformancesAdminTab() {
   const [searchInput, setSearchInput] = useState("");
   const [selectedPerformance, setSelectedPerformance] = useState<PerformanceSummary | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
-
-  const queryClient = useQueryClient();
 
   const { data: performancePage, isLoading: performancesLoading } = useQuery({
     queryKey: ["admin", "performances"],
@@ -265,16 +263,6 @@ export function PerformancesAdminTab() {
       if (error) throw error;
       return data;
     },
-  });
-
-  const { data: performanceDetail } = useQuery({
-    queryKey: ["admin", "performances", selectedPerformance?.id],
-    queryFn: async () => {
-      const { data, error } = await performancesApi.get(selectedPerformance!.id);
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!selectedPerformance,
   });
 
   const { data: allSongs } = useQuery({
@@ -305,18 +293,6 @@ export function PerformancesAdminTab() {
       return data ?? [];
     },
     enabled: createOpen,
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await performancesApi.delete(id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["admin", "performances"] });
-      setSelectedPerformance(null);
-      setConfirmDelete(false);
-    },
   });
 
   const allPerformances = performancePage?.items ?? [];
@@ -363,7 +339,6 @@ export function PerformancesAdminTab() {
                 className={`admin-user-item${selectedPerformance?.id === performance.id ? " admin-user-item--active" : ""}`}
                 onClick={() => {
                   setSelectedPerformance(performance);
-                  setConfirmDelete(false);
                 }}
               >
                 <div className="admin-item-title">
@@ -382,92 +357,13 @@ export function PerformancesAdminTab() {
 
       <div className="admin-panel">
         {selectedPerformance ? (
-          <>
-            <div className="admin-panel-header">
-              <h3 className="admin-panel-title">
-                {selectedPerformance.title ?? formatDate(selectedPerformance.performance_date)}
-              </h3>
-              {confirmDelete ? (
-                <div className="admin-tag-confirm">
-                  <span className="admin-empty">Delete?</span>
-                  <button
-                    className="btn btn-primary"
-                    onClick={() => {
-                      deleteMutation.mutate(selectedPerformance.id);
-                    }}
-                    disabled={deleteMutation.isPending}
-                  >
-                    Yes
-                  </button>
-                  <button
-                    className="btn btn-secondary"
-                    onClick={() => {
-                      setConfirmDelete(false);
-                    }}
-                  >
-                    No
-                  </button>
-                </div>
-              ) : (
-                <button
-                  className="btn btn-secondary"
-                  onClick={() => {
-                    setConfirmDelete(true);
-                  }}
-                >
-                  Delete
-                </button>
-              )}
-            </div>
-
-            {performanceDetail && (
-              <>
-                <div className="admin-detail-section">
-                  <span className="admin-detail-label">Date</span>
-                  <span className="admin-empty">
-                    {formatDate(performanceDetail.performance_date)}
-                  </span>
-                </div>
-                {performanceDetail.songs.length > 0 && (
-                  <div className="admin-detail-section">
-                    <span className="admin-detail-label">Songs</span>
-                    <div className="admin-pills">
-                      {performanceDetail.songs.map((song) => (
-                        <span key={song.id} className="admin-pill admin-pill--display">
-                          {song.title}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {performanceDetail.singers.length > 0 && (
-                  <div className="admin-detail-section">
-                    <span className="admin-detail-label">Singers</span>
-                    <div className="admin-pills">
-                      {performanceDetail.singers.map((singer) => (
-                        <span key={singer.id} className="admin-pill admin-pill--display">
-                          {singer.name}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {performanceDetail.tags.length > 0 && (
-                  <div className="admin-detail-section">
-                    <span className="admin-detail-label">Tags</span>
-                    <div className="admin-pills">
-                      {performanceDetail.tags.map((tag) => (
-                        <span key={tag.id} className="admin-pill admin-pill--display">
-                          {tag.name}
-                          <span className="admin-pill-kind">{tag.kind}</span>
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-          </>
+          <PerformanceDetailPanel
+            key={selectedPerformance.id}
+            performance={selectedPerformance}
+            onDeleted={() => {
+              setSelectedPerformance(null);
+            }}
+          />
         ) : (
           <p className="admin-empty">Select a performance to view details.</p>
         )}

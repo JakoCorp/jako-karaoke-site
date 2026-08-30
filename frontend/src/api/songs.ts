@@ -16,6 +16,10 @@ export const songs = {
   /** Creates a new song. */
   create: (body: components["schemas"]["CreateSongRequest"]) => api.POST("/api/songs", { body }),
 
+  /** Updates a song by ID. */
+  update: (id: string, body: components["schemas"]["UpdateSongRequest"]) =>
+    api.PUT("/api/songs/{id}", { params: { path: { id } }, body }),
+
   /** Deletes a song by ID. */
   delete: (id: string) => api.DELETE("/api/songs/{id}", { params: { path: { id } } }),
 };

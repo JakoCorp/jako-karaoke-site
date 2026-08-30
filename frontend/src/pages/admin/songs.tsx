@@ -8,6 +8,7 @@ import { songs as songsApi } from "@/api/songs";
 import { tags as tagsApi } from "@/api/tags";
 
 import { ItemPicker, TagPicker, type TagAssignment } from "./pickers";
+import { SongDetailPanel } from "./song-detail";
 import { resolveTagAssignments } from "./tag-utils";
 
 type SongSummary = components["schemas"]["SongSummary"];
@@ -181,9 +182,6 @@ export function SongsAdminTab() {
   const [searchInput, setSearchInput] = useState("");
   const [selectedSong, setSelectedSong] = useState<SongSummary | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
-
-  const queryClient = useQueryClient();
 
   const { data: songPage, isLoading: songsLoading } = useQuery({
     queryKey: ["admin", "songs"],
@@ -192,16 +190,6 @@ export function SongsAdminTab() {
       if (error) throw error;
       return data;
     },
-  });
-
-  const { data: songDetail } = useQuery({
-    queryKey: ["admin", "songs", selectedSong?.id],
-    queryFn: async () => {
-      const { data, error } = await songsApi.get(selectedSong!.id);
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!selectedSong,
   });
 
   const { data: allArtists } = useQuery({
@@ -222,18 +210,6 @@ export function SongsAdminTab() {
       return data ?? [];
     },
     enabled: createOpen,
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await songsApi.delete(id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["admin", "songs"] });
-      setSelectedSong(null);
-      setConfirmDelete(false);
-    },
   });
 
   const songs = songPage?.items ?? [];
@@ -276,7 +252,6 @@ export function SongsAdminTab() {
                 className={`admin-user-item${selectedSong?.id === song.id ? " admin-user-item--active" : ""}`}
                 onClick={() => {
                   setSelectedSong(song);
-                  setConfirmDelete(false);
                 }}
               >
                 <div className="admin-item-title">{song.title}</div>
@@ -293,72 +268,13 @@ export function SongsAdminTab() {
 
       <div className="admin-panel">
         {selectedSong ? (
-          <>
-            <div className="admin-panel-header">
-              <h3 className="admin-panel-title">{selectedSong.title}</h3>
-              {confirmDelete ? (
-                <div className="admin-tag-confirm">
-                  <span className="admin-empty">Delete?</span>
-                  <button
-                    className="btn btn-primary"
-                    onClick={() => {
-                      deleteMutation.mutate(selectedSong.id);
-                    }}
-                    disabled={deleteMutation.isPending}
-                  >
-                    Yes
-                  </button>
-                  <button
-                    className="btn btn-secondary"
-                    onClick={() => {
-                      setConfirmDelete(false);
-                    }}
-                  >
-                    No
-                  </button>
-                </div>
-              ) : (
-                <button
-                  className="btn btn-secondary"
-                  onClick={() => {
-                    setConfirmDelete(true);
-                  }}
-                >
-                  Delete
-                </button>
-              )}
-            </div>
-
-            {songDetail && (
-              <>
-                {songDetail.artists.length > 0 && (
-                  <div className="admin-detail-section">
-                    <span className="admin-detail-label">Artists</span>
-                    <div className="admin-pills">
-                      {songDetail.artists.map((artist) => (
-                        <span key={artist.id} className="admin-pill admin-pill--display">
-                          {artist.name}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {songDetail.tags.length > 0 && (
-                  <div className="admin-detail-section">
-                    <span className="admin-detail-label">Tags</span>
-                    <div className="admin-pills">
-                      {songDetail.tags.map((tag) => (
-                        <span key={tag.id} className="admin-pill admin-pill--display">
-                          {tag.name}
-                          <span className="admin-pill-kind">{tag.kind}</span>
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-          </>
+          <SongDetailPanel
+            key={selectedSong.id}
+            song={selectedSong}
+            onDeleted={() => {
+              setSelectedSong(null);
+            }}
+          />
         ) : (
           <p className="admin-empty">Select a song to view details.</p>
         )}

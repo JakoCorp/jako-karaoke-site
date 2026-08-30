@@ -32,6 +32,10 @@ export const performances = {
   create: (body: components["schemas"]["CreatePerformanceRequest"]) =>
     api.POST("/api/performances", { body }),
 
+  /** Updates a performance by ID. */
+  update: (id: string, body: components["schemas"]["UpdatePerformanceRequest"]) =>
+    api.PUT("/api/performances/{id}", { params: { path: { id } }, body }),
+
   /** Deletes a performance by ID. */
   delete: (id: string) => api.DELETE("/api/performances/{id}", { params: { path: { id } } }),
 };
