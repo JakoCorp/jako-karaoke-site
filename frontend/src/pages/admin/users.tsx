@@ -1,26 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { capabilities as capabilitiesApi } from "@/api/capabilities";
 import type { components } from "@/api/generated";
 import { users as usersApi } from "@/api/users";
+import { useDebounced } from "@/hooks/use-debounced";
 
 type UserSummary = components["schemas"]["UserSummary"];
 
 export function UsersAdminTab() {
   const [searchInput, setSearchInput] = useState("");
-  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [selectedUser, setSelectedUser] = useState<UserSummary | null>(null);
   const [isGrantingAll, setIsGrantingAll] = useState(false);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedQuery(searchInput.trim());
-    }, 300);
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [searchInput]);
+  const debouncedQuery = useDebounced(searchInput.trim());
 
   const queryClient = useQueryClient();
 

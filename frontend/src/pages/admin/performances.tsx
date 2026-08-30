@@ -1,12 +1,13 @@
 import { Dialog } from "@base-ui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { artists as artistsApi } from "@/api/artists";
 import type { components } from "@/api/generated";
 import { performances as performancesApi } from "@/api/performances";
 import { songs as songsApi } from "@/api/songs";
 import { tags as tagsApi } from "@/api/tags";
+import { useDebounced } from "@/hooks/use-debounced";
 import { formatDate } from "@/lib/format";
 
 import { PerformanceDetailPanel } from "./performance-detail";
@@ -246,18 +247,10 @@ function CreatePerformanceDialog({
 
 export function PerformancesAdminTab() {
   const [searchInput, setSearchInput] = useState("");
-  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [selectedPerformance, setSelectedPerformance] = useState<PerformanceSummary | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedQuery(searchInput.trim());
-    }, 300);
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [searchInput]);
+  const debouncedQuery = useDebounced(searchInput.trim());
 
   const { data: performancePage, isLoading: performancesLoading } = useQuery({
     queryKey: ["admin", "performances", debouncedQuery],
