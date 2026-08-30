@@ -76,15 +76,13 @@ pub async fn update(
     id: Uuid,
     upd: &UpdateSong,
 ) -> Result<Option<Song>> {
-    sqlx::query_as::<_, Song>(
-        "UPDATE songs SET title = ? WHERE id = ? \
-         RETURNING id, title, created_by, lyrics_id, date_added",
-    )
-    .bind(&upd.title)
-    .bind(id)
-    .fetch_optional(conn)
-    .await
-    .map_err(DbError::from)
+    sqlx::query("UPDATE songs SET title = ? WHERE id = ?")
+        .bind(&upd.title)
+        .bind(id)
+        .execute(&mut *conn)
+        .await
+        .map_err(DbError::from)?;
+    get_by_id(&mut *conn, id).await
 }
 
 /// Sets the `lyrics_id` foreign key on a song, or clears it with `None`.

@@ -186,25 +186,25 @@ pub async fn create(conn: &mut MySqlConnection, new: &NewPerformance) -> Result<
     .map_err(DbError::from)
 }
 
-/// Updates a performance's mutable scalar fields. Returns `None` if the ID does not exist.
+/// Updates a performance's mutable fields. Returns `None` if the ID does not exist.
 pub async fn update(
     conn: &mut MySqlConnection,
     id: Uuid,
     upd: &UpdatePerformance,
 ) -> Result<Option<Performance>> {
-    sqlx::query_as::<_, Performance>(
+    sqlx::query(
         "UPDATE performances \
          SET title = ?, duration = ?, performance_date = ? \
-         WHERE id = ? \
-         RETURNING id, created_by, title, lyrics_id, play_count, duration, performance_date",
+         WHERE id = ?",
     )
     .bind(&upd.title)
     .bind(upd.duration)
     .bind(upd.performance_date)
     .bind(id)
-    .fetch_optional(conn)
+    .execute(&mut *conn)
     .await
-    .map_err(DbError::from)
+    .map_err(DbError::from)?;
+    get_by_id(&mut *conn, id).await
 }
 
 /// Sets the `lyrics_id` foreign key on a performance, or clears it with `None`.
