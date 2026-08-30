@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
 import {
+  PERFORMANCE_TAG_KINDS,
   performances as performancesApi,
   type PerformanceSummary,
   type PerformanceTagKind,
@@ -15,8 +16,6 @@ import { formatDate, isoToDatetimeLocal } from "@/lib/format";
 
 import { ItemPicker, TagPicker, type TagAssignment } from "./pickers";
 import { resolveTagAssignments } from "./tag-utils";
-
-const PERFORMANCE_TAG_KINDS: readonly PerformanceTagKind[] = ["instrument", "modifier", "misc"];
 
 export function PerformanceDetailPanel({
   performance,

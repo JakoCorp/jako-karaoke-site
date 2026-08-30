@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
-import { songs as songsApi, type SongSummary, type SongTagKind } from "@/api/songs";
+import { SONG_TAG_KINDS, songs as songsApi, type SongSummary, type SongTagKind } from "@/api/songs";
 import { tags as tagsApi } from "@/api/tags";
 import { useArtists } from "@/hooks/api/artists";
 import { songKeys, useSong } from "@/hooks/api/songs";
@@ -9,8 +9,6 @@ import { tagKeys, useTags } from "@/hooks/api/tags";
 
 import { ItemPicker, TagPicker, type TagAssignment } from "./pickers";
 import { resolveTagAssignments } from "./tag-utils";
-
-const SONG_TAG_KINDS: readonly SongTagKind[] = ["genre", "source", "language", "misc"];
 
 export function SongDetailPanel({ song, onDeleted }: { song: SongSummary; onDeleted: () => void }) {
   const [isEditing, setIsEditing] = useState(false);

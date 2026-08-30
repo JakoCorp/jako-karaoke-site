@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { type ArtistResponse } from "@/api/artists";
 import {
+  PERFORMANCE_TAG_KINDS,
   performances as performancesApi,
   type PerformanceSummary,
   type PerformanceTagKind,
@@ -20,8 +21,6 @@ import { formatDate } from "@/lib/format";
 import { PerformanceDetailPanel } from "./performance-detail";
 import { ItemPicker, TagPicker, type TagAssignment } from "./pickers";
 import { resolveTagAssignments } from "./tag-utils";
-
-const PERFORMANCE_TAG_KINDS: readonly PerformanceTagKind[] = ["instrument", "modifier", "misc"];
 
 function CreatePerformanceDialog({
   open,

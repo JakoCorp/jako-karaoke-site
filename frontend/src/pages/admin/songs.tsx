@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { type ArtistResponse } from "@/api/artists";
-import { songs as songsApi, type SongSummary, type SongTagKind } from "@/api/songs";
+import { SONG_TAG_KINDS, songs as songsApi, type SongSummary, type SongTagKind } from "@/api/songs";
 import { tags as tagsApi, type TagResponse } from "@/api/tags";
 import { useArtists } from "@/hooks/api/artists";
 import { songKeys, useSongs } from "@/hooks/api/songs";
@@ -13,8 +13,6 @@ import { useDebounced } from "@/hooks/use-debounced";
 import { ItemPicker, TagPicker, type TagAssignment } from "./pickers";
 import { SongDetailPanel } from "./song-detail";
 import { resolveTagAssignments } from "./tag-utils";
-
-const SONG_TAG_KINDS: readonly SongTagKind[] = ["genre", "source", "language", "misc"];
 
 function CreateSongDialog({
   open,

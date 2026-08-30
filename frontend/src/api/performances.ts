@@ -6,6 +6,12 @@ export type PerformanceSummary = components["schemas"]["PerformanceSummary"];
 export type PerformanceResponse = components["schemas"]["PerformanceResponse"];
 export type PerformanceTagKind = components["schemas"]["PerformanceTagKind"];
 
+export const PERFORMANCE_TAG_KINDS = [
+  "instrument",
+  "modifier",
+  "misc",
+] as const satisfies readonly PerformanceTagKind[];
+
 /** Query parameters accepted by the performances list endpoint. */
 export type PerformanceListParams = PaginationParams & {
   /** Text search across performance title, song title, and singer names. */

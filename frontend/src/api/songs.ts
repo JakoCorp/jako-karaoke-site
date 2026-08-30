@@ -6,6 +6,13 @@ export type SongSummary = components["schemas"]["SongSummary"];
 export type SongResponse = components["schemas"]["SongResponse"];
 export type SongTagKind = components["schemas"]["SongTagKind"];
 
+export const SONG_TAG_KINDS = [
+  "genre",
+  "source",
+  "language",
+  "misc",
+] as const satisfies readonly SongTagKind[];
+
 /** Query parameters accepted by the songs list endpoint. */
 export type SongListParams = PaginationParams & {
   /** Text search across song title and original artist names. */
