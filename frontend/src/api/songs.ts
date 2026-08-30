@@ -2,10 +2,16 @@ import { api } from "./client";
 import type { components } from "./generated";
 import type { PaginationParams } from "./types";
 
+/** Query parameters accepted by the songs list endpoint. */
+export type SongListParams = PaginationParams & {
+  /** Text search across song title and original artist names. */
+  q?: string;
+};
+
 /** Song endpoints. */
 export const songs = {
   /** Returns a paginated list of songs. */
-  list: (params?: PaginationParams) => api.GET("/api/songs", { params: { query: params } }),
+  list: (params?: SongListParams) => api.GET("/api/songs", { params: { query: params } }),
 
   /** Returns a single song by ID. */
   get: (id: string) => api.GET("/api/songs/{id}", { params: { path: { id } } }),

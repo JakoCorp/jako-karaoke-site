@@ -1,6 +1,6 @@
 import { Dialog } from "@base-ui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { artists as artistsApi } from "@/api/artists";
 import type { components } from "@/api/generated";
@@ -253,13 +253,26 @@ function formatDate(isoString: string): string {
 
 export function PerformancesAdminTab() {
   const [searchInput, setSearchInput] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [selectedPerformance, setSelectedPerformance] = useState<PerformanceSummary | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(searchInput.trim());
+    }, 300);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [searchInput]);
+
   const { data: performancePage, isLoading: performancesLoading } = useQuery({
-    queryKey: ["admin", "performances"],
+    queryKey: ["admin", "performances", debouncedQuery],
     queryFn: async () => {
-      const { data, error } = await performancesApi.list({ per_page: 100 });
+      const { data, error } = await performancesApi.list({
+        per_page: 100,
+        q: debouncedQuery || undefined,
+      });
       if (error) throw error;
       return data;
     },
@@ -295,14 +308,7 @@ export function PerformancesAdminTab() {
     enabled: createOpen,
   });
 
-  const allPerformances = performancePage?.items ?? [];
-  const filtered = allPerformances.filter((performance) => {
-    const titleMatch = (performance.title ?? "").toLowerCase().includes(searchInput.toLowerCase());
-    const singerMatch = performance.singers.some((singer) =>
-      singer.name.toLowerCase().includes(searchInput.toLowerCase()),
-    );
-    return titleMatch || singerMatch;
-  });
+  const performances = performancePage?.items ?? [];
 
   return (
     <div className="admin-layout">
@@ -330,10 +336,10 @@ export function PerformancesAdminTab() {
         </div>
         <ul className="admin-user-list">
           {performancesLoading && <li className="admin-empty">Loading…</li>}
-          {!performancesLoading && filtered.length === 0 && (
+          {!performancesLoading && performances.length === 0 && (
             <li className="admin-empty">No performances found.</li>
           )}
-          {filtered.map((performance) => (
+          {performances.map((performance) => (
             <li key={performance.id}>
               <button
                 className={`admin-user-item${selectedPerformance?.id === performance.id ? " admin-user-item--active" : ""}`}

@@ -1,6 +1,6 @@
 import { Dialog } from "@base-ui/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { artists as artistsApi } from "@/api/artists";
 import type { components } from "@/api/generated";
@@ -180,13 +180,26 @@ function CreateSongDialog({
 
 export function SongsAdminTab() {
   const [searchInput, setSearchInput] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [selectedSong, setSelectedSong] = useState<SongSummary | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(searchInput.trim());
+    }, 300);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [searchInput]);
+
   const { data: songPage, isLoading: songsLoading } = useQuery({
-    queryKey: ["admin", "songs"],
+    queryKey: ["admin", "songs", debouncedQuery],
     queryFn: async () => {
-      const { data, error } = await songsApi.list({ per_page: 100 });
+      const { data, error } = await songsApi.list({
+        per_page: 100,
+        q: debouncedQuery || undefined,
+      });
       if (error) throw error;
       return data;
     },
@@ -213,9 +226,6 @@ export function SongsAdminTab() {
   });
 
   const songs = songPage?.items ?? [];
-  const filtered = songs.filter((song) =>
-    song.title.toLowerCase().includes(searchInput.toLowerCase()),
-  );
 
   return (
     <div className="admin-layout">
@@ -243,10 +253,8 @@ export function SongsAdminTab() {
         </div>
         <ul className="admin-user-list">
           {songsLoading && <li className="admin-empty">Loading…</li>}
-          {!songsLoading && filtered.length === 0 && (
-            <li className="admin-empty">No songs found.</li>
-          )}
-          {filtered.map((song) => (
+          {!songsLoading && songs.length === 0 && <li className="admin-empty">No songs found.</li>}
+          {songs.map((song) => (
             <li key={song.id}>
               <button
                 className={`admin-user-item${selectedSong?.id === song.id ? " admin-user-item--active" : ""}`}
