@@ -1,8 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
-import { capabilities as capabilitiesApi } from "@/api/capabilities";
 import { users as usersApi, type UserSummary } from "@/api/users";
+import { useCapabilities } from "@/hooks/api/capabilities";
+import { useUserCapabilities, userKeys, useUsers } from "@/hooks/api/users";
 import { useDebounced } from "@/hooks/use-debounced";
 
 export function UsersAdminTab() {
@@ -14,37 +15,13 @@ export function UsersAdminTab() {
 
   const queryClient = useQueryClient();
 
-  const { data: allCapabilities } = useQuery({
-    queryKey: ["capabilities"],
-    queryFn: async () => {
-      const { data, error } = await capabilitiesApi.list();
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const { data: userResults, isLoading: usersLoading } = useQuery({
-    queryKey: ["admin", "users", debouncedQuery],
-    queryFn: async () => {
-      const { data, error } = await usersApi.search(debouncedQuery || undefined);
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const { data: userCapabilities, isLoading: capsLoading } = useQuery({
-    queryKey: ["admin", "users", selectedUser?.id, "capabilities"],
-    queryFn: async () => {
-      const { data, error } = await usersApi.listCapabilities(selectedUser!.id);
-      if (error) throw error;
-      return data ?? [];
-    },
-    enabled: !!selectedUser,
-  });
+  const { data: allCapabilities } = useCapabilities();
+  const { data: userResults, isLoading: usersLoading } = useUsers(debouncedQuery || undefined);
+  const { data: userCapabilities, isLoading: capsLoading } = useUserCapabilities(selectedUser?.id);
 
   const invalidateCaps = () =>
     queryClient.invalidateQueries({
-      queryKey: ["admin", "users", selectedUser?.id, "capabilities"],
+      queryKey: userKeys.capabilities(selectedUser?.id ?? ""),
     });
 
   const grantMutation = useMutation({
