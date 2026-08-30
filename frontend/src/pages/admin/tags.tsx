@@ -1,8 +1,9 @@
 import { Dialog } from "@base-ui/react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { tags as tagsApi } from "@/api/tags";
+import { tagKeys, useTags } from "@/hooks/api/tags";
 
 export function TagsAdminTab() {
   const [search, setSearch] = useState("");
@@ -13,14 +14,7 @@ export function TagsAdminTab() {
 
   const queryClient = useQueryClient();
 
-  const { data: allTags, isLoading } = useQuery({
-    queryKey: ["admin", "tags"],
-    queryFn: async () => {
-      const { data, error } = await tagsApi.list();
-      if (error) throw error;
-      return data ?? [];
-    },
-  });
+  const { data: allTags, isLoading } = useTags();
 
   const createMutation = useMutation({
     mutationFn: async (name: string) => {
@@ -28,7 +22,7 @@ export function TagsAdminTab() {
       if (error) throw error;
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["admin", "tags"] });
+      void queryClient.invalidateQueries({ queryKey: tagKeys.all() });
       setCreateOpen(false);
       setNewTagName("");
       setCreateError(null);
@@ -44,7 +38,7 @@ export function TagsAdminTab() {
       if (error) throw error;
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["admin", "tags"] });
+      void queryClient.invalidateQueries({ queryKey: tagKeys.all() });
       setConfirmDeleteId(null);
     },
   });

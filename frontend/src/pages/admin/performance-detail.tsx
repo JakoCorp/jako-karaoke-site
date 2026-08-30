@@ -1,20 +1,19 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
-import { artists as artistsApi } from "@/api/artists";
 import type { components } from "@/api/generated";
 import { performances as performancesApi } from "@/api/performances";
-import { songs as songsApi } from "@/api/songs";
 import { tags as tagsApi } from "@/api/tags";
+import { useArtists } from "@/hooks/api/artists";
+import { performanceKeys, usePerformance } from "@/hooks/api/performances";
+import { useSongs } from "@/hooks/api/songs";
+import { tagKeys, useTags } from "@/hooks/api/tags";
 import { formatDate, isoToDatetimeLocal } from "@/lib/format";
 
 import { ItemPicker, TagPicker, type TagAssignment } from "./pickers";
 import { resolveTagAssignments } from "./tag-utils";
 
 type PerformanceSummary = components["schemas"]["PerformanceSummary"];
-type SongSummary = components["schemas"]["SongSummary"];
-type ArtistResponse = components["schemas"]["ArtistResponse"];
-type TagResponse = components["schemas"]["TagResponse"];
 type PerformanceTagKind = components["schemas"]["PerformanceTagKind"];
 
 const PERFORMANCE_TAG_KINDS: readonly PerformanceTagKind[] = ["instrument", "modifier", "misc"];
@@ -38,44 +37,10 @@ export function PerformanceDetailPanel({
 
   const queryClient = useQueryClient();
 
-  const { data: performanceDetail } = useQuery({
-    queryKey: ["admin", "performances", performance.id],
-    queryFn: async () => {
-      const { data, error } = await performancesApi.get(performance.id);
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const { data: allSongs } = useQuery<SongSummary[]>({
-    queryKey: ["admin", "songs", "picker"],
-    queryFn: async () => {
-      const { data, error } = await songsApi.list({ per_page: 200 });
-      if (error) throw error;
-      return data?.items ?? [];
-    },
-    enabled: isEditing,
-  });
-
-  const { data: allArtists } = useQuery<ArtistResponse[]>({
-    queryKey: ["admin", "artists"],
-    queryFn: async () => {
-      const { data, error } = await artistsApi.list({ per_page: 200 });
-      if (error) throw error;
-      return data?.items ?? [];
-    },
-    enabled: isEditing,
-  });
-
-  const { data: allTags } = useQuery<TagResponse[]>({
-    queryKey: ["admin", "tags"],
-    queryFn: async () => {
-      const { data, error } = await tagsApi.list();
-      if (error) throw error;
-      return data ?? [];
-    },
-    enabled: isEditing,
-  });
+  const { data: performanceDetail } = usePerformance(performance.id);
+  const { data: allSongs } = useSongs({ per_page: 200 }, isEditing);
+  const { data: allArtists } = useArtists({ per_page: 200 }, isEditing);
+  const { data: allTags } = useTags(isEditing);
 
   const updateMutation = useMutation({
     mutationFn: async () => {
@@ -95,8 +60,8 @@ export function PerformanceDetailPanel({
       if (apiError) throw apiError;
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["admin", "performances"] });
-      void queryClient.invalidateQueries({ queryKey: ["admin", "tags"] });
+      void queryClient.invalidateQueries({ queryKey: performanceKeys.all() });
+      void queryClient.invalidateQueries({ queryKey: tagKeys.all() });
       setIsEditing(false);
       setUpdateError(null);
     },
@@ -111,7 +76,7 @@ export function PerformanceDetailPanel({
       if (apiError) throw apiError;
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["admin", "performances"] });
+      void queryClient.invalidateQueries({ queryKey: performanceKeys.all() });
       onDeleted();
     },
     onError: () => {
@@ -234,7 +199,7 @@ export function PerformanceDetailPanel({
           </div>
           <ItemPicker
             label="Songs"
-            allItems={allSongs ?? []}
+            allItems={allSongs?.items ?? []}
             selectedIds={editSongIds}
             onToggle={toggleSong}
             searchPlaceholder="Search songs…"
@@ -253,7 +218,7 @@ export function PerformanceDetailPanel({
           />
           <ItemPicker
             label="Singers"
-            allItems={allArtists ?? []}
+            allItems={allArtists?.items ?? []}
             selectedIds={editSingerIds}
             onToggle={toggleSinger}
             searchPlaceholder="Search singers…"

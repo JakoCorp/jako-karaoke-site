@@ -1,17 +1,17 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
-import { artists as artistsApi } from "@/api/artists";
 import type { components } from "@/api/generated";
 import { songs as songsApi } from "@/api/songs";
 import { tags as tagsApi } from "@/api/tags";
+import { useArtists } from "@/hooks/api/artists";
+import { songKeys, useSong } from "@/hooks/api/songs";
+import { tagKeys, useTags } from "@/hooks/api/tags";
 
 import { ItemPicker, TagPicker, type TagAssignment } from "./pickers";
 import { resolveTagAssignments } from "./tag-utils";
 
 type SongSummary = components["schemas"]["SongSummary"];
-type ArtistResponse = components["schemas"]["ArtistResponse"];
-type TagResponse = components["schemas"]["TagResponse"];
 type SongTagKind = components["schemas"]["SongTagKind"];
 
 const SONG_TAG_KINDS: readonly SongTagKind[] = ["genre", "source", "language", "misc"];
@@ -27,34 +27,9 @@ export function SongDetailPanel({ song, onDeleted }: { song: SongSummary; onDele
 
   const queryClient = useQueryClient();
 
-  const { data: songDetail } = useQuery({
-    queryKey: ["admin", "songs", song.id],
-    queryFn: async () => {
-      const { data, error } = await songsApi.get(song.id);
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const { data: allArtists } = useQuery<ArtistResponse[]>({
-    queryKey: ["admin", "artists"],
-    queryFn: async () => {
-      const { data, error } = await artistsApi.list({ per_page: 200 });
-      if (error) throw error;
-      return data?.items ?? [];
-    },
-    enabled: isEditing,
-  });
-
-  const { data: allTags } = useQuery<TagResponse[]>({
-    queryKey: ["admin", "tags"],
-    queryFn: async () => {
-      const { data, error } = await tagsApi.list();
-      if (error) throw error;
-      return data ?? [];
-    },
-    enabled: isEditing,
-  });
+  const { data: songDetail } = useSong(song.id);
+  const { data: allArtists } = useArtists({ per_page: 200 }, isEditing);
+  const { data: allTags } = useTags(isEditing);
 
   const updateMutation = useMutation({
     mutationFn: async () => {
@@ -73,8 +48,8 @@ export function SongDetailPanel({ song, onDeleted }: { song: SongSummary; onDele
       if (apiError) throw apiError;
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["admin", "songs"] });
-      void queryClient.invalidateQueries({ queryKey: ["admin", "tags"] });
+      void queryClient.invalidateQueries({ queryKey: songKeys.all() });
+      void queryClient.invalidateQueries({ queryKey: tagKeys.all() });
       setIsEditing(false);
       setUpdateError(null);
     },
@@ -89,7 +64,7 @@ export function SongDetailPanel({ song, onDeleted }: { song: SongSummary; onDele
       if (apiError) throw apiError;
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["admin", "songs"] });
+      void queryClient.invalidateQueries({ queryKey: songKeys.all() });
       onDeleted();
     },
     onError: () => {
@@ -187,7 +162,7 @@ export function SongDetailPanel({ song, onDeleted }: { song: SongSummary; onDele
           </div>
           <ItemPicker
             label="Artists"
-            allItems={allArtists ?? []}
+            allItems={allArtists?.items ?? []}
             selectedIds={editArtistIds}
             onToggle={toggleArtist}
             searchPlaceholder="Search artists…"

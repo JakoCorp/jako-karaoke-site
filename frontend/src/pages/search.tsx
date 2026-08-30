@@ -1,10 +1,9 @@
 import { MagnifyingGlassIcon } from "@phosphor-icons/react";
-import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
 
-import { performances } from "@/api/performances";
 import { PerformanceRow } from "@/components/search/performance-row";
+import { usePerformances } from "@/hooks/api/performances";
 import { useDebounced } from "@/hooks/use-debounced";
 
 type SortField = "performance_date" | "play_count" | "duration";
@@ -130,19 +129,12 @@ export function SearchPage() {
     });
   }
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["performances", { q, page, sort, sortDir, perPage }],
-    queryFn: async () => {
-      const { data: result, error } = await performances.list({
-        q: q || undefined,
-        page,
-        per_page: perPage,
-        sort,
-        sort_dir: sortDir,
-      });
-      if (error) throw error;
-      return result;
-    },
+  const { data, isLoading } = usePerformances({
+    q: q || undefined,
+    page,
+    per_page: perPage,
+    sort,
+    sort_dir: sortDir,
   });
 
   function handleSortChange(field: SortField) {
