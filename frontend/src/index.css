@@ -7,6 +7,8 @@
 @import "./styles/search.css";
 
 :root {
+  color-scheme: light;
+
   --sidebar-width: 20rem;
 
   --color-surface: #ffffff;
