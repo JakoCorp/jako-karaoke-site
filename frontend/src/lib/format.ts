@@ -12,6 +12,15 @@ export function formatDate(isoString: string): string {
   }).format(new Date(isoString));
 }
 
+function padTwo(n: number): string {
+  return String(n).padStart(2, "0");
+}
+
+export function isoToDatetimeLocal(isoString: string): string {
+  const date = new Date(isoString);
+  return `${String(date.getFullYear())}-${padTwo(date.getMonth() + 1)}-${padTwo(date.getDate())}T${padTwo(date.getHours())}:${padTwo(date.getMinutes())}`;
+}
+
 export function formatRelativeDate(isoString: string): string {
   const date = new Date(isoString);
   const now = new Date();

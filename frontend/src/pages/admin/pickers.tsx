@@ -70,7 +70,7 @@ export function ItemPicker<T extends { id: string }>({
             <li key={item.id}>
               <button
                 type="button"
-                className="admin-user-item"
+                className="admin-picker-item"
                 onClick={() => {
                   onToggle(item.id);
                   setSearch("");
@@ -147,12 +147,17 @@ export function TagPicker<K extends string>({
         <div className="admin-pills">
           {selectedWithInfo.map(({ key, kind, displayName, isPending }) => (
             <div key={key} className="admin-tag-selection">
-              <span
-                className={`admin-pill admin-pill--display${isPending ? " admin-pill--pending" : ""}`}
+              <button
+                type="button"
+                className={`admin-pill${isPending ? " admin-pill--pending" : ""}`}
+                onClick={() => {
+                  onRemove(key);
+                }}
               >
                 {displayName}
                 {isPending && <span className="admin-pill-new">new</span>}
-              </span>
+                {" ×"}
+              </button>
               <select
                 className="admin-kind-select"
                 value={kind}
@@ -167,15 +172,6 @@ export function TagPicker<K extends string>({
                   </option>
                 ))}
               </select>
-              <button
-                type="button"
-                className="admin-pill"
-                onClick={() => {
-                  onRemove(key);
-                }}
-              >
-                ×
-              </button>
             </div>
           ))}
         </div>
@@ -198,7 +194,7 @@ export function TagPicker<K extends string>({
             <li key={tag.id}>
               <button
                 type="button"
-                className="admin-user-item"
+                className="admin-picker-item"
                 onClick={() => {
                   onAddExisting(tag.id);
                   setSearch("");
@@ -212,7 +208,7 @@ export function TagPicker<K extends string>({
             <li>
               <button
                 type="button"
-                className="admin-user-item admin-multiselect-create"
+                className="admin-picker-item admin-multiselect-create"
                 onClick={() => {
                   onAddPending(searchTrimmed);
                   setSearch("");

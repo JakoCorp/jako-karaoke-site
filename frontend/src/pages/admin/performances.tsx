@@ -7,6 +7,7 @@ import type { components } from "@/api/generated";
 import { performances as performancesApi } from "@/api/performances";
 import { songs as songsApi } from "@/api/songs";
 import { tags as tagsApi } from "@/api/tags";
+import { formatDate } from "@/lib/format";
 
 import { PerformanceDetailPanel } from "./performance-detail";
 import { ItemPicker, TagPicker, type TagAssignment } from "./pickers";
@@ -241,14 +242,6 @@ function CreatePerformanceDialog({
       </Dialog.Portal>
     </Dialog.Root>
   );
-}
-
-function formatDate(isoString: string): string {
-  return new Date(isoString).toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
 }
 
 export function PerformancesAdminTab() {

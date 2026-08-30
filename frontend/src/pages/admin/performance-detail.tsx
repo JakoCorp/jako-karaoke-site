@@ -6,6 +6,7 @@ import type { components } from "@/api/generated";
 import { performances as performancesApi } from "@/api/performances";
 import { songs as songsApi } from "@/api/songs";
 import { tags as tagsApi } from "@/api/tags";
+import { formatDate, isoToDatetimeLocal } from "@/lib/format";
 
 import { ItemPicker, TagPicker, type TagAssignment } from "./pickers";
 import { resolveTagAssignments } from "./tag-utils";
@@ -17,23 +18,6 @@ type TagResponse = components["schemas"]["TagResponse"];
 type PerformanceTagKind = components["schemas"]["PerformanceTagKind"];
 
 const PERFORMANCE_TAG_KINDS: readonly PerformanceTagKind[] = ["instrument", "modifier", "misc"];
-
-function formatDate(isoString: string): string {
-  return new Date(isoString).toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
-
-function padTwo(n: number): string {
-  return n.toString().padStart(2, "0");
-}
-
-function isoToDatetimeLocal(isoString: string): string {
-  const date = new Date(isoString);
-  return `${date.getFullYear()}-${padTwo(date.getMonth() + 1)}-${padTwo(date.getDate())}T${padTwo(date.getHours())}:${padTwo(date.getMinutes())}`;
-}
 
 export function PerformanceDetailPanel({
   performance,
