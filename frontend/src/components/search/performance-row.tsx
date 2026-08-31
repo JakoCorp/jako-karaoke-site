@@ -1,10 +1,8 @@
 import { PauseIcon, PlayIcon } from "@phosphor-icons/react";
 
-import type { components } from "@/api/generated";
+import type { PerformanceSummary } from "@/api/performances";
 import { formatDuration, formatRelativeDate } from "@/lib/format";
 import { usePlayerStore } from "@/store/player";
-
-type PerformanceSummary = components["schemas"]["PerformanceSummary"];
 
 interface Props {
   performance: PerformanceSummary;

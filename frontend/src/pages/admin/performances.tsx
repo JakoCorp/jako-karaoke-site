@@ -1,25 +1,26 @@
 import { Dialog } from "@base-ui/react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 
-import { artists as artistsApi } from "@/api/artists";
-import type { components } from "@/api/generated";
-import { performances as performancesApi } from "@/api/performances";
-import { songs as songsApi } from "@/api/songs";
-import { tags as tagsApi } from "@/api/tags";
+import { type ArtistResponse } from "@/api/artists";
+import {
+  PERFORMANCE_TAG_KINDS,
+  performancesApi,
+  type PerformanceSummary,
+  type PerformanceTagKind,
+} from "@/api/performances";
+import { type SongSummary } from "@/api/songs";
+import { tagsApi, type TagResponse } from "@/api/tags";
+import { useArtists } from "@/hooks/api/artists";
+import { performanceKeys, usePerformances } from "@/hooks/api/performances";
+import { useSongs } from "@/hooks/api/songs";
+import { tagKeys, useTags } from "@/hooks/api/tags";
+import { useDebounced } from "@/hooks/use-debounced";
 import { formatDate } from "@/lib/format";
 
 import { PerformanceDetailPanel } from "./performance-detail";
 import { ItemPicker, TagPicker, type TagAssignment } from "./pickers";
 import { resolveTagAssignments } from "./tag-utils";
-
-type PerformanceSummary = components["schemas"]["PerformanceSummary"];
-type ArtistResponse = components["schemas"]["ArtistResponse"];
-type SongSummary = components["schemas"]["SongSummary"];
-type TagResponse = components["schemas"]["TagResponse"];
-type PerformanceTagKind = components["schemas"]["PerformanceTagKind"];
-
-const PERFORMANCE_TAG_KINDS: readonly PerformanceTagKind[] = ["instrument", "modifier", "misc"];
 
 function CreatePerformanceDialog({
   open,
@@ -63,8 +64,8 @@ function CreatePerformanceDialog({
       if (apiError) throw apiError;
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["admin", "performances"] });
-      void queryClient.invalidateQueries({ queryKey: ["admin", "tags"] });
+      void queryClient.invalidateQueries({ queryKey: performanceKeys.all() });
+      void queryClient.invalidateQueries({ queryKey: tagKeys.all() });
       onOpenChange(false);
     },
     onError: () => {
@@ -246,60 +247,19 @@ function CreatePerformanceDialog({
 
 export function PerformancesAdminTab() {
   const [searchInput, setSearchInput] = useState("");
-  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [selectedPerformance, setSelectedPerformance] = useState<PerformanceSummary | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedQuery(searchInput.trim());
-    }, 300);
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [searchInput]);
+  const debouncedQuery = useDebounced(searchInput.trim());
 
-  const { data: performancePage, isLoading: performancesLoading } = useQuery({
-    queryKey: ["admin", "performances", debouncedQuery],
-    queryFn: async () => {
-      const { data, error } = await performancesApi.list({
-        per_page: 100,
-        q: debouncedQuery || undefined,
-      });
-      if (error) throw error;
-      return data;
-    },
+  const { data: performancePage, isLoading: performancesLoading } = usePerformances({
+    per_page: 100,
+    q: debouncedQuery || undefined,
   });
 
-  const { data: allSongs } = useQuery({
-    queryKey: ["admin", "songs", "picker"],
-    queryFn: async () => {
-      const { data, error } = await songsApi.list({ per_page: 200 });
-      if (error) throw error;
-      return data?.items ?? [];
-    },
-    enabled: createOpen,
-  });
-
-  const { data: allArtists } = useQuery({
-    queryKey: ["admin", "artists"],
-    queryFn: async () => {
-      const { data, error } = await artistsApi.list({ per_page: 200 });
-      if (error) throw error;
-      return data?.items ?? [];
-    },
-    enabled: createOpen,
-  });
-
-  const { data: allTags } = useQuery({
-    queryKey: ["admin", "tags"],
-    queryFn: async () => {
-      const { data, error } = await tagsApi.list();
-      if (error) throw error;
-      return data ?? [];
-    },
-    enabled: createOpen,
-  });
+  const { data: allSongs } = useSongs({ per_page: 200 }, createOpen);
+  const { data: allArtists } = useArtists({ per_page: 200 }, createOpen);
+  const { data: allTags } = useTags(createOpen);
 
   const performances = performancePage?.items ?? [];
 
@@ -371,8 +331,8 @@ export function PerformancesAdminTab() {
       <CreatePerformanceDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
-        allSongs={allSongs ?? []}
-        allArtists={allArtists ?? []}
+        allSongs={allSongs?.items ?? []}
+        allArtists={allArtists?.items ?? []}
         allTags={allTags ?? []}
       />
     </div>

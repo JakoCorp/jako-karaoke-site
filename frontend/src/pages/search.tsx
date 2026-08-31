@@ -1,10 +1,10 @@
 import { MagnifyingGlassIcon } from "@phosphor-icons/react";
-import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
 
-import { performances } from "@/api/performances";
 import { PerformanceRow } from "@/components/search/performance-row";
+import { usePerformances } from "@/hooks/api/performances";
+import { useDebounced } from "@/hooks/use-debounced";
 
 type SortField = "performance_date" | "play_count" | "duration";
 
@@ -88,36 +88,32 @@ export function SearchPage() {
   const perPage = searchState.per_page ?? 20;
 
   const [inputValue, setInputValue] = useState(q);
+  const debouncedInput = useDebounced(inputValue);
 
   useEffect(() => {
     setInputValue(decodeSearchState(searchParams.get("query") ?? "").q ?? "");
   }, [searchParams]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setSearchParams(
-        (prev) => {
-          const current = decodeSearchState(prev.get("query") ?? "");
-          const next = stateToParam({
-            ...current,
-            q: inputValue.trim() || undefined,
-            page: undefined,
-          });
-          const params = new URLSearchParams(prev);
-          if (next) {
-            params.set("query", next);
-          } else {
-            params.delete("query");
-          }
-          return params;
-        },
-        { replace: true },
-      );
-    }, 300); // 300ms debounce delay
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [inputValue, setSearchParams]);
+    setSearchParams(
+      (prev) => {
+        const current = decodeSearchState(prev.get("query") ?? "");
+        const next = stateToParam({
+          ...current,
+          q: debouncedInput.trim() || undefined,
+          page: undefined,
+        });
+        const params = new URLSearchParams(prev);
+        if (next) {
+          params.set("query", next);
+        } else {
+          params.delete("query");
+        }
+        return params;
+      },
+      { replace: true },
+    );
+  }, [debouncedInput, setSearchParams]);
 
   function updateSearch(partial: Partial<SearchState>) {
     setSearchParams((prev) => {
@@ -133,19 +129,12 @@ export function SearchPage() {
     });
   }
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["performances", { q, page, sort, sortDir, perPage }],
-    queryFn: async () => {
-      const { data: result, error } = await performances.list({
-        q: q || undefined,
-        page,
-        per_page: perPage,
-        sort,
-        sort_dir: sortDir,
-      });
-      if (error) throw error;
-      return result;
-    },
+  const { data, isLoading } = usePerformances({
+    q: q || undefined,
+    page,
+    per_page: perPage,
+    sort,
+    sort_dir: sortDir,
   });
 
   function handleSortChange(field: SortField) {
@@ -169,8 +158,8 @@ export function SearchPage() {
             className="form-input search-input"
             placeholder="Search by title, song, or artist…"
             value={inputValue}
-            onChange={(e) => {
-              setInputValue(e.target.value);
+            onChange={(event) => {
+              setInputValue(event.target.value);
             }}
             aria-label="Search performances"
           />
@@ -193,8 +182,8 @@ export function SearchPage() {
           <select
             className="search-per-page-select"
             value={perPage}
-            onChange={(e) => {
-              const val = parseInt(e.target.value, 10);
+            onChange={(event) => {
+              const val = parseInt(event.target.value, 10);
               if (val === 20 || val === 50 || val === 100) {
                 updateSearch({ per_page: val, page: undefined });
               }

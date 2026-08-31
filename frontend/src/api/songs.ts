@@ -2,6 +2,17 @@ import { api } from "./client";
 import type { components } from "./generated";
 import type { PaginationParams } from "./types";
 
+export type SongSummary = components["schemas"]["SongSummary"];
+export type SongResponse = components["schemas"]["SongResponse"];
+export type SongTagKind = components["schemas"]["SongTagKind"];
+
+export const SONG_TAG_KINDS = [
+  "genre",
+  "source",
+  "language",
+  "misc",
+] as const satisfies readonly SongTagKind[];
+
 /** Query parameters accepted by the songs list endpoint. */
 export type SongListParams = PaginationParams & {
   /** Text search across song title and original artist names. */
@@ -9,7 +20,7 @@ export type SongListParams = PaginationParams & {
 };
 
 /** Song endpoints. */
-export const songs = {
+export const songsApi = {
   /** Returns a paginated list of songs. */
   list: (params?: SongListParams) => api.GET("/api/songs", { params: { query: params } }),
 

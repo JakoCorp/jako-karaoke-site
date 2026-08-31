@@ -2,7 +2,7 @@ import { Popover } from "@base-ui/react";
 import { UserIcon } from "@phosphor-icons/react";
 import { Link } from "react-router";
 
-import { auth } from "@/api/auth";
+import { authApi } from "@/api/auth";
 import { useAuthStore } from "@/store/auth";
 
 export function UserMenu() {
@@ -11,7 +11,7 @@ export function UserMenu() {
   const hasCapability = useAuthStore((state) => state.hasCapability);
 
   async function handleLogout() {
-    await auth.logout();
+    await authApi.logout();
     setUser(null);
   }
 

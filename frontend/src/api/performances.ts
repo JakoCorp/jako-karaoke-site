@@ -2,6 +2,16 @@ import { api } from "./client";
 import type { components } from "./generated";
 import type { PaginationParams } from "./types";
 
+export type PerformanceSummary = components["schemas"]["PerformanceSummary"];
+export type PerformanceResponse = components["schemas"]["PerformanceResponse"];
+export type PerformanceTagKind = components["schemas"]["PerformanceTagKind"];
+
+export const PERFORMANCE_TAG_KINDS = [
+  "instrument",
+  "modifier",
+  "misc",
+] as const satisfies readonly PerformanceTagKind[];
+
 /** Query parameters accepted by the performances list endpoint. */
 export type PerformanceListParams = PaginationParams & {
   /** Text search across performance title, song title, and singer names. */
@@ -13,7 +23,7 @@ export type PerformanceListParams = PaginationParams & {
 };
 
 /** Performance endpoints. */
-export const performances = {
+export const performancesApi = {
   /** Returns a paginated, optionally filtered list of performances. */
   list: (params?: PerformanceListParams) =>
     api.GET("/api/performances", { params: { query: params } }),

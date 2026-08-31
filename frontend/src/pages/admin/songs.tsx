@@ -1,22 +1,18 @@
 import { Dialog } from "@base-ui/react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 
-import { artists as artistsApi } from "@/api/artists";
-import type { components } from "@/api/generated";
-import { songs as songsApi } from "@/api/songs";
-import { tags as tagsApi } from "@/api/tags";
+import { type ArtistResponse } from "@/api/artists";
+import { SONG_TAG_KINDS, songsApi, type SongSummary, type SongTagKind } from "@/api/songs";
+import { tagsApi, type TagResponse } from "@/api/tags";
+import { useArtists } from "@/hooks/api/artists";
+import { songKeys, useSongs } from "@/hooks/api/songs";
+import { tagKeys, useTags } from "@/hooks/api/tags";
+import { useDebounced } from "@/hooks/use-debounced";
 
 import { ItemPicker, TagPicker, type TagAssignment } from "./pickers";
 import { SongDetailPanel } from "./song-detail";
 import { resolveTagAssignments } from "./tag-utils";
-
-type SongSummary = components["schemas"]["SongSummary"];
-type ArtistResponse = components["schemas"]["ArtistResponse"];
-type TagResponse = components["schemas"]["TagResponse"];
-type SongTagKind = components["schemas"]["SongTagKind"];
-
-const SONG_TAG_KINDS: readonly SongTagKind[] = ["genre", "source", "language", "misc"];
 
 function CreateSongDialog({
   open,
@@ -53,8 +49,8 @@ function CreateSongDialog({
       if (apiError) throw apiError;
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["admin", "songs"] });
-      void queryClient.invalidateQueries({ queryKey: ["admin", "tags"] });
+      void queryClient.invalidateQueries({ queryKey: songKeys.all() });
+      void queryClient.invalidateQueries({ queryKey: tagKeys.all() });
       onOpenChange(false);
     },
     onError: () => {
@@ -180,50 +176,18 @@ function CreateSongDialog({
 
 export function SongsAdminTab() {
   const [searchInput, setSearchInput] = useState("");
-  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [selectedSong, setSelectedSong] = useState<SongSummary | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedQuery(searchInput.trim());
-    }, 300);
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [searchInput]);
+  const debouncedQuery = useDebounced(searchInput.trim());
 
-  const { data: songPage, isLoading: songsLoading } = useQuery({
-    queryKey: ["admin", "songs", debouncedQuery],
-    queryFn: async () => {
-      const { data, error } = await songsApi.list({
-        per_page: 100,
-        q: debouncedQuery || undefined,
-      });
-      if (error) throw error;
-      return data;
-    },
+  const { data: songPage, isLoading: songsLoading } = useSongs({
+    per_page: 100,
+    q: debouncedQuery || undefined,
   });
 
-  const { data: allArtists } = useQuery({
-    queryKey: ["admin", "artists"],
-    queryFn: async () => {
-      const { data, error } = await artistsApi.list({ per_page: 200 });
-      if (error) throw error;
-      return data?.items ?? [];
-    },
-    enabled: createOpen,
-  });
-
-  const { data: allTags } = useQuery({
-    queryKey: ["admin", "tags"],
-    queryFn: async () => {
-      const { data, error } = await tagsApi.list();
-      if (error) throw error;
-      return data ?? [];
-    },
-    enabled: createOpen,
-  });
+  const { data: allArtists } = useArtists({ per_page: 200 }, createOpen);
+  const { data: allTags } = useTags(createOpen);
 
   const songs = songPage?.items ?? [];
 
@@ -291,7 +255,7 @@ export function SongsAdminTab() {
       <CreateSongDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
-        allArtists={allArtists ?? []}
+        allArtists={allArtists?.items ?? []}
         allTags={allTags ?? []}
       />
     </div>
