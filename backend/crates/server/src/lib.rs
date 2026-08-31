@@ -1,5 +1,5 @@
 pub(crate) mod auth;
-pub(crate) mod capabilities;
+pub mod capabilities;
 pub mod config;
 pub(crate) mod convert;
 pub mod docs;

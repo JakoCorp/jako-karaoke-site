@@ -14,6 +14,10 @@ path = "src/main.rs"
 name = "export-spec"
 path = "src/bin/export_spec.rs"
 
+[[bin]]
+name = "set-admin"
+path = "src/bin/set_admin.rs"
+
 [dependencies]
 api-types = { workspace = true }
 axum = { workspace = true }
