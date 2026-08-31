@@ -2,7 +2,7 @@ import { Dialog } from "@base-ui/react";
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 
-import { auth } from "@/api/auth";
+import { authApi } from "@/api/auth";
 import { useAuthStore } from "@/store/auth";
 
 export function UsernameClaim() {
@@ -21,7 +21,7 @@ export function UsernameClaim() {
     if (suggested === null) return;
 
     const verify = async () => {
-      const { response } = await auth.checkPending();
+      const { response } = await authApi.checkPending();
       if (response.ok) {
         setReady(true);
       } else {
@@ -38,7 +38,7 @@ export function UsernameClaim() {
     setSubmitting(true);
     setError(null);
 
-    const { data, response } = await auth.claim({ username });
+    const { data, response } = await authApi.claim({ username });
 
     if (data) {
       setUser({ id: data.id, username: data.username, capabilities: data.capabilities });

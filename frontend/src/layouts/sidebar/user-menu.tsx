@@ -1,15 +1,17 @@
 import { Popover } from "@base-ui/react";
 import { UserIcon } from "@phosphor-icons/react";
+import { Link } from "react-router";
 
-import { auth } from "@/api/auth";
+import { authApi } from "@/api/auth";
 import { useAuthStore } from "@/store/auth";
 
-export function AccountPopover() {
+export function UserMenu() {
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
+  const hasCapability = useAuthStore((state) => state.hasCapability);
 
   async function handleLogout() {
-    await auth.logout();
+    await authApi.logout();
     setUser(null);
   }
 
@@ -25,6 +27,11 @@ export function AccountPopover() {
         <Popover.Positioner side="top" align="center" sideOffset={8}>
           <Popover.Popup className="account-popup">
             <p className="account-popup-user">@{user.username}</p>
+            {hasCapability("capabilities:manage") && (
+              <Link to="/admin" className="btn btn-secondary w-full">
+                Admin
+              </Link>
+            )}
             <button
               onClick={() => {
                 void handleLogout();

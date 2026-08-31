@@ -397,7 +397,8 @@ pub(crate) async fn get_performance(
         (status = 401, description = "Unauthorized", body = ErrorResponse),
         (status = 403, description = "Forbidden", body = ErrorResponse),
     ),
-    tag = "performances"
+    tag = "performances",
+    security(("session" = []))
 )]
 pub(crate) async fn create_performance(
     State(state): State<AppState>,
@@ -453,7 +454,8 @@ pub(crate) async fn create_performance(
         (status = 403, description = "Forbidden", body = ErrorResponse),
         (status = 404, description = "Not found", body = ErrorResponse),
     ),
-    tag = "performances"
+    tag = "performances",
+    security(("session" = []))
 )]
 pub(crate) async fn update_performance(
     State(state): State<AppState>,
@@ -501,7 +503,8 @@ pub(crate) async fn update_performance(
         (status = 403, description = "Forbidden", body = ErrorResponse),
         (status = 404, description = "Not found", body = ErrorResponse),
     ),
-    tag = "performances"
+    tag = "performances",
+    security(("session" = []))
 )]
 pub(crate) async fn delete_performance(
     State(state): State<AppState>,
@@ -534,7 +537,8 @@ pub(crate) async fn delete_performance(
         (status = 403, description = "Forbidden", body = ErrorResponse),
         (status = 404, description = "Performance not found", body = ErrorResponse),
     ),
-    tag = "performances"
+    tag = "performances",
+    security(("session" = []))
 )]
 pub(crate) async fn upload_audio(
     State(state): State<AppState>,
@@ -589,7 +593,8 @@ pub(crate) async fn upload_audio(
         (status = 403, description = "Forbidden", body = ErrorResponse),
         (status = 404, description = "Not found", body = ErrorResponse),
     ),
-    tag = "performances"
+    tag = "performances",
+    security(("session" = []))
 )]
 pub(crate) async fn delete_audio(
     State(state): State<AppState>,
@@ -629,7 +634,8 @@ pub(crate) async fn delete_audio(
         (status = 403, description = "Forbidden", body = ErrorResponse),
         (status = 404, description = "Performance not found", body = ErrorResponse),
     ),
-    tag = "performances"
+    tag = "performances",
+    security(("session" = []))
 )]
 pub(crate) async fn upload_video(
     State(state): State<AppState>,
@@ -684,7 +690,8 @@ pub(crate) async fn upload_video(
         (status = 403, description = "Forbidden", body = ErrorResponse),
         (status = 404, description = "Not found", body = ErrorResponse),
     ),
-    tag = "performances"
+    tag = "performances",
+    security(("session" = []))
 )]
 pub(crate) async fn delete_video(
     State(state): State<AppState>,

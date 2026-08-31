@@ -56,6 +56,63 @@ pub async fn list(
     .map_err(DbError::from)
 }
 
+/// Returns songs matching an optional text query, ordered by date added descending.
+///
+/// When `q` is `Some`, results are filtered by a case-insensitive substring match
+/// against the song title or any linked original artist name.
+pub async fn search(
+    executor: impl Executor<'_, Database = MySql>,
+    q: Option<&str>,
+    limit: u32,
+    offset: u32,
+) -> Result<Vec<Song>> {
+    let Some(q) = q else {
+        return list(executor, limit, offset).await;
+    };
+    let pattern = format!("%{q}%");
+    sqlx::query_as::<_, Song>(
+        "SELECT id, title, created_by, lyrics_id, date_added \
+         FROM songs WHERE id IN ( \
+           SELECT id FROM songs WHERE title LIKE ? \
+           UNION \
+           SELECT soa.song_id FROM song_original_artists soa \
+           JOIN artists a ON a.id = soa.artist_id WHERE a.name LIKE ? \
+         ) ORDER BY date_added DESC LIMIT ? OFFSET ?",
+    )
+    .bind(&pattern)
+    .bind(&pattern)
+    .bind(limit)
+    .bind(offset)
+    .fetch_all(executor)
+    .await
+    .map_err(DbError::from)
+}
+
+/// Returns the total number of songs matching the optional text query.
+pub async fn search_count(
+    executor: impl Executor<'_, Database = MySql>,
+    q: Option<&str>,
+) -> Result<u64> {
+    let Some(q) = q else {
+        return count(executor).await;
+    };
+    let pattern = format!("%{q}%");
+    sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM ( \
+           SELECT id FROM songs WHERE title LIKE ? \
+           UNION \
+           SELECT soa.song_id FROM song_original_artists soa \
+           JOIN artists a ON a.id = soa.artist_id WHERE a.name LIKE ? \
+         ) AS matched",
+    )
+    .bind(&pattern)
+    .bind(&pattern)
+    .fetch_one(executor)
+    .await
+    .map(|n| n as u64)
+    .map_err(DbError::from)
+}
+
 /// Inserts a new song and returns the created row.
 pub async fn create(conn: &mut MySqlConnection, new: &NewSong) -> Result<Song> {
     sqlx::query_as::<_, Song>(
@@ -76,15 +133,13 @@ pub async fn update(
     id: Uuid,
     upd: &UpdateSong,
 ) -> Result<Option<Song>> {
-    sqlx::query_as::<_, Song>(
-        "UPDATE songs SET title = ? WHERE id = ? \
-         RETURNING id, title, created_by, lyrics_id, date_added",
-    )
-    .bind(&upd.title)
-    .bind(id)
-    .fetch_optional(conn)
-    .await
-    .map_err(DbError::from)
+    sqlx::query("UPDATE songs SET title = ? WHERE id = ?")
+        .bind(&upd.title)
+        .bind(id)
+        .execute(&mut *conn)
+        .await
+        .map_err(DbError::from)?;
+    get_by_id(&mut *conn, id).await
 }
 
 /// Sets the `lyrics_id` foreign key on a song, or clears it with `None`.

@@ -64,16 +64,14 @@ pub async fn update(
     id: Uuid,
     upd: &UpdateArtist,
 ) -> Result<Option<Artist>> {
-    sqlx::query_as::<_, Artist>(
-        "UPDATE artists SET name = ?, description = ? WHERE id = ? \
-         RETURNING id, name, description",
-    )
-    .bind(&upd.name)
-    .bind(&upd.description)
-    .bind(id)
-    .fetch_optional(conn)
-    .await
-    .map_err(DbError::from)
+    sqlx::query("UPDATE artists SET name = ?, description = ? WHERE id = ?")
+        .bind(&upd.name)
+        .bind(&upd.description)
+        .bind(id)
+        .execute(&mut *conn)
+        .await
+        .map_err(DbError::from)?;
+    get_by_id(&mut *conn, id).await
 }
 
 /// Deletes an artist by ID. Returns `true` if a row was deleted.

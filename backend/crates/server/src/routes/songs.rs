@@ -13,7 +13,7 @@ use uuid::Uuid;
 use api_types::{
     common::{ArtistInfo, ErrorResponse, ImageInfo, TagInfo},
     lyrics::{LyricsResponse, UpdateLyricsRequest},
-    pagination::{PagedResponse, PaginationParams},
+    pagination::PagedResponse,
     songs::{CreateSongRequest, SongResponse, SongSummary, SongTagAssignment, UpdateSongRequest},
     tags::SongTagKind,
 };
@@ -57,6 +57,36 @@ use crate::{
     ))
 )]
 pub(crate) struct SongsApi;
+
+/// Query parameters for `GET /api/songs`.
+#[derive(Debug, Clone, serde::Deserialize, utoipa::IntoParams)]
+#[into_params(parameter_in = Query)]
+pub(crate) struct SongListParams {
+    /// Page number, 1-indexed. Defaults to 1.
+    #[serde(default = "default_page")]
+    pub page: u32,
+    /// Items per page. Defaults to 20. The server enforces a maximum.
+    #[serde(default = "default_per_page")]
+    pub per_page: u32,
+    /// Text search across song title and original artist names.
+    pub q: Option<String>,
+}
+
+fn default_page() -> u32 {
+    1
+}
+
+fn default_per_page() -> u32 {
+    20
+}
+
+impl SongListParams {
+    fn limit_offset(&self) -> (u32, u32) {
+        let per_page = self.per_page.min(pagination::MAX_PER_PAGE);
+        let offset = self.page.saturating_sub(1).saturating_mul(per_page);
+        (per_page, offset)
+    }
+}
 
 pub fn router() -> Router<AppState> {
     Router::new()
@@ -125,7 +155,7 @@ fn tag_pairs(assignments: &[SongTagAssignment]) -> Vec<(Uuid, &str)> {
 #[utoipa::path(
     get,
     path = "/api/songs",
-    params(PaginationParams),
+    params(SongListParams),
     responses(
         (status = 200, description = "Paged list of songs", body = PagedResponse<SongSummary>),
     ),
@@ -133,13 +163,14 @@ fn tag_pairs(assignments: &[SongTagAssignment]) -> Vec<(Uuid, &str)> {
 )]
 pub(crate) async fn list_songs(
     State(state): State<AppState>,
-    Query(params): Query<PaginationParams>,
+    Query(params): Query<SongListParams>,
 ) -> Result<Json<PagedResponse<SongSummary>>, ApiError> {
-    let (limit, offset) = pagination::limit_offset(&params);
+    let (limit, offset) = params.limit_offset();
+    let q = params.q.as_deref().filter(|s| !s.is_empty());
 
     let (total, songs) = tokio::try_join!(
-        queries::songs::count(&state.pool),
-        queries::songs::list(&state.pool, limit, offset),
+        queries::songs::search_count(&state.pool, q),
+        queries::songs::search(&state.pool, q, limit, offset),
     )?;
 
     let song_ids: Vec<Uuid> = songs.iter().map(|s| s.id).collect();
@@ -205,7 +236,8 @@ pub(crate) async fn get_song(
         (status = 401, description = "Unauthorized", body = ErrorResponse),
         (status = 403, description = "Forbidden", body = ErrorResponse),
     ),
-    tag = "songs"
+    tag = "songs",
+    security(("session" = []))
 )]
 pub(crate) async fn create_song(
     State(state): State<AppState>,
@@ -256,7 +288,8 @@ pub(crate) async fn create_song(
         (status = 403, description = "Forbidden", body = ErrorResponse),
         (status = 404, description = "Not found", body = ErrorResponse),
     ),
-    tag = "songs"
+    tag = "songs",
+    security(("session" = []))
 )]
 pub(crate) async fn update_song(
     State(state): State<AppState>,
@@ -293,7 +326,8 @@ pub(crate) async fn update_song(
         (status = 403, description = "Forbidden", body = ErrorResponse),
         (status = 404, description = "Not found", body = ErrorResponse),
     ),
-    tag = "songs"
+    tag = "songs",
+    security(("session" = []))
 )]
 pub(crate) async fn delete_song(
     State(state): State<AppState>,

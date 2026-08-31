@@ -180,7 +180,8 @@ async fn claim(
         (status = 200, description = "Current user", body = MeResponse),
         (status = 401, description = "Not authenticated", body = ErrorResponse),
     ),
-    tag = "auth"
+    tag = "auth",
+    security(("session" = []))
 )]
 pub(crate) async fn me(
     State(state): State<AppState>,

@@ -1,14 +1,42 @@
 import { api } from "./client";
+import type { components } from "./generated";
 import type { PaginationParams } from "./types";
 
+export type SongSummary = components["schemas"]["SongSummary"];
+export type SongResponse = components["schemas"]["SongResponse"];
+export type SongTagKind = components["schemas"]["SongTagKind"];
+
+export const SONG_TAG_KINDS = [
+  "genre",
+  "source",
+  "language",
+  "misc",
+] as const satisfies readonly SongTagKind[];
+
+/** Query parameters accepted by the songs list endpoint. */
+export type SongListParams = PaginationParams & {
+  /** Text search across song title and original artist names. */
+  q?: string;
+};
+
 /** Song endpoints. */
-export const songs = {
+export const songsApi = {
   /** Returns a paginated list of songs. */
-  list: (params?: PaginationParams) => api.GET("/api/songs", { params: { query: params } }),
+  list: (params?: SongListParams) => api.GET("/api/songs", { params: { query: params } }),
 
   /** Returns a single song by ID. */
   get: (id: string) => api.GET("/api/songs/{id}", { params: { path: { id } } }),
 
   /** Returns the lyrics for a song, or 404 if none are set. */
   getLyrics: (id: string) => api.GET("/api/songs/{id}/lyrics", { params: { path: { id } } }),
+
+  /** Creates a new song. */
+  create: (body: components["schemas"]["CreateSongRequest"]) => api.POST("/api/songs", { body }),
+
+  /** Updates a song by ID. */
+  update: (id: string, body: components["schemas"]["UpdateSongRequest"]) =>
+    api.PUT("/api/songs/{id}", { params: { path: { id } }, body }),
+
+  /** Deletes a song by ID. */
+  delete: (id: string) => api.DELETE("/api/songs/{id}", { params: { path: { id } } }),
 };

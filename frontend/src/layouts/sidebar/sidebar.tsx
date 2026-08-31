@@ -1,9 +1,9 @@
 import logoUrl from "@/assets/Baji.factions.Industry.svg";
-import { AccountPopover } from "@/components/auth/account-popover";
 import { AuthDialog } from "@/components/auth/auth-dialog";
 import { useAuthStore } from "@/store/auth";
 
 import { NavItem } from "./nav-item";
+import { UserMenu } from "./user-menu";
 
 export function Sidebar() {
   const user = useAuthStore((state) => state.user);
@@ -32,7 +32,7 @@ export function Sidebar() {
 
         <div className="nav-divider" />
       </nav>
-      <div className="sidebar-footer">{user ? <AccountPopover /> : <AuthDialog />}</div>
+      <div className="sidebar-footer">{user ? <UserMenu /> : <AuthDialog />}</div>
     </aside>
   );
 }

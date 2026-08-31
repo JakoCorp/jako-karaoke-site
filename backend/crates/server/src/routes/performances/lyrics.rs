@@ -72,7 +72,8 @@ pub(crate) async fn get_performance_lyrics(
         (status = 403, description = "Forbidden", body = ErrorResponse),
         (status = 404, description = "Performance not found", body = ErrorResponse),
     ),
-    tag = "performances"
+    tag = "performances",
+    security(("session" = []))
 )]
 pub(crate) async fn put_performance_lyrics(
     State(state): State<AppState>,
@@ -122,7 +123,8 @@ pub(crate) async fn put_performance_lyrics(
         (status = 403, description = "Forbidden", body = ErrorResponse),
         (status = 404, description = "Not found", body = ErrorResponse),
     ),
-    tag = "performances"
+    tag = "performances",
+    security(("session" = []))
 )]
 pub(crate) async fn delete_performance_lyrics(
     State(state): State<AppState>,

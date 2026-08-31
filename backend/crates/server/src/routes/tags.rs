@@ -14,7 +14,7 @@ use api_types::{
 };
 use db::{error::DbError, models::NewTag, queries};
 
-use crate::{convert, error::ApiError, state::AppState};
+use crate::{auth::middleware::AuthUser, capabilities, convert, error::ApiError, state::AppState};
 
 #[derive(utoipa::OpenApi)]
 #[openapi(
@@ -70,13 +70,20 @@ pub(crate) async fn get_tag(
     request_body = CreateTagRequest,
     responses(
         (status = 200, description = "Tag returned, created if new", body = TagResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden", body = ErrorResponse),
     ),
-    tag = "tags"
+    tag = "tags",
+    security(("session" = []))
 )]
 pub(crate) async fn create_tag(
     State(state): State<AppState>,
+    auth: AuthUser,
     Json(req): Json<CreateTagRequest>,
 ) -> Result<Json<TagResponse>, ApiError> {
+    if !auth.capabilities.contains(capabilities::TAGS_MANAGE_ANY) {
+        return Err(ApiError::Forbidden);
+    }
     let mut conn = state.pool.acquire().await.map_err(DbError::Sqlx)?;
     let tag = queries::tags::get_or_create(&mut conn, &NewTag { name: req.name }).await?;
     Ok(Json(convert::tag_response(tag)))
@@ -88,14 +95,21 @@ pub(crate) async fn create_tag(
     params(("id" = Uuid, Path, description = "Tag ID")),
     responses(
         (status = 204, description = "Deleted"),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden", body = ErrorResponse),
         (status = 404, description = "Not found", body = ErrorResponse),
     ),
-    tag = "tags"
+    tag = "tags",
+    security(("session" = []))
 )]
 pub(crate) async fn delete_tag(
     State(state): State<AppState>,
+    auth: AuthUser,
     Path(id): Path<Uuid>,
 ) -> Result<StatusCode, ApiError> {
+    if !auth.capabilities.contains(capabilities::TAGS_MANAGE_ANY) {
+        return Err(ApiError::Forbidden);
+    }
     let found = queries::tags::delete(&state.pool, id).await?;
     if found {
         Ok(StatusCode::NO_CONTENT)

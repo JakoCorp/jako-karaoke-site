@@ -174,17 +174,15 @@ pub async fn update(
     id: Uuid,
     upd: &UpdateUser,
 ) -> Result<Option<User>> {
-    sqlx::query_as::<_, User>(
-        "UPDATE users SET username = ?, twitch_id = ?, discord_id = ? WHERE id = ? \
-         RETURNING id, username, twitch_id, discord_id",
-    )
-    .bind(&upd.username)
-    .bind(upd.twitch_id)
-    .bind(upd.discord_id)
-    .bind(id)
-    .fetch_optional(conn)
-    .await
-    .map_err(DbError::from)
+    sqlx::query("UPDATE users SET username = ?, twitch_id = ?, discord_id = ? WHERE id = ?")
+        .bind(&upd.username)
+        .bind(upd.twitch_id)
+        .bind(upd.discord_id)
+        .bind(id)
+        .execute(&mut *conn)
+        .await
+        .map_err(DbError::from)?;
+    get_by_id(&mut *conn, id).await
 }
 
 /// Deletes a user by ID. Returns `true` if a row was deleted.
