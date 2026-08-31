@@ -64,6 +64,7 @@ fn can_view_private(auth: &Option<AuthUser>, user_id: Uuid) -> bool {
 }
 
 #[derive(Deserialize, utoipa::IntoParams)]
+#[into_params(parameter_in = Query)]
 pub(crate) struct UserSearchParams {
     /// Optional username substring filter.
     q: Option<String>,
