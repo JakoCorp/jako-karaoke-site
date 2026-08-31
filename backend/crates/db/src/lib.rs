@@ -6,6 +6,11 @@ pub mod queries;
 
 pub use sqlx::MySqlPool;
 
+/// Migrator built from this crate's migrations directory.
+///
+/// Exported so integration tests can pass `#[sqlx::test(migrator = "db::MIGRATOR")]`.
+pub static MIGRATOR: sqlx::migrate::Migrator = sqlx::migrate!("./migrations");
+
 pub type Result<T> = std::result::Result<T, error::DbError>;
 
 /// Connects to MySQL and runs any pending migrations.
