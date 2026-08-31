@@ -42,17 +42,15 @@ pub async fn update(
     id: Uuid,
     upd: &UpdateImage,
 ) -> Result<Option<Image>> {
-    sqlx::query_as::<_, Image>(
-        "UPDATE images SET public_url = ?, internal_path = ?, credits = ? WHERE id = ? \
-         RETURNING id, public_url, internal_path, credits",
-    )
-    .bind(&upd.public_url)
-    .bind(&upd.internal_path)
-    .bind(&upd.credits)
-    .bind(id)
-    .fetch_optional(conn)
-    .await
-    .map_err(DbError::from)
+    sqlx::query("UPDATE images SET public_url = ?, internal_path = ?, credits = ? WHERE id = ?")
+        .bind(&upd.public_url)
+        .bind(&upd.internal_path)
+        .bind(&upd.credits)
+        .bind(id)
+        .execute(&mut *conn)
+        .await
+        .map_err(DbError::from)?;
+    get_by_id(&mut *conn, id).await
 }
 
 /// Deletes an image record by ID. Returns `true` if a row was deleted.

@@ -98,8 +98,8 @@ export function UsersAdminTab() {
           className="form-input"
           placeholder="Search users…"
           value={searchInput}
-          onChange={(e) => {
-            setSearchInput(e.target.value);
+          onChange={(event) => {
+            setSearchInput(event.target.value);
           }}
           aria-label="Search users"
         />

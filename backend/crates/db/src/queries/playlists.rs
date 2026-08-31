@@ -112,18 +112,18 @@ pub async fn update(
     id: Uuid,
     upd: &UpdatePlaylist,
 ) -> Result<Option<Playlist>> {
-    sqlx::query_as::<_, Playlist>(
-        "UPDATE playlists SET title = ?, description = ?, kind = ?, is_public = ? WHERE id = ? \
-         RETURNING id, title, description, kind, is_public, created_by",
+    sqlx::query(
+        "UPDATE playlists SET title = ?, description = ?, kind = ?, is_public = ? WHERE id = ?",
     )
     .bind(&upd.title)
     .bind(&upd.description)
     .bind(&upd.kind)
     .bind(upd.is_public)
     .bind(id)
-    .fetch_optional(conn)
+    .execute(&mut *conn)
     .await
-    .map_err(DbError::from)
+    .map_err(DbError::from)?;
+    get_by_id(&mut *conn, id).await
 }
 
 /// Inserts favorites playlist for a new user.
