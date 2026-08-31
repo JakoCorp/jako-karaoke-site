@@ -62,7 +62,8 @@ pub(crate) async fn get_song_lyrics(
         (status = 403, description = "Forbidden", body = ErrorResponse),
         (status = 404, description = "Song not found", body = ErrorResponse),
     ),
-    tag = "songs"
+    tag = "songs",
+    security(("session" = []))
 )]
 pub(crate) async fn put_song_lyrics(
     State(state): State<AppState>,
@@ -109,7 +110,8 @@ pub(crate) async fn put_song_lyrics(
         (status = 403, description = "Forbidden", body = ErrorResponse),
         (status = 404, description = "Not found", body = ErrorResponse),
     ),
-    tag = "songs"
+    tag = "songs",
+    security(("session" = []))
 )]
 pub(crate) async fn delete_song_lyrics(
     State(state): State<AppState>,

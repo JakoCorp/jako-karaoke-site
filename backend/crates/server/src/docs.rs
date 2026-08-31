@@ -2,6 +2,7 @@
 
 use axum::Router;
 use utoipa::OpenApi;
+use utoipa::openapi::security::{ApiKey, ApiKeyValue, SecurityScheme};
 use utoipa_swagger_ui::SwaggerUi;
 
 use crate::{
@@ -23,6 +24,12 @@ pub fn openapi_spec() -> utoipa::openapi::OpenApi {
     spec.merge(TagsApi::openapi());
     spec.merge(UsersApi::openapi());
     spec.merge(AuthApi::openapi());
+    spec.components
+        .get_or_insert_with(Default::default)
+        .add_security_scheme(
+            "session",
+            SecurityScheme::ApiKey(ApiKey::Cookie(ApiKeyValue::new("session"))),
+        );
     spec
 }
 

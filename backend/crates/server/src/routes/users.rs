@@ -79,7 +79,8 @@ pub(crate) struct UserSearchParams {
         (status = 401, description = "Unauthorized", body = ErrorResponse),
         (status = 403, description = "Forbidden", body = ErrorResponse),
     ),
-    tag = "users"
+    tag = "users",
+    security(("session" = []))
 )]
 pub(crate) async fn search_users(
     State(state): State<AppState>,
@@ -182,7 +183,8 @@ pub(crate) async fn get_user_favorites(
         (status = 403, description = "Forbidden", body = ErrorResponse),
         (status = 404, description = "User not found", body = ErrorResponse),
     ),
-    tag = "users"
+    tag = "users",
+    security(("session" = []))
 )]
 pub(crate) async fn list_user_capabilities(
     State(state): State<AppState>,
@@ -214,7 +216,8 @@ pub(crate) async fn list_user_capabilities(
         (status = 403, description = "Forbidden", body = ErrorResponse),
         (status = 404, description = "User not found", body = ErrorResponse),
     ),
-    tag = "users"
+    tag = "users",
+    security(("session" = []))
 )]
 pub(crate) async fn grant_capability(
     State(state): State<AppState>,
@@ -259,7 +262,8 @@ pub(crate) async fn grant_capability(
         (status = 403, description = "Forbidden", body = ErrorResponse),
         (status = 404, description = "User not found", body = ErrorResponse),
     ),
-    tag = "users"
+    tag = "users",
+    security(("session" = []))
 )]
 pub(crate) async fn revoke_capability(
     State(state): State<AppState>,

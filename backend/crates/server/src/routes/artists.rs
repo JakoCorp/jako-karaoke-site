@@ -100,7 +100,8 @@ pub(crate) async fn get_artist(
         (status = 401, description = "Unauthorized", body = ErrorResponse),
         (status = 403, description = "Forbidden", body = ErrorResponse),
     ),
-    tag = "artists"
+    tag = "artists",
+    security(("session" = []))
 )]
 pub(crate) async fn create_artist(
     State(state): State<AppState>,
@@ -133,7 +134,8 @@ pub(crate) async fn create_artist(
         (status = 403, description = "Forbidden", body = ErrorResponse),
         (status = 404, description = "Not found", body = ErrorResponse),
     ),
-    tag = "artists"
+    tag = "artists",
+    security(("session" = []))
 )]
 pub(crate) async fn update_artist(
     State(state): State<AppState>,
@@ -168,7 +170,8 @@ pub(crate) async fn update_artist(
         (status = 403, description = "Forbidden", body = ErrorResponse),
         (status = 404, description = "Not found", body = ErrorResponse),
     ),
-    tag = "artists"
+    tag = "artists",
+    security(("session" = []))
 )]
 pub(crate) async fn delete_artist(
     State(state): State<AppState>,

@@ -137,7 +137,8 @@ pub(crate) async fn get_playlist(
         (status = 401, description = "Unauthorized", body = ErrorResponse),
         (status = 403, description = "Forbidden", body = ErrorResponse),
     ),
-    tag = "playlists"
+    tag = "playlists",
+    security(("session" = []))
 )]
 pub(crate) async fn create_playlist(
     State(state): State<AppState>,
@@ -179,7 +180,8 @@ pub(crate) async fn create_playlist(
         (status = 403, description = "Forbidden", body = ErrorResponse),
         (status = 404, description = "Not found", body = ErrorResponse),
     ),
-    tag = "playlists"
+    tag = "playlists",
+    security(("session" = []))
 )]
 pub(crate) async fn update_playlist(
     State(state): State<AppState>,
@@ -225,7 +227,8 @@ pub(crate) async fn update_playlist(
         (status = 403, description = "Forbidden", body = ErrorResponse),
         (status = 404, description = "Not found", body = ErrorResponse),
     ),
-    tag = "playlists"
+    tag = "playlists",
+    security(("session" = []))
 )]
 pub(crate) async fn delete_playlist(
     State(state): State<AppState>,
