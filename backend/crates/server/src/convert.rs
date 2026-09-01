@@ -1,11 +1,10 @@
 //! Conversions from database models to API response types.
 
 use api_types::{
-    artists::ArtistResponse,
     playlists::{PlaylistKind, PlaylistResponse},
     tags::TagResponse,
 };
-use db::models::{Artist, Tag, playlist::Playlist};
+use db::models::{Tag, playlist::Playlist};
 
 use crate::error::ApiError;
 
@@ -31,15 +30,6 @@ pub(crate) fn playlist_response(playlist: Playlist) -> Result<PlaylistResponse, 
         is_public: playlist.is_public,
         created_by: playlist.created_by,
     })
-}
-
-/// Converts an [`Artist`] model to an [`ArtistResponse`].
-pub(crate) fn artist_response(artist: Artist) -> ArtistResponse {
-    ArtistResponse {
-        id: artist.id,
-        name: artist.name,
-        description: artist.description,
-    }
 }
 
 /// Converts a [`Tag`] model to a [`TagResponse`].

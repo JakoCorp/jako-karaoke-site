@@ -13,7 +13,7 @@ pub mod song;
 pub mod tag;
 pub mod user;
 
-pub use artist::{Artist, NewArtist, UpdateArtist};
+pub use artist::{Artist, ArtistLink, NewArtist, NewArtistLink, UpdateArtist};
 pub use image::{Image, NewImage, UpdateImage};
 pub use lyrics::{Lyrics, NewLyrics};
 pub use pending_oauth::PendingOAuth;
