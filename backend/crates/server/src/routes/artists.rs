@@ -14,7 +14,7 @@ use api_types::{
         ArtistLinkKind, ArtistResponse, ArtistSummary, CreateArtistRequest, UpdateArtistRequest,
     },
     common::ErrorResponse,
-    pagination::{PagedResponse, PaginationParams},
+    pagination::PagedResponse,
 };
 use db::{
     MySqlPool,
@@ -46,6 +46,36 @@ use crate::{
     ))
 )]
 pub(crate) struct ArtistsApi;
+
+/// Query parameters for `GET /api/artists`.
+#[derive(Debug, Clone, serde::Deserialize, utoipa::IntoParams)]
+#[into_params(parameter_in = Query)]
+pub(crate) struct ArtistListParams {
+    /// Page number, 1-indexed. Defaults to 1.
+    #[serde(default = "default_page")]
+    pub page: u32,
+    /// Items per page. Defaults to 20. The server enforces a maximum.
+    #[serde(default = "default_per_page")]
+    pub per_page: u32,
+    /// Text search filter on artist name.
+    pub q: Option<String>,
+}
+
+fn default_page() -> u32 {
+    1
+}
+
+fn default_per_page() -> u32 {
+    20
+}
+
+impl ArtistListParams {
+    fn limit_offset(&self) -> (u32, u32) {
+        let per_page = self.per_page.min(pagination::MAX_PER_PAGE);
+        let offset = self.page.saturating_sub(1).saturating_mul(per_page);
+        (per_page, offset)
+    }
+}
 
 pub fn router() -> Router<AppState> {
     Router::new()
@@ -112,7 +142,7 @@ fn new_links(inputs: Vec<ArtistLinkInput>) -> Vec<NewArtistLink> {
 #[utoipa::path(
     get,
     path = "/api/artists",
-    params(PaginationParams),
+    params(ArtistListParams),
     responses(
         (status = 200, description = "Paginated list of artists ordered by name", body = PagedResponse<ArtistSummary>),
     ),
@@ -120,12 +150,13 @@ fn new_links(inputs: Vec<ArtistLinkInput>) -> Vec<NewArtistLink> {
 )]
 pub(crate) async fn list_artists(
     State(state): State<AppState>,
-    Query(params): Query<PaginationParams>,
+    Query(params): Query<ArtistListParams>,
 ) -> Result<Json<PagedResponse<ArtistSummary>>, ApiError> {
-    let (limit, offset) = pagination::limit_offset(&params);
+    let (limit, offset) = params.limit_offset();
+    let q = params.q.as_deref().filter(|s| !s.is_empty());
     let (artists, total) = tokio::try_join!(
-        queries::artists::list(&state.pool, limit, offset),
-        queries::artists::count(&state.pool),
+        queries::artists::search(&state.pool, q, limit, offset),
+        queries::artists::search_count(&state.pool, q),
     )?;
 
     let artist_ids: Vec<Uuid> = artists.iter().map(|a| a.id).collect();

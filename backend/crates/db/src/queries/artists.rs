@@ -48,6 +48,48 @@ pub async fn list(
     .map_err(DbError::from)
 }
 
+/// Returns artists matching an optional name query, ordered by name.
+///
+/// When `q` is `Some`, results are filtered by a case-insensitive substring match
+/// against the artist name. Falls through to [`list`] when `q` is `None`.
+pub async fn search(
+    executor: impl Executor<'_, Database = MySql>,
+    q: Option<&str>,
+    limit: u32,
+    offset: u32,
+) -> Result<Vec<Artist>> {
+    let Some(q) = q else {
+        return list(executor, limit, offset).await;
+    };
+    let pattern = format!("%{q}%");
+    sqlx::query_as::<_, Artist>(
+        "SELECT id, name, description FROM artists WHERE name LIKE ? ORDER BY name LIMIT ? OFFSET ?",
+    )
+    .bind(&pattern)
+    .bind(limit)
+    .bind(offset)
+    .fetch_all(executor)
+    .await
+    .map_err(DbError::from)
+}
+
+/// Returns the total number of artists matching the optional name query.
+pub async fn search_count(
+    executor: impl Executor<'_, Database = MySql>,
+    q: Option<&str>,
+) -> Result<u64> {
+    let Some(q) = q else {
+        return count(executor).await;
+    };
+    let pattern = format!("%{q}%");
+    sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM artists WHERE name LIKE ?")
+        .bind(&pattern)
+        .fetch_one(executor)
+        .await
+        .map(|n| n as u64)
+        .map_err(DbError::from)
+}
+
 /// Inserts a new artist and returns the created row.
 pub async fn create(conn: &mut MySqlConnection, new: &NewArtist) -> Result<Artist> {
     sqlx::query_as::<_, Artist>(

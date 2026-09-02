@@ -38,6 +38,15 @@
               "format": "int32",
               "minimum": 0
             }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Text search filter on artist name.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
