@@ -1,15 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { songsApi } from "@/api/songs";
-import type { SongListParams } from "@/api/songs";
+import type { SearchPaginationParams } from "@/api/types";
 
 export const songKeys = {
   all: () => ["songs"] as const,
-  list: (params?: SongListParams) => ["songs", "list", params] as const,
+  list: (params?: SearchPaginationParams) => ["songs", "list", params] as const,
   detail: (id: string) => ["songs", "detail", id] as const,
 };
 
-export function useSongs(params?: SongListParams, enabled = true) {
+export function useSongs(params?: SearchPaginationParams, enabled = true) {
   return useQuery({
     queryKey: songKeys.list(params),
     queryFn: async () => {
