@@ -22,7 +22,8 @@ pub async fn get_by_id(
     id: Uuid,
 ) -> Result<Option<Performance>> {
     sqlx::query_as::<_, Performance>(
-        "SELECT id, created_by, title, lyrics_id, play_count, duration, performance_date \
+        "SELECT id, created_by, title, lyrics_id, play_count, duration, \
+         performance_date, stream_number, performance_number \
          FROM performances WHERE id = ?",
     )
     .bind(id)
@@ -44,18 +45,18 @@ pub async fn count(executor: impl Executor<'_, Database = MySql>) -> Result<u64>
 ///
 /// When `q` is `Some`, results are filtered by a case-insensitive substring match
 /// against the performance title, any linked song title, or any linked singer name.
-/// `sort_col` and `sort_dir` must be derived from validated enums to prevent injection.
+/// `order_by` must be derived from validated enums to prevent injection.
 pub async fn search(
     executor: impl Executor<'_, Database = MySql>,
     q: Option<&str>,
-    sort_col: &str,
-    sort_dir: &str,
+    order_by: &str,
     limit: u32,
     offset: u32,
 ) -> Result<Vec<Performance>> {
     let sql = if q.is_some() {
         format!(
-            "SELECT id, created_by, title, lyrics_id, play_count, duration, performance_date \
+            "SELECT id, created_by, title, lyrics_id, play_count, duration, \
+             performance_date, stream_number, performance_number \
              FROM performances WHERE id IN ( \
                SELECT id FROM performances WHERE title LIKE ? \
                UNION \
@@ -64,12 +65,13 @@ pub async fn search(
                UNION \
                SELECT ps.performance_id FROM performance_singers ps \
                JOIN artists a ON a.id = ps.artist_id WHERE a.name LIKE ? \
-             ) ORDER BY {sort_col} {sort_dir} LIMIT ? OFFSET ?"
+             ) ORDER BY {order_by} LIMIT ? OFFSET ?"
         )
     } else {
         format!(
-            "SELECT id, created_by, title, lyrics_id, play_count, duration, performance_date \
-             FROM performances ORDER BY {sort_col} {sort_dir} LIMIT ? OFFSET ?"
+            "SELECT id, created_by, title, lyrics_id, play_count, duration, \
+             performance_date, stream_number, performance_number \
+             FROM performances ORDER BY {order_by} LIMIT ? OFFSET ?"
         )
     };
 
@@ -172,15 +174,18 @@ pub async fn get_songs_batch(
 pub async fn create(conn: &mut MySqlConnection, new: &NewPerformance) -> Result<Performance> {
     sqlx::query_as::<_, Performance>(
         "INSERT INTO performances \
-         (created_by, title, lyrics_id, duration, performance_date) \
-         VALUES (?, ?, ?, ?, ?) \
-         RETURNING id, created_by, title, lyrics_id, play_count, duration, performance_date",
+         (created_by, title, lyrics_id, duration, performance_date, stream_number, performance_number) \
+         VALUES (?, ?, ?, ?, ?, ?, ?) \
+         RETURNING id, created_by, title, lyrics_id, play_count, duration, \
+         performance_date, stream_number, performance_number",
     )
     .bind(new.created_by)
     .bind(&new.title)
     .bind(new.lyrics_id)
     .bind(new.duration)
     .bind(new.performance_date)
+    .bind(new.stream_number)
+    .bind(new.performance_number)
     .fetch_one(conn)
     .await
     .map_err(DbError::from)
@@ -194,12 +199,15 @@ pub async fn update(
 ) -> Result<Option<Performance>> {
     sqlx::query(
         "UPDATE performances \
-         SET title = ?, duration = ?, performance_date = ? \
+         SET title = ?, duration = ?, performance_date = ?, \
+         stream_number = ?, performance_number = ? \
          WHERE id = ?",
     )
     .bind(&upd.title)
     .bind(upd.duration)
     .bind(upd.performance_date)
+    .bind(upd.stream_number)
+    .bind(upd.performance_number)
     .bind(id)
     .execute(&mut *conn)
     .await

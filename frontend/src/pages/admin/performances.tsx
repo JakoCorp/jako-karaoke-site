@@ -61,7 +61,8 @@ export function PerformancesAdminTab() {
                 }}
               >
                 <div className="admin-item-title">
-                  {performance.title ?? formatDate(performance.performance_date)}
+                  {performance.title ??
+                    `${formatDate(performance.performance_date)} · S${String(performance.stream_number)} #${String(performance.performance_number)}`}
                 </div>
                 {performance.singers.length > 0 && (
                   <div className="admin-item-sub">

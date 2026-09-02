@@ -12,7 +12,7 @@ import { useArtists } from "@/hooks/api/artists";
 import { performanceKeys, usePerformance } from "@/hooks/api/performances";
 import { useSongs } from "@/hooks/api/songs";
 import { tagKeys, useTags } from "@/hooks/api/tags";
-import { formatDate, isoToDatetimeLocal } from "@/lib/format";
+import { formatDate } from "@/lib/format";
 
 import { ItemPicker, TagPicker, type TagAssignment } from "./pickers";
 import { resolveTagAssignments } from "./tag-utils";
@@ -29,6 +29,8 @@ export function PerformanceDetailPanel({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editDate, setEditDate] = useState("");
+  const [editStreamNumber, setEditStreamNumber] = useState(1);
+  const [editPerformanceNumber, setEditPerformanceNumber] = useState(1);
   const [editSongIds, setEditSongIds] = useState<string[]>([]);
   const [editSingerIds, setEditSingerIds] = useState<string[]>([]);
   const [editTags, setEditTags] = useState<TagAssignment<PerformanceTagKind>[]>([]);
@@ -53,7 +55,9 @@ export function PerformanceDetailPanel({
         return data.id;
       });
       const { error: apiError } = await performancesApi.create({
-        performance_date: new Date(editDate).toISOString(),
+        performance_date: editDate,
+        stream_number: editStreamNumber,
+        performance_number: editPerformanceNumber,
         song_ids: editSongIds,
         singer_ids: editSingerIds,
         tags: resolvedTags,
@@ -82,7 +86,9 @@ export function PerformanceDetailPanel({
         return data.id;
       });
       const { error: apiError } = await performancesApi.update(performance.id, {
-        performance_date: new Date(editDate).toISOString(),
+        performance_date: editDate,
+        stream_number: editStreamNumber,
+        performance_number: editPerformanceNumber,
         song_ids: editSongIds,
         singer_ids: editSingerIds,
         tags: resolvedTags,
@@ -119,7 +125,9 @@ export function PerformanceDetailPanel({
   function startEditing() {
     if (!performanceDetail) return;
     setEditTitle(performanceDetail.title ?? "");
-    setEditDate(isoToDatetimeLocal(performanceDetail.performance_date));
+    setEditDate(performanceDetail.performance_date);
+    setEditStreamNumber(performanceDetail.stream_number);
+    setEditPerformanceNumber(performanceDetail.performance_number);
     setEditSongIds(performanceDetail.songs.map((song) => song.id));
     setEditSingerIds(performanceDetail.singers.map((singer) => singer.id));
     setEditTags(
@@ -196,7 +204,9 @@ export function PerformanceDetailPanel({
             <button
               className="btn btn-primary"
               type="button"
-              disabled={isPending || editDate === ""}
+              disabled={
+                isPending || editDate === "" || editStreamNumber < 1 || editPerformanceNumber < 1
+              }
               onClick={() => {
                 if (isCreating) {
                   createMutation.mutate();
@@ -217,12 +227,42 @@ export function PerformanceDetailPanel({
             <input
               id="perf-edit-date"
               className="form-input"
-              type="datetime-local"
+              type="date"
               value={editDate}
               onChange={(event) => {
                 setEditDate(event.target.value);
               }}
               required
+            />
+          </div>
+          <div className="form-field">
+            <label className="form-label" htmlFor="perf-edit-stream">
+              Stream number
+            </label>
+            <input
+              id="perf-edit-stream"
+              className="form-input"
+              type="number"
+              min={1}
+              value={editStreamNumber}
+              onChange={(event) => {
+                setEditStreamNumber(Number(event.target.value));
+              }}
+            />
+          </div>
+          <div className="form-field">
+            <label className="form-label" htmlFor="perf-edit-number">
+              Performance number
+            </label>
+            <input
+              id="perf-edit-number"
+              className="form-input"
+              type="number"
+              min={1}
+              value={editPerformanceNumber}
+              onChange={(event) => {
+                setEditPerformanceNumber(Number(event.target.value));
+              }}
             />
           </div>
           <div className="form-field">
@@ -353,6 +393,12 @@ export function PerformanceDetailPanel({
           <div className="admin-detail-section">
             <span className="admin-detail-label">Date</span>
             <span className="admin-empty">{formatDate(performanceDetail.performance_date)}</span>
+          </div>
+          <div className="admin-detail-section">
+            <span className="admin-detail-label">Stream</span>
+            <span className="admin-empty">
+              S{performanceDetail.stream_number} #{performanceDetail.performance_number}
+            </span>
           </div>
           {performanceDetail.songs.length > 0 && (
             <div className="admin-detail-section">

@@ -94,18 +94,19 @@ pub(crate) struct PerformanceListParams {
 }
 
 impl PerformanceListParams {
-    fn sort_col(&self) -> &'static str {
-        match &self.sort {
-            Some(PerformanceSort::PlayCount) => "play_count",
-            Some(PerformanceSort::Duration) => "duration",
-            _ => "performance_date",
-        }
-    }
-
     fn sort_dir_str(&self) -> &'static str {
         match &self.sort_dir {
             Some(SortDir::Asc) => "ASC",
             _ => "DESC",
+        }
+    }
+
+    fn order_by_clause(&self) -> String {
+        let dir = self.sort_dir_str();
+        match &self.sort {
+            Some(PerformanceSort::PlayCount) => format!("play_count {dir}"),
+            Some(PerformanceSort::Duration) => format!("duration {dir}"),
+            _ => format!("performance_date {dir}, stream_number {dir}, performance_number {dir}"),
         }
     }
 }
@@ -166,6 +167,8 @@ pub(crate) async fn build_performance_summaries(
                 play_count: p.play_count,
                 duration: p.duration,
                 performance_date: p.performance_date,
+                stream_number: p.stream_number,
+                performance_number: p.performance_number,
                 singers,
                 songs,
             }
@@ -273,6 +276,8 @@ async fn hydrate(
         play_count: perf.play_count,
         duration: perf.duration,
         performance_date: perf.performance_date,
+        stream_number: perf.stream_number,
+        performance_number: perf.performance_number,
         songs,
         singers,
         tags,
@@ -332,16 +337,10 @@ pub(crate) async fn list_performances(
     let (limit, offset) = pagination::limit_offset(params.page, params.per_page);
     let q = params.q.as_deref().filter(|s| !s.is_empty());
 
+    let order_by = params.order_by_clause();
     let (total, perfs) = tokio::try_join!(
         queries::performances::search_count(&state.pool, q),
-        queries::performances::search(
-            &state.pool,
-            q,
-            params.sort_col(),
-            params.sort_dir_str(),
-            limit,
-            offset,
-        ),
+        queries::performances::search(&state.pool, q, &order_by, limit, offset),
     )?;
 
     let items = build_performance_summaries(&state.pool, perfs).await?;
@@ -415,6 +414,8 @@ pub(crate) async fn create_performance(
             lyrics_id,
             duration: req.duration,
             performance_date: req.performance_date,
+            stream_number: req.stream_number,
+            performance_number: req.performance_number,
         },
     )
     .await?;
@@ -464,6 +465,8 @@ pub(crate) async fn update_performance(
             title: req.title,
             duration: req.duration,
             performance_date: req.performance_date,
+            stream_number: req.stream_number,
+            performance_number: req.performance_number,
         },
     )
     .await?

@@ -4,12 +4,14 @@ export function formatDuration(totalSeconds: number): string {
   return `${String(minutes)}:${String(seconds).padStart(2, "0")}`;
 }
 
-export function formatDate(isoString: string): string {
+export function formatDate(dateString: string): string {
+  // Force local timezone interpretation.
+  const date = dateString.includes("T") ? new Date(dateString) : new Date(dateString + "T00:00:00");
   return new Intl.DateTimeFormat("en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",
-  }).format(new Date(isoString));
+  }).format(date);
 }
 
 function padTwo(n: number): string {

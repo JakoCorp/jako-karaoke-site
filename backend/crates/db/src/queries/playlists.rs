@@ -158,7 +158,7 @@ pub async fn get_performances_in_playlist(
 ) -> Result<Vec<Performance>> {
     sqlx::query_as::<_, Performance>(
         "SELECT p.id, p.created_by, p.title, p.lyrics_id, p.play_count, p.duration, \
-         p.performance_date \
+         p.performance_date, p.stream_number, p.performance_number \
          FROM performances p \
          JOIN playlist_performances pp ON pp.performance_id = p.id \
          WHERE pp.playlist_id = ? \

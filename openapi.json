@@ -2982,6 +2982,8 @@
         "description": "Request body for `POST /api/performances`.",
         "required": [
           "performance_date",
+          "stream_number",
+          "performance_number",
           "song_ids",
           "singer_ids",
           "tags"
@@ -3005,7 +3007,12 @@
           },
           "performance_date": {
             "type": "string",
-            "format": "date-time"
+            "format": "date"
+          },
+          "performance_number": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
           },
           "singer_ids": {
             "type": "array",
@@ -3020,6 +3027,11 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          "stream_number": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
           },
           "tags": {
             "type": "array",
@@ -3315,6 +3327,8 @@
                 "id",
                 "play_count",
                 "performance_date",
+                "stream_number",
+                "performance_number",
                 "singers",
                 "songs"
               ],
@@ -3334,7 +3348,12 @@
                 },
                 "performance_date": {
                   "type": "string",
-                  "format": "date-time"
+                  "format": "date"
+                },
+                "performance_number": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 0
                 },
                 "play_count": {
                   "type": "integer",
@@ -3351,6 +3370,11 @@
                   "items": {
                     "$ref": "#/components/schemas/SongRef"
                   }
+                },
+                "stream_number": {
+                  "type": "integer",
+                  "format": "int32",
+                  "minimum": 0
                 },
                 "title": {
                   "type": [
@@ -3450,6 +3474,8 @@
           "id",
           "play_count",
           "performance_date",
+          "stream_number",
+          "performance_number",
           "songs",
           "singers",
           "tags",
@@ -3478,7 +3504,12 @@
           },
           "performance_date": {
             "type": "string",
-            "format": "date-time"
+            "format": "date"
+          },
+          "performance_number": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
           },
           "play_count": {
             "type": "integer",
@@ -3495,6 +3526,11 @@
             "items": {
               "$ref": "#/components/schemas/SongSummary"
             }
+          },
+          "stream_number": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
           },
           "tags": {
             "type": "array",
@@ -3532,6 +3568,8 @@
           "id",
           "play_count",
           "performance_date",
+          "stream_number",
+          "performance_number",
           "singers",
           "songs"
         ],
@@ -3551,7 +3589,12 @@
           },
           "performance_date": {
             "type": "string",
-            "format": "date-time"
+            "format": "date"
+          },
+          "performance_number": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
           },
           "play_count": {
             "type": "integer",
@@ -3568,6 +3611,11 @@
             "items": {
               "$ref": "#/components/schemas/SongRef"
             }
+          },
+          "stream_number": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
           },
           "title": {
             "type": [
@@ -3878,6 +3926,8 @@
         "description": "Request body for `PUT /api/performances/{id}`.\n\nLyrics are excluded, use `PUT /api/performances/{id}/lyrics` instead.",
         "required": [
           "performance_date",
+          "stream_number",
+          "performance_number",
           "song_ids",
           "singer_ids",
           "tags"
@@ -3894,7 +3944,12 @@
           },
           "performance_date": {
             "type": "string",
-            "format": "date-time"
+            "format": "date"
+          },
+          "performance_number": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
           },
           "singer_ids": {
             "type": "array",
@@ -3909,6 +3964,11 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          "stream_number": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
           },
           "tags": {
             "type": "array",
