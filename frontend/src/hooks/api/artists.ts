@@ -21,7 +21,7 @@ export function useArtists(params?: SearchPaginationParams, enabled = true) {
   });
 }
 
-export function useArtist(id: string) {
+export function useArtist(id: string, enabled = true) {
   return useQuery({
     queryKey: artistKeys.detail(id),
     queryFn: async () => {
@@ -29,5 +29,6 @@ export function useArtist(id: string) {
       if (error) throw error;
       return data;
     },
+    enabled,
   });
 }

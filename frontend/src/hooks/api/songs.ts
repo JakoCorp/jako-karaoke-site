@@ -21,7 +21,7 @@ export function useSongs(params?: SearchPaginationParams, enabled = true) {
   });
 }
 
-export function useSong(id: string) {
+export function useSong(id: string, enabled = true) {
   return useQuery({
     queryKey: songKeys.detail(id),
     queryFn: async () => {
@@ -29,5 +29,6 @@ export function useSong(id: string) {
       if (error) throw error;
       return data;
     },
+    enabled,
   });
 }

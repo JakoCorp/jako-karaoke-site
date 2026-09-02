@@ -10,23 +10,58 @@ import { tagKeys, useTags } from "@/hooks/api/tags";
 import { ItemPicker, TagPicker, type TagAssignment } from "./pickers";
 import { resolveTagAssignments } from "./tag-utils";
 
-export function SongDetailPanel({ song, onDeleted }: { song: SongSummary; onDeleted: () => void }) {
+export function SongDetailPanel({
+  song,
+  onClose,
+}: {
+  song: SongSummary | null;
+  onClose: () => void;
+}) {
+  const isCreating = song === null;
   const [isEditing, setIsEditing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editArtistIds, setEditArtistIds] = useState<string[]>([]);
   const [editTags, setEditTags] = useState<TagAssignment<SongTagKind>[]>([]);
-  const [updateError, setUpdateError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const queryClient = useQueryClient();
+  const isFormOpen = isCreating || isEditing;
 
-  const { data: songDetail } = useSong(song.id);
-  const { data: allArtists } = useArtists({ per_page: 200 }, isEditing);
-  const { data: allTags } = useTags(isEditing);
+  const { data: songDetail } = useSong(song?.id ?? "", !isCreating);
+  const { data: allArtists } = useArtists({ per_page: 200 }, isFormOpen);
+  const { data: allTags } = useTags(isFormOpen);
+
+  const createMutation = useMutation({
+    mutationFn: async () => {
+      const resolvedTags = await resolveTagAssignments(editTags, async (name) => {
+        const { data, error: tagError } = await tagsApi.create({ name });
+        if (tagError) throw tagError;
+        if (!data) throw new Error("Tag creation returned no data.");
+        return data.id;
+      });
+      const { error: apiError } = await songsApi.create({
+        title: editTitle.trim(),
+        artist_ids: editArtistIds,
+        image_ids: [],
+        tags: resolvedTags,
+      });
+      if (apiError) throw apiError;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: songKeys.all() });
+      void queryClient.invalidateQueries({ queryKey: tagKeys.all() });
+      onClose();
+    },
+    onError: () => {
+      setFormError("Failed to create song.");
+    },
+  });
 
   const updateMutation = useMutation({
     mutationFn: async () => {
+      if (!song) return;
       const resolvedTags = await resolveTagAssignments(editTags, async (name) => {
         const { data, error: tagError } = await tagsApi.create({ name });
         if (tagError) throw tagError;
@@ -45,21 +80,22 @@ export function SongDetailPanel({ song, onDeleted }: { song: SongSummary; onDele
       void queryClient.invalidateQueries({ queryKey: songKeys.all() });
       void queryClient.invalidateQueries({ queryKey: tagKeys.all() });
       setIsEditing(false);
-      setUpdateError(null);
+      setFormError(null);
     },
     onError: () => {
-      setUpdateError("Failed to update song.");
+      setFormError("Failed to update song.");
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
+      if (!song) return;
       const { error: apiError } = await songsApi.delete(song.id);
       if (apiError) throw apiError;
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: songKeys.all() });
-      onDeleted();
+      onClose();
     },
     onError: () => {
       setDeleteError("Failed to delete song.");
@@ -77,13 +113,13 @@ export function SongDetailPanel({ song, onDeleted }: { song: SongSummary; onDele
         kind: SONG_TAG_KINDS.find((k) => k === tag.kind) ?? "misc",
       })),
     );
-    setUpdateError(null);
+    setFormError(null);
     setIsEditing(true);
   }
 
   function cancelEditing() {
     setIsEditing(false);
-    setUpdateError(null);
+    setFormError(null);
   }
 
   function toggleArtist(artistId: string) {
@@ -118,24 +154,33 @@ export function SongDetailPanel({ song, onDeleted }: { song: SongSummary; onDele
     );
   }
 
-  if (isEditing) {
+  if (isFormOpen) {
+    const isPending = isCreating ? createMutation.isPending : updateMutation.isPending;
     return (
       <>
         <div className="admin-panel-header">
-          <h3 className="admin-panel-title">{song.title}</h3>
+          <h3 className="admin-panel-title">{isCreating ? "New song" : song.title}</h3>
           <div className="admin-tag-confirm">
-            <button className="btn btn-secondary" type="button" onClick={cancelEditing}>
+            <button
+              className="btn btn-secondary"
+              type="button"
+              onClick={isCreating ? onClose : cancelEditing}
+            >
               Cancel
             </button>
             <button
               className="btn btn-primary"
               type="button"
-              disabled={updateMutation.isPending || editTitle.trim() === ""}
+              disabled={isPending || editTitle.trim() === ""}
               onClick={() => {
-                updateMutation.mutate();
+                if (isCreating) {
+                  createMutation.mutate();
+                } else {
+                  updateMutation.mutate();
+                }
               }}
             >
-              {updateMutation.isPending ? "Saving…" : "Save"}
+              {isPending ? (isCreating ? "Creating…" : "Saving…") : isCreating ? "Create" : "Save"}
             </button>
           </div>
         </div>
@@ -171,7 +216,7 @@ export function SongDetailPanel({ song, onDeleted }: { song: SongSummary; onDele
             onRemove={removeTag}
             onKindChange={changeTagKind}
           />
-          {updateError !== null && <p className="form-error">{updateError}</p>}
+          {formError !== null && <p className="form-error">{formError}</p>}
         </div>
       </>
     );

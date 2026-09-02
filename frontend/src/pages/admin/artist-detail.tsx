@@ -30,25 +30,51 @@ function linkDraftFromInfo(link: { url: string; kind: string; label?: string | n
 
 export function ArtistDetailPanel({
   artist,
-  onDeleted,
+  onClose,
 }: {
-  artist: ArtistSummary;
-  onDeleted: () => void;
+  artist: ArtistSummary | null;
+  onClose: () => void;
 }) {
+  const isCreating = artist === null;
   const [isEditing, setIsEditing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [editLinks, setEditLinks] = useState<LinkDraft[]>([]);
-  const [updateError, setUpdateError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const queryClient = useQueryClient();
 
-  const { data: artistDetail } = useArtist(artist.id);
+  const { data: artistDetail } = useArtist(artist?.id ?? "", !isCreating);
+
+  const createMutation = useMutation({
+    mutationFn: async () => {
+      const validLinks = editLinks.filter((link) => link.url.trim() !== "");
+      const { error: apiError } = await artistsApi.create({
+        name: editName.trim(),
+        description: editDescription.trim() !== "" ? editDescription.trim() : null,
+        images: [],
+        links: validLinks.map((link) => ({
+          url: link.url.trim(),
+          kind: link.kind,
+          label: link.label.trim() !== "" ? link.label.trim() : null,
+        })),
+      });
+      if (apiError) throw apiError;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: artistKeys.all() });
+      onClose();
+    },
+    onError: () => {
+      setFormError("Failed to create artist.");
+    },
+  });
 
   const updateMutation = useMutation({
     mutationFn: async () => {
+      if (!artist) return;
       const validLinks = editLinks.filter((link) => link.url.trim() !== "");
       const { error: apiError } = await artistsApi.update(artist.id, {
         name: editName.trim(),
@@ -68,21 +94,22 @@ export function ArtistDetailPanel({
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: artistKeys.all() });
       setIsEditing(false);
-      setUpdateError(null);
+      setFormError(null);
     },
     onError: () => {
-      setUpdateError("Failed to update artist.");
+      setFormError("Failed to update artist.");
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
+      if (!artist) return;
       const { error: apiError } = await artistsApi.delete(artist.id);
       if (apiError) throw apiError;
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: artistKeys.all() });
-      onDeleted();
+      onClose();
     },
     onError: () => {
       setDeleteError("Failed to delete artist.");
@@ -94,13 +121,13 @@ export function ArtistDetailPanel({
     setEditName(artistDetail.name);
     setEditDescription(artistDetail.description ?? "");
     setEditLinks(artistDetail.links.map(linkDraftFromInfo));
-    setUpdateError(null);
+    setFormError(null);
     setIsEditing(true);
   }
 
   function cancelEditing() {
     setIsEditing(false);
-    setUpdateError(null);
+    setFormError(null);
   }
 
   function addLink() {
@@ -117,24 +144,33 @@ export function ArtistDetailPanel({
     );
   }
 
-  if (isEditing) {
+  if (isCreating || isEditing) {
+    const isPending = isCreating ? createMutation.isPending : updateMutation.isPending;
     return (
       <>
         <div className="admin-panel-header">
-          <h3 className="admin-panel-title">{artist.name}</h3>
+          <h3 className="admin-panel-title">{isCreating ? "New artist" : artist.name}</h3>
           <div className="admin-tag-confirm">
-            <button className="btn btn-secondary" type="button" onClick={cancelEditing}>
+            <button
+              className="btn btn-secondary"
+              type="button"
+              onClick={isCreating ? onClose : cancelEditing}
+            >
               Cancel
             </button>
             <button
               className="btn btn-primary"
               type="button"
-              disabled={updateMutation.isPending || editName.trim() === ""}
+              disabled={isPending || editName.trim() === ""}
               onClick={() => {
-                updateMutation.mutate();
+                if (isCreating) {
+                  createMutation.mutate();
+                } else {
+                  updateMutation.mutate();
+                }
               }}
             >
-              {updateMutation.isPending ? "Saving…" : "Save"}
+              {isPending ? (isCreating ? "Creating…" : "Saving…") : isCreating ? "Create" : "Save"}
             </button>
           </div>
         </div>
@@ -223,7 +259,7 @@ export function ArtistDetailPanel({
               </button>
             </div>
           </div>
-          {updateError !== null && <p className="form-error">{updateError}</p>}
+          {formError !== null && <p className="form-error">{formError}</p>}
         </div>
       </>
     );
