@@ -391,4 +391,43 @@
     resize: vertical;
     font-family: inherit;
   }
+
+  .admin-link-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .admin-link-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .admin-link-url {
+    font-size: 0.875rem;
+    color: var(--color-text);
+    word-break: break-all;
+    flex: 1;
+  }
+
+  .admin-link-label {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+  }
+
+  .admin-link-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    padding: 0.625rem 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: 0.375rem;
+  }
+
+  .admin-link-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
 }

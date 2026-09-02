@@ -3,17 +3,19 @@ import { useNavigate } from "react-router";
 
 import { useAuthStore } from "@/store/auth";
 
+import { ArtistsAdminTab } from "./admin/artists";
 import { PerformancesAdminTab } from "./admin/performances";
 import { SongsAdminTab } from "./admin/songs";
 import { TagsAdminTab } from "./admin/tags";
 import { UsersAdminTab } from "./admin/users";
 
-type AdminTab = "users" | "songs" | "performances" | "tags";
+type AdminTab = "users" | "performances" | "songs" | "artists" | "tags";
 
 const ALL_TABS: { id: AdminTab; label: string; capability: string }[] = [
   { id: "users", label: "Users", capability: "capabilities:manage" },
-  { id: "songs", label: "Songs", capability: "songs:manage_any" },
   { id: "performances", label: "Performances", capability: "performances:manage_any" },
+  { id: "songs", label: "Songs", capability: "songs:manage_any" },
+  { id: "artists", label: "Artists", capability: "artists:manage_any" },
   { id: "tags", label: "Tags", capability: "tags:manage_any" },
 ];
 
@@ -50,8 +52,9 @@ export function AdminPage() {
       </div>
       <div className="admin-content">
         {activeTab === "users" && <UsersAdminTab />}
-        {activeTab === "songs" && <SongsAdminTab />}
         {activeTab === "performances" && <PerformancesAdminTab />}
+        {activeTab === "songs" && <SongsAdminTab />}
+        {activeTab === "artists" && <ArtistsAdminTab />}
         {activeTab === "tags" && <TagsAdminTab />}
       </div>
     </div>
