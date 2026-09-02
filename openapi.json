@@ -42,7 +42,7 @@
           {
             "name": "q",
             "in": "query",
-            "description": "Text search filter on artist name.",
+            "description": "Optional text search filter.",
             "required": false,
             "schema": {
               "type": "string"
@@ -1544,7 +1544,7 @@
           {
             "name": "q",
             "in": "query",
-            "description": "Text search across song title and original artist names.",
+            "description": "Optional text search filter.",
             "required": false,
             "schema": {
               "type": "string"
