@@ -231,7 +231,6 @@ async fn hydrate(
         .map(|s| SongSummary {
             id: s.id,
             title: s.title,
-            date_added: s.date_added,
             artists: vec![],
         })
         .collect();
