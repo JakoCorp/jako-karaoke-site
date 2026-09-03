@@ -27,12 +27,26 @@ pub struct PaginationParams {
     pub per_page: u32,
 }
 
-mod defaults {
-    pub(super) fn page() -> u32 {
+/// Query parameters for list endpoints that support text search.
+#[derive(Debug, Clone, Deserialize, IntoParams)]
+#[into_params(parameter_in = Query)]
+pub struct SearchPaginationParams {
+    /// Page number, 1-indexed. Defaults to 1.
+    #[serde(default = "defaults::page")]
+    pub page: u32,
+    /// Items per page. Defaults to 20. The server enforces a maximum.
+    #[serde(default = "defaults::per_page")]
+    pub per_page: u32,
+    /// Optional text search filter.
+    pub q: Option<String>,
+}
+
+pub mod defaults {
+    pub fn page() -> u32 {
         1
     }
 
-    pub(super) fn per_page() -> u32 {
+    pub fn per_page() -> u32 {
         20
     }
 }

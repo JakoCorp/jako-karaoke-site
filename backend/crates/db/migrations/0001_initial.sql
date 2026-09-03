@@ -42,16 +42,6 @@ CREATE TABLE IF NOT EXISTS sessions (
     CONSTRAINT FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 ) ENGINE = InnoDB;
 
--- Artists
--- Representative of both original artists of a song and any singers.
-CREATE TABLE IF NOT EXISTS artists (
-    id BINARY(16) NOT NULL DEFAULT (UNHEX(REPLACE(UUID_V7(), '-', ''))),
-    name VARCHAR(256) NOT NULL,
-    description TEXT NULL,
-    PRIMARY KEY (id),
-    INDEX (name)
-) ENGINE = InnoDB;
-
 -- Tags
 CREATE TABLE IF NOT EXISTS tags (
     id BINARY(16) NOT NULL DEFAULT (UNHEX(REPLACE(UUID_V7(), '-', ''))),
@@ -90,6 +80,37 @@ CREATE TABLE IF NOT EXISTS playlists (
     INDEX (kind),
     INDEX (is_public),
     INDEX (created_by, kind)
+) ENGINE = InnoDB;
+
+-- Artists
+-- Representative of both original artists of a song and any singers.
+CREATE TABLE IF NOT EXISTS artists (
+    id BINARY(16) NOT NULL DEFAULT (UNHEX(REPLACE(UUID_V7(), '-', ''))),
+    name VARCHAR(256) NOT NULL,
+    description TEXT NULL,
+    PRIMARY KEY (id),
+    INDEX (name)
+) ENGINE = InnoDB;
+
+-- Artist external links (e.g. YouTube, website)
+CREATE TABLE IF NOT EXISTS artist_links (
+    id BINARY(16) NOT NULL DEFAULT (UNHEX(REPLACE(UUID_V7(), '-', ''))),
+    artist_id BINARY(16) NOT NULL REFERENCES artists (id) ON DELETE CASCADE,
+    url VARCHAR(1024) NOT NULL,
+    kind VARCHAR(32) NOT NULL,
+    label VARCHAR(128) NULL,
+    PRIMARY KEY (id),
+    INDEX (artist_id)
+) ENGINE = InnoDB;
+
+-- Artist <-> Image (M2M)
+-- kind denotes the semantic role of the image (e.g. "avatar").
+CREATE TABLE IF NOT EXISTS artist_images (
+    artist_id BINARY(16) NOT NULL REFERENCES artists (id) ON DELETE CASCADE,
+    image_id BINARY(16) NOT NULL REFERENCES images (id) ON DELETE CASCADE,
+    kind VARCHAR(32) NOT NULL,
+    PRIMARY KEY (artist_id, image_id),
+    INDEX (artist_id)
 ) ENGINE = InnoDB;
 
 -- Songs

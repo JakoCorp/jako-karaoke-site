@@ -1,6 +1,6 @@
 import { api } from "./client";
 import type { components } from "./generated";
-import type { PaginationParams } from "./types";
+import type { SearchPaginationParams } from "./types";
 
 export type PerformanceSummary = components["schemas"]["PerformanceSummary"];
 export type PerformanceResponse = components["schemas"]["PerformanceResponse"];
@@ -13,9 +13,7 @@ export const PERFORMANCE_TAG_KINDS = [
 ] as const satisfies readonly PerformanceTagKind[];
 
 /** Query parameters accepted by the performances list endpoint. */
-export type PerformanceListParams = PaginationParams & {
-  /** Text search across performance title, song title, and singer names. */
-  q?: string;
+export type PerformanceListParams = SearchPaginationParams & {
   /** Field to sort by. Defaults to performance_date. */
   sort?: "performance_date" | "play_count" | "duration";
   /** Sort direction. Defaults to desc. */

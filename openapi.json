@@ -38,6 +38,15 @@
               "format": "int32",
               "minimum": 0
             }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Optional text search filter.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -46,7 +55,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PagedResponse_ArtistResponse"
+                  "$ref": "#/components/schemas/PagedResponse_ArtistSummary"
                 }
               }
             }
@@ -1535,7 +1544,7 @@
           {
             "name": "q",
             "in": "query",
-            "description": "Text search across song title and original artist names.",
+            "description": "Optional text search filter.",
             "required": false,
             "schema": {
               "type": "string"
@@ -2721,6 +2730,57 @@
           }
         }
       },
+      "ArtistImageInfo": {
+        "type": "object",
+        "description": "An image attached to an artist with its semantic role.",
+        "required": [
+          "id",
+          "public_url",
+          "kind"
+        ],
+        "properties": {
+          "credits": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "public_url": {
+            "type": "string"
+          }
+        }
+      },
+      "ArtistImageInput": {
+        "type": "object",
+        "description": "Input for attaching an existing image to an artist.",
+        "required": [
+          "image_id",
+          "kind"
+        ],
+        "properties": {
+          "image_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ArtistImageKind"
+          }
+        }
+      },
+      "ArtistImageKind": {
+        "type": "string",
+        "description": "Valid kind values for an image attached to an artist.",
+        "enum": [
+          "avatar"
+        ]
+      },
       "ArtistInfo": {
         "type": "object",
         "description": "A minimal artist record embedded in song and performance responses.",
@@ -2744,12 +2804,75 @@
           }
         }
       },
-      "ArtistResponse": {
+      "ArtistLinkInfo": {
         "type": "object",
-        "description": "An artist record returned by artist endpoints.",
+        "description": "An external link associated with an artist.",
         "required": [
           "id",
-          "name"
+          "url",
+          "kind"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "label": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "url": {
+            "type": "string"
+          }
+        }
+      },
+      "ArtistLinkInput": {
+        "type": "object",
+        "description": "Input for creating an external link on an artist.",
+        "required": [
+          "url",
+          "kind"
+        ],
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/ArtistLinkKind"
+          },
+          "label": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "url": {
+            "type": "string"
+          }
+        }
+      },
+      "ArtistLinkKind": {
+        "type": "string",
+        "description": "Valid platform kinds for an artist external link.",
+        "enum": [
+          "youtube",
+          "website",
+          "x",
+          "instagram",
+          "twitch",
+          "other"
+        ]
+      },
+      "ArtistResponse": {
+        "type": "object",
+        "description": "A full artist record returned by detail and mutation endpoints.",
+        "required": [
+          "id",
+          "name",
+          "images",
+          "links"
         ],
         "properties": {
           "description": {
@@ -2761,6 +2884,48 @@
           "id": {
             "type": "string",
             "format": "uuid"
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ArtistImageInfo"
+            }
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ArtistLinkInfo"
+            }
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "ArtistSummary": {
+        "type": "object",
+        "description": "A lean artist record returned by the list endpoint.",
+        "required": [
+          "id",
+          "name",
+          "images"
+        ],
+        "properties": {
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ArtistImageInfo"
+            }
           },
           "name": {
             "type": "string"
@@ -2784,7 +2949,9 @@
         "type": "object",
         "description": "Request body for `POST /api/artists`.",
         "required": [
-          "name"
+          "name",
+          "images",
+          "links"
         ],
         "properties": {
           "description": {
@@ -2792,6 +2959,18 @@
               "string",
               "null"
             ]
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ArtistImageInput"
+            }
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ArtistLinkInput"
+            }
           },
           "name": {
             "type": "string"
@@ -3054,7 +3233,7 @@
           }
         }
       },
-      "PagedResponse_ArtistResponse": {
+      "PagedResponse_ArtistSummary": {
         "type": "object",
         "description": "Generic envelope returned by all paginated list endpoints.",
         "required": [
@@ -3068,10 +3247,11 @@
             "type": "array",
             "items": {
               "type": "object",
-              "description": "An artist record returned by artist endpoints.",
+              "description": "A lean artist record returned by the list endpoint.",
               "required": [
                 "id",
-                "name"
+                "name",
+                "images"
               ],
               "properties": {
                 "description": {
@@ -3083,6 +3263,12 @@
                 "id": {
                   "type": "string",
                   "format": "uuid"
+                },
+                "images": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ArtistImageInfo"
+                  }
                 },
                 "name": {
                   "type": "string"
@@ -3647,7 +3833,9 @@
         "type": "object",
         "description": "Request body for `PUT /api/artists/{id}`.",
         "required": [
-          "name"
+          "name",
+          "images",
+          "links"
         ],
         "properties": {
           "description": {
@@ -3655,6 +3843,18 @@
               "string",
               "null"
             ]
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ArtistImageInput"
+            }
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ArtistLinkInput"
+            }
           },
           "name": {
             "type": "string"

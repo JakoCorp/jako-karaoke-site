@@ -2,7 +2,7 @@ import { Dialog } from "@base-ui/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
-import { type ArtistResponse } from "@/api/artists";
+import { type ArtistSummary } from "@/api/artists";
 import { SONG_TAG_KINDS, songsApi, type SongSummary, type SongTagKind } from "@/api/songs";
 import { tagsApi, type TagResponse } from "@/api/tags";
 import { useArtists } from "@/hooks/api/artists";
@@ -22,7 +22,7 @@ function CreateSongDialog({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  allArtists: ArtistResponse[];
+  allArtists: ArtistSummary[];
   allTags: TagResponse[];
 }) {
   const [title, setTitle] = useState("");

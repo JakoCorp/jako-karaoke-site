@@ -9,29 +9,40 @@ use axum::{
 use uuid::Uuid;
 
 use api_types::{
-    artists::{ArtistResponse, CreateArtistRequest, UpdateArtistRequest},
+    artists::{
+        ArtistImageInfo, ArtistImageInput, ArtistImageKind, ArtistLinkInfo, ArtistLinkInput,
+        ArtistLinkKind, ArtistResponse, ArtistSummary, CreateArtistRequest, UpdateArtistRequest,
+    },
     common::ErrorResponse,
-    pagination::{PagedResponse, PaginationParams},
+    pagination::{PagedResponse, SearchPaginationParams},
 };
 use db::{
+    MySqlPool,
     error::DbError,
-    models::{NewArtist, UpdateArtist},
+    models::{NewArtist, NewArtistLink, UpdateArtist},
     queries,
 };
 
 use crate::{
-    auth::middleware::AuthUser, capabilities, convert, error::ApiError, pagination, state::AppState,
+    auth::middleware::AuthUser, capabilities, error::ApiError, pagination, state::AppState,
 };
 
 #[derive(utoipa::OpenApi)]
 #[openapi(
     paths(list_artists, get_artist, create_artist, update_artist, delete_artist),
     components(schemas(
+        ArtistSummary,
         ArtistResponse,
+        ArtistImageInfo,
+        ArtistImageInput,
+        ArtistImageKind,
+        ArtistLinkInfo,
+        ArtistLinkInput,
+        ArtistLinkKind,
         CreateArtistRequest,
         UpdateArtistRequest,
         ErrorResponse,
-        PagedResponse<ArtistResponse>,
+        PagedResponse<ArtistSummary>,
     ))
 )]
 pub(crate) struct ArtistsApi;
@@ -45,26 +56,102 @@ pub fn router() -> Router<AppState> {
         )
 }
 
+fn image_info(image: db::models::Image, kind: String) -> ArtistImageInfo {
+    ArtistImageInfo {
+        id: image.id,
+        public_url: image.public_url,
+        credits: image.credits,
+        kind,
+    }
+}
+
+fn link_info(link: db::models::ArtistLink) -> ArtistLinkInfo {
+    ArtistLinkInfo {
+        id: link.id,
+        url: link.url,
+        kind: link.kind,
+        label: link.label,
+    }
+}
+
+async fn hydrate(pool: &MySqlPool, artist: db::models::Artist) -> Result<ArtistResponse, ApiError> {
+    let (raw_images, links) = tokio::try_join!(
+        queries::artists::get_images(pool, artist.id),
+        queries::artists::get_links(pool, artist.id),
+    )?;
+    Ok(ArtistResponse {
+        id: artist.id,
+        name: artist.name,
+        description: artist.description,
+        images: raw_images
+            .into_iter()
+            .map(|(i, k)| image_info(i, k))
+            .collect(),
+        links: links.into_iter().map(link_info).collect(),
+    })
+}
+
+fn image_pairs(inputs: &[ArtistImageInput]) -> Vec<(Uuid, &str)> {
+    inputs
+        .iter()
+        .map(|i| (i.image_id, i.kind.as_str()))
+        .collect()
+}
+
+fn new_links(inputs: Vec<ArtistLinkInput>) -> Vec<NewArtistLink> {
+    inputs
+        .into_iter()
+        .map(|l| NewArtistLink {
+            url: l.url,
+            kind: l.kind.as_str().to_string(),
+            label: l.label,
+        })
+        .collect()
+}
+
 #[utoipa::path(
     get,
     path = "/api/artists",
-    params(PaginationParams),
+    params(SearchPaginationParams),
     responses(
-        (status = 200, description = "Paginated list of artists ordered by name", body = PagedResponse<ArtistResponse>),
+        (status = 200, description = "Paginated list of artists ordered by name", body = PagedResponse<ArtistSummary>),
     ),
     tag = "artists"
 )]
 pub(crate) async fn list_artists(
     State(state): State<AppState>,
-    Query(params): Query<PaginationParams>,
-) -> Result<Json<PagedResponse<ArtistResponse>>, ApiError> {
-    let (limit, offset) = pagination::limit_offset(&params);
+    Query(params): Query<SearchPaginationParams>,
+) -> Result<Json<PagedResponse<ArtistSummary>>, ApiError> {
+    let (limit, offset) = pagination::limit_offset(params.page, params.per_page);
+    let q = params.q.as_deref().filter(|s| !s.is_empty());
     let (artists, total) = tokio::try_join!(
-        queries::artists::list(&state.pool, limit, offset),
-        queries::artists::count(&state.pool),
+        queries::artists::search(&state.pool, q, limit, offset),
+        queries::artists::search_count(&state.pool, q),
     )?;
+
+    let artist_ids: Vec<Uuid> = artists.iter().map(|a| a.id).collect();
+    let mut artist_image_map = queries::artists::get_images_batch(&state.pool, &artist_ids).await?;
+
+    let items = artists
+        .into_iter()
+        .map(|a| {
+            let images = artist_image_map
+                .remove(&a.id)
+                .unwrap_or_default()
+                .into_iter()
+                .map(|(i, k)| image_info(i, k))
+                .collect();
+            ArtistSummary {
+                id: a.id,
+                name: a.name,
+                description: a.description,
+                images,
+            }
+        })
+        .collect();
+
     Ok(Json(PagedResponse {
-        items: artists.into_iter().map(convert::artist_response).collect(),
+        items,
         total,
         page: params.page,
         per_page: limit,
@@ -88,7 +175,7 @@ pub(crate) async fn get_artist(
     let artist = queries::artists::get_by_id(&state.pool, id)
         .await?
         .ok_or(ApiError::NotFound)?;
-    Ok(Json(convert::artist_response(artist)))
+    Ok(Json(hydrate(&state.pool, artist).await?))
 }
 
 #[utoipa::path(
@@ -111,16 +198,26 @@ pub(crate) async fn create_artist(
     if !auth.capabilities.contains(capabilities::ARTISTS_MANAGE_ANY) {
         return Err(ApiError::Forbidden);
     }
-    let mut conn = state.pool.acquire().await.map_err(DbError::Sqlx)?;
+    let image_pairs = image_pairs(&req.images);
+    let new_links = new_links(req.links);
+
+    let mut tx = state.pool.begin().await.map_err(DbError::Sqlx)?;
     let artist = queries::artists::create(
-        &mut conn,
+        &mut tx,
         &NewArtist {
             name: req.name,
             description: req.description,
         },
     )
     .await?;
-    Ok((StatusCode::CREATED, Json(convert::artist_response(artist))))
+    queries::artists::set_images(&mut tx, artist.id, &image_pairs).await?;
+    queries::artists::set_links(&mut tx, artist.id, &new_links).await?;
+    tx.commit().await.map_err(DbError::Sqlx)?;
+
+    Ok((
+        StatusCode::CREATED,
+        Json(hydrate(&state.pool, artist).await?),
+    ))
 }
 
 #[utoipa::path(
@@ -146,9 +243,12 @@ pub(crate) async fn update_artist(
     if !auth.capabilities.contains(capabilities::ARTISTS_MANAGE_ANY) {
         return Err(ApiError::Forbidden);
     }
-    let mut conn = state.pool.acquire().await.map_err(DbError::Sqlx)?;
+    let image_pairs = image_pairs(&req.images);
+    let new_links = new_links(req.links);
+
+    let mut tx = state.pool.begin().await.map_err(DbError::Sqlx)?;
     let artist = queries::artists::update(
-        &mut conn,
+        &mut tx,
         id,
         &UpdateArtist {
             name: req.name,
@@ -157,7 +257,11 @@ pub(crate) async fn update_artist(
     )
     .await?
     .ok_or(ApiError::NotFound)?;
-    Ok(Json(convert::artist_response(artist)))
+    queries::artists::set_images(&mut tx, id, &image_pairs).await?;
+    queries::artists::set_links(&mut tx, id, &new_links).await?;
+    tx.commit().await.map_err(DbError::Sqlx)?;
+
+    Ok(Json(hydrate(&state.pool, artist).await?))
 }
 
 #[utoipa::path(
