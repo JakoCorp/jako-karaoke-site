@@ -21,13 +21,11 @@ pub async fn get_by_id(
     executor: impl Executor<'_, Database = MySql>,
     id: Uuid,
 ) -> Result<Option<Song>> {
-    sqlx::query_as::<_, Song>(
-        "SELECT id, title, created_by, lyrics_id, date_added FROM songs WHERE id = ?",
-    )
-    .bind(id)
-    .fetch_optional(executor)
-    .await
-    .map_err(DbError::from)
+    sqlx::query_as::<_, Song>("SELECT id, title, created_by, lyrics_id FROM songs WHERE id = ?")
+        .bind(id)
+        .fetch_optional(executor)
+        .await
+        .map_err(DbError::from)
 }
 
 /// Returns the total number of songs.
@@ -39,15 +37,15 @@ pub async fn count(executor: impl Executor<'_, Database = MySql>) -> Result<u64>
         .map_err(DbError::from)
 }
 
-/// Returns a page of songs ordered by date added descending.
+/// Returns a page of songs ordered by ID descending.
 pub async fn list(
     executor: impl Executor<'_, Database = MySql>,
     limit: u32,
     offset: u32,
 ) -> Result<Vec<Song>> {
     sqlx::query_as::<_, Song>(
-        "SELECT id, title, created_by, lyrics_id, date_added \
-         FROM songs ORDER BY date_added DESC LIMIT ? OFFSET ?",
+        "SELECT id, title, created_by, lyrics_id \
+         FROM songs ORDER BY id DESC LIMIT ? OFFSET ?",
     )
     .bind(limit)
     .bind(offset)
@@ -56,7 +54,7 @@ pub async fn list(
     .map_err(DbError::from)
 }
 
-/// Returns songs matching an optional text query, ordered by date added descending.
+/// Returns songs matching an optional text query, ordered by ID descending.
 ///
 /// When `q` is `Some`, results are filtered by a case-insensitive substring match
 /// against the song title or any linked original artist name.
@@ -71,13 +69,13 @@ pub async fn search(
     };
     let pattern = format!("%{q}%");
     sqlx::query_as::<_, Song>(
-        "SELECT id, title, created_by, lyrics_id, date_added \
+        "SELECT id, title, created_by, lyrics_id \
          FROM songs WHERE id IN ( \
            SELECT id FROM songs WHERE title LIKE ? \
            UNION \
            SELECT soa.song_id FROM song_original_artists soa \
            JOIN artists a ON a.id = soa.artist_id WHERE a.name LIKE ? \
-         ) ORDER BY date_added DESC LIMIT ? OFFSET ?",
+         ) ORDER BY id DESC LIMIT ? OFFSET ?",
     )
     .bind(&pattern)
     .bind(&pattern)
@@ -117,7 +115,7 @@ pub async fn search_count(
 pub async fn create(conn: &mut MySqlConnection, new: &NewSong) -> Result<Song> {
     sqlx::query_as::<_, Song>(
         "INSERT INTO songs (title, created_by, lyrics_id) VALUES (?, ?, ?) \
-         RETURNING id, title, created_by, lyrics_id, date_added",
+         RETURNING id, title, created_by, lyrics_id",
     )
     .bind(&new.title)
     .bind(new.created_by)

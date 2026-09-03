@@ -4,7 +4,6 @@
 //! Updates use PUT semantics: all fields are required and missing optionals mean
 //! null or remove. Lyrics are managed separately via the `/lyrics` subresource.
 
-use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -55,7 +54,6 @@ pub struct SongRef {
 pub struct SongSummary {
     pub id: Uuid,
     pub title: String,
-    pub date_added: DateTime<Utc>,
     pub artists: Vec<ArtistInfo>,
 }
 
@@ -66,7 +64,6 @@ pub struct SongSummary {
 pub struct SongResponse {
     pub id: Uuid,
     pub title: String,
-    pub date_added: DateTime<Utc>,
     pub artists: Vec<ArtistInfo>,
     pub tags: Vec<TagInfo>,
     pub images: Vec<ImageInfo>,

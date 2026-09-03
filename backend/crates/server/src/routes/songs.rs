@@ -108,7 +108,6 @@ async fn hydrate(pool: &MySqlPool, song: db::models::Song) -> Result<SongRespons
     Ok(SongResponse {
         id: song.id,
         title: song.title,
-        date_added: song.date_added,
         artists,
         tags,
         images,
@@ -163,7 +162,6 @@ pub(crate) async fn list_songs(
             SongSummary {
                 id: s.id,
                 title: s.title,
-                date_added: s.date_added,
                 artists,
             }
         })

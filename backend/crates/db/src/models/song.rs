@@ -1,6 +1,5 @@
 //! Song model.
 
-use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -15,7 +14,6 @@ pub struct Song {
     /// User who created this song record. `None` if created by system.
     pub created_by: Option<Uuid>,
     pub lyrics_id: Option<Uuid>,
-    pub date_added: DateTime<Utc>,
 }
 
 /// Input for creating a new song.

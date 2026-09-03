@@ -3439,7 +3439,6 @@
               "required": [
                 "id",
                 "title",
-                "date_added",
                 "artists"
               ],
               "properties": {
@@ -3448,10 +3447,6 @@
                   "items": {
                     "$ref": "#/components/schemas/ArtistInfo"
                   }
-                },
-                "date_added": {
-                  "type": "string",
-                  "format": "date-time"
                 },
                 "id": {
                   "type": "string",
@@ -3767,7 +3762,6 @@
         "required": [
           "id",
           "title",
-          "date_added",
           "artists",
           "tags",
           "images"
@@ -3778,10 +3772,6 @@
             "items": {
               "$ref": "#/components/schemas/ArtistInfo"
             }
-          },
-          "date_added": {
-            "type": "string",
-            "format": "date-time"
           },
           "id": {
             "type": "string",
@@ -3810,7 +3800,6 @@
         "required": [
           "id",
           "title",
-          "date_added",
           "artists"
         ],
         "properties": {
@@ -3819,10 +3808,6 @@
             "items": {
               "$ref": "#/components/schemas/ArtistInfo"
             }
-          },
-          "date_added": {
-            "type": "string",
-            "format": "date-time"
           },
           "id": {
             "type": "string",

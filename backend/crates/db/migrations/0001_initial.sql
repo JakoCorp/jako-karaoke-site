@@ -120,10 +120,8 @@ CREATE TABLE IF NOT EXISTS songs (
     title VARCHAR(256) NOT NULL,
     created_by BINARY(16) NULL REFERENCES users (id) ON DELETE SET NULL,
     lyrics_id BINARY(16) NULL REFERENCES lyrics (id) ON DELETE SET NULL,
-    date_added DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
-    INDEX (title),
-    INDEX (date_added)
+    INDEX (title)
 ) ENGINE = InnoDB;
 
 -- Song <-> Image (M2M)
