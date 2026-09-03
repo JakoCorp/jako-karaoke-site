@@ -19,11 +19,12 @@ import { resolveTagAssignments } from "./tag-utils";
 
 export function PerformanceDetailPanel({
   performance,
-  onDeleted,
+  onClose,
 }: {
-  performance: PerformanceSummary;
-  onDeleted: () => void;
+  performance: PerformanceSummary | null;
+  onClose: () => void;
 }) {
+  const isCreating = performance === null;
   const [isEditing, setIsEditing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [editTitle, setEditTitle] = useState("");
@@ -31,18 +32,49 @@ export function PerformanceDetailPanel({
   const [editSongIds, setEditSongIds] = useState<string[]>([]);
   const [editSingerIds, setEditSingerIds] = useState<string[]>([]);
   const [editTags, setEditTags] = useState<TagAssignment<PerformanceTagKind>[]>([]);
-  const [updateError, setUpdateError] = useState<string | null>(null);
+  const [editLyrics, setEditLyrics] = useState("");
+  const [formError, setFormError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const queryClient = useQueryClient();
+  const isFormOpen = isCreating || isEditing;
 
-  const { data: performanceDetail } = usePerformance(performance.id);
-  const { data: allSongs } = useSongs({ per_page: 200 }, isEditing);
-  const { data: allArtists } = useArtists({ per_page: 200 }, isEditing);
-  const { data: allTags } = useTags(isEditing);
+  const { data: performanceDetail } = usePerformance(performance?.id ?? "", !isCreating);
+  const { data: allSongs } = useSongs({ per_page: 200 }, isFormOpen);
+  const { data: allArtists } = useArtists({ per_page: 200 }, isFormOpen);
+  const { data: allTags } = useTags(isFormOpen);
+
+  const createMutation = useMutation({
+    mutationFn: async () => {
+      const resolvedTags = await resolveTagAssignments(editTags, async (name) => {
+        const { data, error: tagError } = await tagsApi.create({ name });
+        if (tagError) throw tagError;
+        if (!data) throw new Error("Tag creation returned no data.");
+        return data.id;
+      });
+      const { error: apiError } = await performancesApi.create({
+        performance_date: new Date(editDate).toISOString(),
+        song_ids: editSongIds,
+        singer_ids: editSingerIds,
+        tags: resolvedTags,
+        title: editTitle.trim() !== "" ? editTitle.trim() : null,
+        lyrics: editLyrics.trim() !== "" ? editLyrics.trim() : null,
+      });
+      if (apiError) throw apiError;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: performanceKeys.all() });
+      void queryClient.invalidateQueries({ queryKey: tagKeys.all() });
+      onClose();
+    },
+    onError: () => {
+      setFormError("Failed to create performance.");
+    },
+  });
 
   const updateMutation = useMutation({
     mutationFn: async () => {
+      if (!performance) return;
       const resolvedTags = await resolveTagAssignments(editTags, async (name) => {
         const { data, error: tagError } = await tagsApi.create({ name });
         if (tagError) throw tagError;
@@ -62,21 +94,22 @@ export function PerformanceDetailPanel({
       void queryClient.invalidateQueries({ queryKey: performanceKeys.all() });
       void queryClient.invalidateQueries({ queryKey: tagKeys.all() });
       setIsEditing(false);
-      setUpdateError(null);
+      setFormError(null);
     },
     onError: () => {
-      setUpdateError("Failed to update performance.");
+      setFormError("Failed to update performance.");
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
+      if (!performance) return;
       const { error: apiError } = await performancesApi.delete(performance.id);
       if (apiError) throw apiError;
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: performanceKeys.all() });
-      onDeleted();
+      onClose();
     },
     onError: () => {
       setDeleteError("Failed to delete performance.");
@@ -96,13 +129,13 @@ export function PerformanceDetailPanel({
         kind: PERFORMANCE_TAG_KINDS.find((k) => k === tag.kind) ?? "misc",
       })),
     );
-    setUpdateError(null);
+    setFormError(null);
     setIsEditing(true);
   }
 
   function cancelEditing() {
     setIsEditing(false);
-    setUpdateError(null);
+    setFormError(null);
   }
 
   function toggleSong(songId: string) {
@@ -143,26 +176,36 @@ export function PerformanceDetailPanel({
     );
   }
 
-  const displayTitle = performance.title ?? formatDate(performance.performance_date);
-
-  if (isEditing) {
+  if (isFormOpen) {
+    const isPending = isCreating ? createMutation.isPending : updateMutation.isPending;
+    const displayTitle = isCreating
+      ? "New performance"
+      : (performance.title ?? formatDate(performance.performance_date));
     return (
       <>
         <div className="admin-panel-header">
           <h3 className="admin-panel-title">{displayTitle}</h3>
           <div className="admin-tag-confirm">
-            <button className="btn btn-secondary" type="button" onClick={cancelEditing}>
+            <button
+              className="btn btn-secondary"
+              type="button"
+              onClick={isCreating ? onClose : cancelEditing}
+            >
               Cancel
             </button>
             <button
               className="btn btn-primary"
               type="button"
-              disabled={updateMutation.isPending || editDate === ""}
+              disabled={isPending || editDate === ""}
               onClick={() => {
-                updateMutation.mutate();
+                if (isCreating) {
+                  createMutation.mutate();
+                } else {
+                  updateMutation.mutate();
+                }
               }}
             >
-              {updateMutation.isPending ? "Saving…" : "Save"}
+              {isPending ? (isCreating ? "Creating…" : "Saving…") : isCreating ? "Create" : "Save"}
             </button>
           </div>
         </div>
@@ -232,11 +275,29 @@ export function PerformanceDetailPanel({
             onRemove={removeTag}
             onKindChange={changeTagKind}
           />
-          {updateError !== null && <p className="form-error">{updateError}</p>}
+          {isCreating && (
+            <div className="form-field">
+              <label className="form-label" htmlFor="perf-lyrics">
+                Lyrics (optional)
+              </label>
+              <textarea
+                id="perf-lyrics"
+                className="form-input admin-textarea"
+                value={editLyrics}
+                onChange={(event) => {
+                  setEditLyrics(event.target.value);
+                }}
+                rows={4}
+              />
+            </div>
+          )}
+          {formError !== null && <p className="form-error">{formError}</p>}
         </div>
       </>
     );
   }
+
+  const displayTitle = performance.title ?? formatDate(performance.performance_date);
 
   return (
     <>

@@ -20,7 +20,7 @@ export function usePerformances(params?: PerformanceListParams) {
   });
 }
 
-export function usePerformance(id: string) {
+export function usePerformance(id: string, enabled = true) {
   return useQuery({
     queryKey: performanceKeys.detail(id),
     queryFn: async () => {
@@ -28,5 +28,6 @@ export function usePerformance(id: string) {
       if (error) throw error;
       return data;
     },
+    enabled,
   });
 }
