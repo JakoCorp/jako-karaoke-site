@@ -52,6 +52,7 @@ impl ArtistLinkKind {
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct ArtistImageInfo {
     pub id: Uuid,
+    /// Publicly served URL for clients.
     pub public_url: String,
     pub credits: Option<String>,
     pub kind: String,

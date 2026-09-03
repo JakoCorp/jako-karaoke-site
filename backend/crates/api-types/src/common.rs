@@ -25,6 +25,7 @@ pub struct TagInfo {
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct ImageInfo {
     pub id: Uuid,
+    /// Publicly served URL for clients.
     pub public_url: String,
     pub credits: Option<String>,
 }
@@ -33,6 +34,7 @@ pub struct ImageInfo {
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct MediaInfo {
     pub id: Uuid,
+    /// Publicly served URL for clients.
     pub public_url: String,
 }
 

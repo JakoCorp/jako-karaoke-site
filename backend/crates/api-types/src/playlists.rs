@@ -53,6 +53,7 @@ pub struct PlaylistResponse {
     pub description: Option<String>,
     pub kind: PlaylistKind,
     pub is_public: bool,
+    /// User who created this playlist. `None` for system generated playlists.
     pub created_by: Option<Uuid>,
 }
 

@@ -22,7 +22,9 @@ pub struct Performance {
     /// Offset in seconds from the start of the stream.
     pub stream_time: Option<u32>,
     pub performance_date: NaiveDate,
+    /// Stream index within `performance_date`, 1-based.
     pub stream_number: u8,
+    /// Performance index within `performance_date` + `stream_number`, 1-based.
     pub performance_number: u16,
 }
 
@@ -37,7 +39,9 @@ pub struct NewPerformance {
     /// Offset in seconds from the start of the stream.
     pub stream_time: Option<u32>,
     pub performance_date: NaiveDate,
+    /// Stream index within `performance_date`, 1-based.
     pub stream_number: u8,
+    /// Performance index within `performance_date` + `stream_number`, 1-based.
     pub performance_number: u16,
 }
 
@@ -53,6 +57,8 @@ pub struct UpdatePerformance {
     /// Offset in seconds from the start of the stream.
     pub stream_time: Option<u32>,
     pub performance_date: NaiveDate,
+    /// Stream index within `performance_date`, 1-based.
     pub stream_number: u8,
+    /// Performance index within `performance_date` + `stream_number`, 1-based.
     pub performance_number: u16,
 }
