@@ -1,6 +1,6 @@
 //! Performance model.
 
-use chrono::{DateTime, Utc};
+use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -19,7 +19,11 @@ pub struct Performance {
     pub play_count: i32,
     /// Duration in seconds.
     pub duration: Option<u32>,
-    pub performance_date: DateTime<Utc>,
+    /// Offset in seconds from the start of the stream.
+    pub stream_time: Option<u32>,
+    pub performance_date: NaiveDate,
+    pub stream_number: u8,
+    pub performance_number: u16,
 }
 
 /// Input for creating a new performance.
@@ -30,7 +34,11 @@ pub struct NewPerformance {
     pub lyrics_id: Option<Uuid>,
     /// Duration in seconds.
     pub duration: Option<u32>,
-    pub performance_date: DateTime<Utc>,
+    /// Offset in seconds from the start of the stream.
+    pub stream_time: Option<u32>,
+    pub performance_date: NaiveDate,
+    pub stream_number: u8,
+    pub performance_number: u16,
 }
 
 /// Input for replacing a performance's mutable scalar fields.
@@ -42,5 +50,9 @@ pub struct UpdatePerformance {
     pub title: Option<String>,
     /// Duration in seconds.
     pub duration: Option<u32>,
-    pub performance_date: DateTime<Utc>,
+    /// Offset in seconds from the start of the stream.
+    pub stream_time: Option<u32>,
+    pub performance_date: NaiveDate,
+    pub stream_number: u8,
+    pub performance_number: u16,
 }

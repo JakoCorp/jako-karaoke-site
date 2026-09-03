@@ -162,9 +162,13 @@ CREATE TABLE IF NOT EXISTS performances (
     lyrics_id BINARY(16) NULL REFERENCES lyrics (id) ON DELETE SET NULL,
     play_count INT NOT NULL DEFAULT 0,
     duration INT UNSIGNED NULL,
-    performance_date DATETIME NOT NULL,
+    stream_time INT UNSIGNED NULL,
+    performance_date DATE NOT NULL,
+    stream_number TINYINT UNSIGNED NOT NULL,
+    performance_number SMALLINT UNSIGNED NOT NULL,
     PRIMARY KEY (id),
-    INDEX (performance_date)
+    INDEX (performance_date),
+    UNIQUE INDEX (performance_date, stream_number, performance_number)
 ) ENGINE = InnoDB;
 
 -- Performance <-> Song (M2M)

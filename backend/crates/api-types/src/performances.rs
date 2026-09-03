@@ -4,7 +4,7 @@
 //! Updates use PUT semantics: all fields are required and missing optionals mean
 //! null or remove. Lyrics are managed separately via the `/lyrics` subresource.
 
-use chrono::{DateTime, Utc};
+use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -24,9 +24,13 @@ pub struct PerformanceTagAssignment {
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct CreatePerformanceRequest {
     pub title: Option<String>,
-    pub performance_date: DateTime<Utc>,
+    pub performance_date: NaiveDate,
+    pub stream_number: u8,
+    pub performance_number: u16,
     /// Duration in seconds.
     pub duration: Option<u32>,
+    /// Offset in seconds from the start of the stream.
+    pub stream_time: Option<u32>,
     pub song_ids: Vec<Uuid>,
     pub singer_ids: Vec<Uuid>,
     pub tags: Vec<PerformanceTagAssignment>,
@@ -40,9 +44,13 @@ pub struct CreatePerformanceRequest {
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct UpdatePerformanceRequest {
     pub title: Option<String>,
-    pub performance_date: DateTime<Utc>,
+    pub performance_date: NaiveDate,
+    pub stream_number: u8,
+    pub performance_number: u16,
     /// Duration in seconds.
     pub duration: Option<u32>,
+    /// Offset in seconds from the start of the stream.
+    pub stream_time: Option<u32>,
     pub song_ids: Vec<Uuid>,
     pub singer_ids: Vec<Uuid>,
     pub tags: Vec<PerformanceTagAssignment>,
@@ -58,7 +66,9 @@ pub struct PerformanceSummary {
     pub play_count: i32,
     /// Duration in seconds.
     pub duration: Option<u32>,
-    pub performance_date: DateTime<Utc>,
+    pub performance_date: NaiveDate,
+    pub stream_number: u8,
+    pub performance_number: u16,
     pub singers: Vec<ArtistInfo>,
     pub songs: Vec<SongRef>,
 }
@@ -73,7 +83,11 @@ pub struct PerformanceResponse {
     pub play_count: i32,
     /// Duration in seconds.
     pub duration: Option<u32>,
-    pub performance_date: DateTime<Utc>,
+    /// Offset in seconds from the start of the stream.
+    pub stream_time: Option<u32>,
+    pub performance_date: NaiveDate,
+    pub stream_number: u8,
+    pub performance_number: u16,
     pub songs: Vec<SongSummary>,
     pub singers: Vec<ArtistInfo>,
     pub tags: Vec<TagInfo>,
