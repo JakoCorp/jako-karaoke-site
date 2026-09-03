@@ -25,7 +25,9 @@ pub struct PerformanceTagAssignment {
 pub struct CreatePerformanceRequest {
     pub title: Option<String>,
     pub performance_date: NaiveDate,
+    /// Stream index within `performance_date`, 1-based.
     pub stream_number: u8,
+    /// Performance index within `performance_date` + `stream_number`, 1-based.
     pub performance_number: u16,
     /// Duration in seconds.
     pub duration: Option<u32>,
@@ -45,7 +47,9 @@ pub struct CreatePerformanceRequest {
 pub struct UpdatePerformanceRequest {
     pub title: Option<String>,
     pub performance_date: NaiveDate,
+    /// Stream index within `performance_date`, 1-based.
     pub stream_number: u8,
+    /// Performance index within `performance_date` + `stream_number`, 1-based.
     pub performance_number: u16,
     /// Duration in seconds.
     pub duration: Option<u32>,
@@ -67,7 +71,9 @@ pub struct PerformanceSummary {
     /// Duration in seconds.
     pub duration: Option<u32>,
     pub performance_date: NaiveDate,
+    /// Stream index within `performance_date`, 1-based.
     pub stream_number: u8,
+    /// Performance index within `performance_date` + `stream_number`, 1-based.
     pub performance_number: u16,
     pub singers: Vec<ArtistInfo>,
     pub songs: Vec<SongRef>,
@@ -86,7 +92,9 @@ pub struct PerformanceResponse {
     /// Offset in seconds from the start of the stream.
     pub stream_time: Option<u32>,
     pub performance_date: NaiveDate,
+    /// Stream index within `performance_date`, 1-based.
     pub stream_number: u8,
+    /// Performance index within `performance_date` + `stream_number`, 1-based.
     pub performance_number: u16,
     pub songs: Vec<SongSummary>,
     pub singers: Vec<ArtistInfo>,

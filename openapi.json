@@ -2753,7 +2753,8 @@
             "type": "string"
           },
           "public_url": {
-            "type": "string"
+            "type": "string",
+            "description": "Publicly served URL for clients."
           }
         }
       },
@@ -3012,6 +3013,7 @@
           "performance_number": {
             "type": "integer",
             "format": "int32",
+            "description": "Performance index within `performance_date` + `stream_number`, 1-based.",
             "minimum": 0
           },
           "singer_ids": {
@@ -3031,6 +3033,7 @@
           "stream_number": {
             "type": "integer",
             "format": "int32",
+            "description": "Stream index within `performance_date`, 1-based.",
             "minimum": 0
           },
           "stream_time": {
@@ -3196,7 +3199,8 @@
             "format": "uuid"
           },
           "public_url": {
-            "type": "string"
+            "type": "string",
+            "description": "Publicly served URL for clients."
           }
         }
       },
@@ -3250,7 +3254,8 @@
             "format": "uuid"
           },
           "public_url": {
-            "type": "string"
+            "type": "string",
+            "description": "Publicly served URL for clients."
           }
         }
       },
@@ -3362,6 +3367,7 @@
                 "performance_number": {
                   "type": "integer",
                   "format": "int32",
+                  "description": "Performance index within `performance_date` + `stream_number`, 1-based.",
                   "minimum": 0
                 },
                 "play_count": {
@@ -3383,6 +3389,7 @@
                 "stream_number": {
                   "type": "integer",
                   "format": "int32",
+                  "description": "Stream index within `performance_date`, 1-based.",
                   "minimum": 0
                 },
                 "title": {
@@ -3518,6 +3525,7 @@
           "performance_number": {
             "type": "integer",
             "format": "int32",
+            "description": "Performance index within `performance_date` + `stream_number`, 1-based.",
             "minimum": 0
           },
           "play_count": {
@@ -3539,6 +3547,7 @@
           "stream_number": {
             "type": "integer",
             "format": "int32",
+            "description": "Stream index within `performance_date`, 1-based.",
             "minimum": 0
           },
           "stream_time": {
@@ -3612,6 +3621,7 @@
           "performance_number": {
             "type": "integer",
             "format": "int32",
+            "description": "Performance index within `performance_date` + `stream_number`, 1-based.",
             "minimum": 0
           },
           "play_count": {
@@ -3633,6 +3643,7 @@
           "stream_number": {
             "type": "integer",
             "format": "int32",
+            "description": "Stream index within `performance_date`, 1-based.",
             "minimum": 0
           },
           "title": {
@@ -3693,7 +3704,8 @@
               "string",
               "null"
             ],
-            "format": "uuid"
+            "format": "uuid",
+            "description": "User who created this playlist. `None` for system generated playlists."
           },
           "description": {
             "type": [
@@ -3967,6 +3979,7 @@
           "performance_number": {
             "type": "integer",
             "format": "int32",
+            "description": "Performance index within `performance_date` + `stream_number`, 1-based.",
             "minimum": 0
           },
           "singer_ids": {
@@ -3986,6 +3999,7 @@
           "stream_number": {
             "type": "integer",
             "format": "int32",
+            "description": "Stream index within `performance_date`, 1-based.",
             "minimum": 0
           },
           "stream_time": {
