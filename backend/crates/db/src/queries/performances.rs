@@ -22,7 +22,7 @@ pub async fn get_by_id(
     id: Uuid,
 ) -> Result<Option<Performance>> {
     sqlx::query_as::<_, Performance>(
-        "SELECT id, created_by, title, lyrics_id, play_count, duration, \
+        "SELECT id, created_by, title, lyrics_id, play_count, duration, stream_time, \
          performance_date, stream_number, performance_number \
          FROM performances WHERE id = ?",
     )
@@ -56,7 +56,7 @@ pub async fn search(
     let sql = if q.is_some() {
         format!(
             "SELECT id, created_by, title, lyrics_id, play_count, duration, \
-             performance_date, stream_number, performance_number \
+             performance_date, stream_number, performance_number, stream_time \
              FROM performances WHERE id IN ( \
                SELECT id FROM performances WHERE title LIKE ? \
                UNION \
@@ -69,7 +69,7 @@ pub async fn search(
         )
     } else {
         format!(
-            "SELECT id, created_by, title, lyrics_id, play_count, duration, \
+            "SELECT id, created_by, title, lyrics_id, play_count, duration, stream_time, \
              performance_date, stream_number, performance_number \
              FROM performances ORDER BY {order_by} LIMIT ? OFFSET ?"
         )
@@ -174,15 +174,16 @@ pub async fn get_songs_batch(
 pub async fn create(conn: &mut MySqlConnection, new: &NewPerformance) -> Result<Performance> {
     sqlx::query_as::<_, Performance>(
         "INSERT INTO performances \
-         (created_by, title, lyrics_id, duration, performance_date, stream_number, performance_number) \
-         VALUES (?, ?, ?, ?, ?, ?, ?) \
-         RETURNING id, created_by, title, lyrics_id, play_count, duration, \
+         (created_by, title, lyrics_id, duration, stream_time, performance_date, stream_number, performance_number) \
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?) \
+         RETURNING id, created_by, title, lyrics_id, play_count, duration, stream_time, \
          performance_date, stream_number, performance_number",
     )
     .bind(new.created_by)
     .bind(&new.title)
     .bind(new.lyrics_id)
     .bind(new.duration)
+    .bind(new.stream_time)
     .bind(new.performance_date)
     .bind(new.stream_number)
     .bind(new.performance_number)
@@ -199,12 +200,13 @@ pub async fn update(
 ) -> Result<Option<Performance>> {
     sqlx::query(
         "UPDATE performances \
-         SET title = ?, duration = ?, performance_date = ?, \
+         SET title = ?, duration = ?, stream_time = ?, performance_date = ?, \
          stream_number = ?, performance_number = ? \
          WHERE id = ?",
     )
     .bind(&upd.title)
     .bind(upd.duration)
+    .bind(upd.stream_time)
     .bind(upd.performance_date)
     .bind(upd.stream_number)
     .bind(upd.performance_number)

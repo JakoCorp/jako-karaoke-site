@@ -275,6 +275,7 @@ async fn hydrate(
         title: perf.title,
         play_count: perf.play_count,
         duration: perf.duration,
+        stream_time: perf.stream_time,
         performance_date: perf.performance_date,
         stream_number: perf.stream_number,
         performance_number: perf.performance_number,
@@ -413,6 +414,7 @@ pub(crate) async fn create_performance(
             title: req.title,
             lyrics_id,
             duration: req.duration,
+            stream_time: req.stream_time,
             performance_date: req.performance_date,
             stream_number: req.stream_number,
             performance_number: req.performance_number,
@@ -464,6 +466,7 @@ pub(crate) async fn update_performance(
         &UpdatePerformance {
             title: req.title,
             duration: req.duration,
+            stream_time: req.stream_time,
             performance_date: req.performance_date,
             stream_number: req.stream_number,
             performance_number: req.performance_number,

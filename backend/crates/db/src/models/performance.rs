@@ -19,6 +19,8 @@ pub struct Performance {
     pub play_count: i32,
     /// Duration in seconds.
     pub duration: Option<u32>,
+    /// Offset in seconds from the start of the stream.
+    pub stream_time: Option<u32>,
     pub performance_date: NaiveDate,
     pub stream_number: u8,
     pub performance_number: u16,
@@ -32,6 +34,8 @@ pub struct NewPerformance {
     pub lyrics_id: Option<Uuid>,
     /// Duration in seconds.
     pub duration: Option<u32>,
+    /// Offset in seconds from the start of the stream.
+    pub stream_time: Option<u32>,
     pub performance_date: NaiveDate,
     pub stream_number: u8,
     pub performance_number: u16,
@@ -46,6 +50,8 @@ pub struct UpdatePerformance {
     pub title: Option<String>,
     /// Duration in seconds.
     pub duration: Option<u32>,
+    /// Offset in seconds from the start of the stream.
+    pub stream_time: Option<u32>,
     pub performance_date: NaiveDate,
     pub stream_number: u8,
     pub performance_number: u16,

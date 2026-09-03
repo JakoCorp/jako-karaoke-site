@@ -29,6 +29,8 @@ pub struct CreatePerformanceRequest {
     pub performance_number: u16,
     /// Duration in seconds.
     pub duration: Option<u32>,
+    /// Offset in seconds from the start of the stream.
+    pub stream_time: Option<u32>,
     pub song_ids: Vec<Uuid>,
     pub singer_ids: Vec<Uuid>,
     pub tags: Vec<PerformanceTagAssignment>,
@@ -47,6 +49,8 @@ pub struct UpdatePerformanceRequest {
     pub performance_number: u16,
     /// Duration in seconds.
     pub duration: Option<u32>,
+    /// Offset in seconds from the start of the stream.
+    pub stream_time: Option<u32>,
     pub song_ids: Vec<Uuid>,
     pub singer_ids: Vec<Uuid>,
     pub tags: Vec<PerformanceTagAssignment>,
@@ -79,6 +83,8 @@ pub struct PerformanceResponse {
     pub play_count: i32,
     /// Duration in seconds.
     pub duration: Option<u32>,
+    /// Offset in seconds from the start of the stream.
+    pub stream_time: Option<u32>,
     pub performance_date: NaiveDate,
     pub stream_number: u8,
     pub performance_number: u16,

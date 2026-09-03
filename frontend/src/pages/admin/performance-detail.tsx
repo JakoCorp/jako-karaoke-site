@@ -12,7 +12,7 @@ import { useArtists } from "@/hooks/api/artists";
 import { performanceKeys, usePerformance } from "@/hooks/api/performances";
 import { useSongs } from "@/hooks/api/songs";
 import { tagKeys, useTags } from "@/hooks/api/tags";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatStreamTime, parseStreamTime } from "@/lib/format";
 
 import { ItemPicker, TagPicker, type TagAssignment } from "./pickers";
 import { resolveTagAssignments } from "./tag-utils";
@@ -31,6 +31,7 @@ export function PerformanceDetailPanel({
   const [editDate, setEditDate] = useState("");
   const [editStreamNumber, setEditStreamNumber] = useState(1);
   const [editPerformanceNumber, setEditPerformanceNumber] = useState(1);
+  const [editStreamTimeInput, setEditStreamTimeInput] = useState("");
   const [editSongIds, setEditSongIds] = useState<string[]>([]);
   const [editSingerIds, setEditSingerIds] = useState<string[]>([]);
   const [editTags, setEditTags] = useState<TagAssignment<PerformanceTagKind>[]>([]);
@@ -58,6 +59,7 @@ export function PerformanceDetailPanel({
         performance_date: editDate,
         stream_number: editStreamNumber,
         performance_number: editPerformanceNumber,
+        stream_time: parseStreamTime(editStreamTimeInput) ?? undefined,
         song_ids: editSongIds,
         singer_ids: editSingerIds,
         tags: resolvedTags,
@@ -89,6 +91,7 @@ export function PerformanceDetailPanel({
         performance_date: editDate,
         stream_number: editStreamNumber,
         performance_number: editPerformanceNumber,
+        stream_time: parseStreamTime(editStreamTimeInput) ?? undefined,
         song_ids: editSongIds,
         singer_ids: editSingerIds,
         tags: resolvedTags,
@@ -128,6 +131,9 @@ export function PerformanceDetailPanel({
     setEditDate(performanceDetail.performance_date);
     setEditStreamNumber(performanceDetail.stream_number);
     setEditPerformanceNumber(performanceDetail.performance_number);
+    setEditStreamTimeInput(
+      performanceDetail.stream_time != null ? formatStreamTime(performanceDetail.stream_time) : "",
+    );
     setEditSongIds(performanceDetail.songs.map((song) => song.id));
     setEditSingerIds(performanceDetail.singers.map((singer) => singer.id));
     setEditTags(
@@ -266,6 +272,21 @@ export function PerformanceDetailPanel({
             />
           </div>
           <div className="form-field">
+            <label className="form-label" htmlFor="perf-edit-stream-time">
+              Stream time (optional)
+            </label>
+            <input
+              id="perf-edit-stream-time"
+              className="form-input"
+              type="text"
+              placeholder="1:23:45"
+              value={editStreamTimeInput}
+              onChange={(event) => {
+                setEditStreamTimeInput(event.target.value);
+              }}
+            />
+          </div>
+          <div className="form-field">
             <label className="form-label" htmlFor="perf-edit-title">
               Title (optional)
             </label>
@@ -398,6 +419,8 @@ export function PerformanceDetailPanel({
             <span className="admin-detail-label">Stream</span>
             <span className="admin-empty">
               S{performanceDetail.stream_number} #{performanceDetail.performance_number}
+              {performanceDetail.stream_time != null &&
+                ` · ${formatStreamTime(performanceDetail.stream_time)}`}
             </span>
           </div>
           {performanceDetail.songs.length > 0 && (

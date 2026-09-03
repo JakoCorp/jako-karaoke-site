@@ -162,6 +162,7 @@ CREATE TABLE IF NOT EXISTS performances (
     lyrics_id BINARY(16) NULL REFERENCES lyrics (id) ON DELETE SET NULL,
     play_count INT NOT NULL DEFAULT 0,
     duration INT UNSIGNED NULL,
+    stream_time INT UNSIGNED NULL,
     performance_date DATE NOT NULL,
     stream_number TINYINT UNSIGNED NOT NULL,
     performance_number SMALLINT UNSIGNED NOT NULL,
