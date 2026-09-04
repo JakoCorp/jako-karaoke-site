@@ -3,10 +3,14 @@
 use std::sync::Arc;
 
 use db::MySqlPool;
-use oauth2::basic::BasicClient;
+use oauth2::{EndpointNotSet, EndpointSet, basic::BasicClient};
 
 use crate::config::Config;
 use crate::storage::FileStore;
+
+/// OAuth2 client with both auth URI and token URI configured.
+pub(crate) type OAuthClient =
+    BasicClient<EndpointSet, EndpointNotSet, EndpointNotSet, EndpointNotSet, EndpointSet>;
 
 /// Shared state injected into all Axum route handlers via [`axum::extract::State`].
 ///
@@ -17,7 +21,7 @@ pub struct AppState {
     pub pool: MySqlPool,
     pub store: FileStore,
     pub config: Config,
-    pub twitch_oauth: Arc<BasicClient>,
-    pub discord_oauth: Arc<BasicClient>,
+    pub twitch_oauth: Arc<OAuthClient>,
+    pub discord_oauth: Arc<OAuthClient>,
     pub http_client: reqwest::Client,
 }

@@ -14,14 +14,14 @@ axum-extra = { version = "0.12", features = ["cookie"] }
 chrono = { version = "0.4", features = ["serde"] }
 cookie = "0.18"
 db = { path = "crates/db" }
+getrandom = "0.4"
 hex = "0.4"
 mime_guess = "2"
-oauth2 = "4"
-rand_core = "0.6"
-reqwest = { version = "0.12", features = ["json"] }
+oauth2 = "5"
+reqwest = { version = "0.13", features = ["json", "form"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-sha2 = "0.10"
+sha2 = "0.11"
 sqlx = { version = "0.9", features = [
     "runtime-tokio",
     "tls-rustls-ring",
@@ -33,7 +33,7 @@ sqlx = { version = "0.9", features = [
 thiserror = "2"
 time = "0.3"
 tokio = { version = "1", features = ["full"] }
-tower-http = { version = "0.6", features = ["cors", "trace"] }
+tower-http = { version = "0.7", features = ["cors", "trace"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 utoipa = { version = "5", features = ["chrono", "uuid"] }
