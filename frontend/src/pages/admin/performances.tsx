@@ -13,6 +13,7 @@ export function PerformancesAdminTab() {
   const [selectedPerformance, setSelectedPerformance] = useState<PerformanceSummary | null>(null);
   const [creating, setCreating] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [importKey, setImportKey] = useState(0);
 
   const debouncedQuery = useDebounced(searchInput.trim());
 
@@ -53,6 +54,7 @@ export function PerformancesAdminTab() {
             className="btn btn-secondary"
             style={{ width: "100%" }}
             onClick={() => {
+              setImportKey((k) => k + 1);
               setImportOpen(true);
             }}
           >
@@ -103,6 +105,7 @@ export function PerformancesAdminTab() {
       </div>
 
       <ImportPerformancesDialog
+        key={importKey}
         open={importOpen}
         onClose={() => {
           setImportOpen(false);

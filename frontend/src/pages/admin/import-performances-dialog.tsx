@@ -1,6 +1,6 @@
 import { Dialog } from "@base-ui/react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
 import { artistsApi } from "@/api/artists";
 import { performancesApi, type PerformanceTagKind } from "@/api/performances";
@@ -121,14 +121,6 @@ export function ImportPerformancesDialog({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [state, setState] = useState<ImportPhase>({ phase: "idle" });
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (open) {
-      setState({ phase: "idle" });
-      setSelectedFileName(null);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  }, [open]);
 
   function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
