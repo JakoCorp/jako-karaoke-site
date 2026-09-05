@@ -53,7 +53,11 @@ export function ArtistsAdminTab() {
           {artists.map((artist) => (
             <li key={artist.id}>
               <button
-                className={`admin-user-item${selectedArtist?.id === artist.id && !creating ? " admin-user-item--active" : ""}`}
+                className={
+                  selectedArtist?.id === artist.id && !creating
+                    ? "admin-user-item admin-user-item--active"
+                    : "admin-user-item"
+                }
                 onClick={() => {
                   setCreating(false);
                   setSelectedArtist(artist);

@@ -69,7 +69,11 @@ export function PerformancesAdminTab() {
           {performances.map((performance) => (
             <li key={performance.id}>
               <button
-                className={`admin-user-item${selectedPerformance?.id === performance.id && !creating ? " admin-user-item--active" : ""}`}
+                className={
+                  selectedPerformance?.id === performance.id && !creating
+                    ? "admin-user-item admin-user-item--active"
+                    : "admin-user-item"
+                }
                 onClick={() => {
                   setCreating(false);
                   setSelectedPerformance(performance);

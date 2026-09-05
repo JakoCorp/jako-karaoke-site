@@ -226,7 +226,7 @@ export function ImportPerformancesDialog({
                     className="form-input"
                     style={{
                       flex: 1,
-                      color: selectedFileName ? "var(--color-text)" : "var(--color-text-muted)",
+                      color: selectedFileName ? "var(--color-fg)" : "var(--color-fg-muted)",
                     }}
                   >
                     {selectedFileName ?? "No file chosen"}

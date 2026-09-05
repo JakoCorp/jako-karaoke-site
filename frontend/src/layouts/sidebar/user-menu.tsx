@@ -28,7 +28,7 @@ export function UserMenu() {
           <Popover.Popup className="account-popup">
             <p className="account-popup-user">@{user.username}</p>
             {hasCapability("capabilities:manage") && (
-              <Link to="/admin" className="btn btn-secondary w-full">
+              <Link to="/admin" className="btn w-full btn-secondary">
                 Admin
               </Link>
             )}
@@ -36,7 +36,7 @@ export function UserMenu() {
               onClick={() => {
                 void handleLogout();
               }}
-              className="btn btn-secondary w-full"
+              className="btn w-full btn-secondary"
             >
               Sign Out
             </button>

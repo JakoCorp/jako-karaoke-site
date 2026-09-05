@@ -428,7 +428,7 @@ export function PerformanceDetailPanel({
               <span className="admin-detail-label">Songs</span>
               <div className="admin-pills">
                 {performanceDetail.songs.map((song) => (
-                  <span key={song.id} className="admin-pill admin-pill--display">
+                  <span key={song.id} className="admin-pill-display">
                     {song.title}
                   </span>
                 ))}
@@ -440,7 +440,7 @@ export function PerformanceDetailPanel({
               <span className="admin-detail-label">Singers</span>
               <div className="admin-pills">
                 {performanceDetail.singers.map((singer) => (
-                  <span key={singer.id} className="admin-pill admin-pill--display">
+                  <span key={singer.id} className="admin-pill-display">
                     {singer.name}
                   </span>
                 ))}
@@ -452,7 +452,7 @@ export function PerformanceDetailPanel({
               <span className="admin-detail-label">Tags</span>
               <div className="admin-pills">
                 {performanceDetail.tags.map((tag) => (
-                  <span key={tag.id} className="admin-pill admin-pill--display">
+                  <span key={tag.id} className="admin-pill-display">
                     {tag.name}
                     <span className="admin-pill-kind">{tag.kind}</span>
                   </span>

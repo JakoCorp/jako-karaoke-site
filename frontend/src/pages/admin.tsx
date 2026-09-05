@@ -41,7 +41,7 @@ export function AdminPage() {
         {visibleTabs.map((tab) => (
           <button
             key={tab.id}
-            className={`admin-tab${activeTab === tab.id ? " admin-tab--active" : ""}`}
+            className={activeTab === tab.id ? "admin-tab admin-tab--active" : "admin-tab"}
             onClick={() => {
               setActiveTab(tab.id);
             }}

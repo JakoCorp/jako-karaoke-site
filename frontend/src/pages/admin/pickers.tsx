@@ -147,7 +147,7 @@ export function TagPicker<K extends string>({
             <div key={key} className="admin-tag-selection">
               <button
                 type="button"
-                className={`admin-pill${isPending ? " admin-pill--pending" : ""}`}
+                className={isPending ? "admin-pill admin-pill--pending" : "admin-pill"}
                 onClick={() => {
                   onRemove(key);
                 }}

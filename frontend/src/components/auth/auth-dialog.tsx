@@ -20,14 +20,14 @@ export function AuthDialog() {
           <Dialog.Close className="dialog-close" aria-label="Close">
             <XIcon size={16} />
           </Dialog.Close>
-          <div className="flex flex-col gap-4">
+          <div className="admin-dialog-form">
             <Dialog.Title className="text-base font-semibold">Sign In</Dialog.Title>
-            <div className="flex flex-col gap-2">
-              <a href="/auth/twitch" className="btn btn-secondary oauth-btn">
+            <div className="admin-link-list">
+              <a href="/auth/twitch" className="btn oauth-btn btn-secondary">
                 <img src={twitchIcon} alt="" className="h-4.5 w-auto shrink-0" />
                 Continue with Twitch
               </a>
-              <a href="/auth/discord" className="btn btn-secondary oauth-btn">
+              <a href="/auth/discord" className="btn oauth-btn btn-secondary">
                 <img src={discordIcon} alt="" className="h-4.5 w-auto shrink-0" />
                 Continue with Discord
               </a>

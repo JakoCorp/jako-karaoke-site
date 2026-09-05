@@ -251,7 +251,7 @@ export function SearchPage() {
             return (
               <button
                 key={pageNum}
-                className={`page-btn${pageNum === page ? " page-btn--active" : ""}`}
+                className={pageNum === page ? "page-btn page-btn--active" : "page-btn"}
                 onClick={() => {
                   updateSearch({ page: pageNum });
                 }}
@@ -289,7 +289,9 @@ function SortHeader({ label, field, sort, sortDir, onSort }: SortHeaderProps) {
   const isActive = sort === field;
   return (
     <button
-      className={`perf-header-sort-btn${isActive ? " perf-header-sort-btn--active" : ""}`}
+      className={
+        isActive ? "perf-header-sort-btn perf-header-sort-btn--active" : "perf-header-sort-btn"
+      }
       onClick={() => onSort(field)}
       aria-label={
         isActive

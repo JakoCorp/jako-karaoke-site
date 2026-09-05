@@ -45,7 +45,7 @@ export function PerformanceRow({ performance }: Props) {
   return (
     <div className="perf-row">
       <button
-        className={`perf-row-play${isCurrent ? " perf-row-play--active" : ""}`}
+        className={isCurrent ? "perf-row-play perf-row-play--active" : "perf-row-play"}
         onClick={handlePlay}
         aria-label={isActive ? "Pause" : "Play"}
       >

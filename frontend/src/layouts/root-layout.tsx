@@ -21,7 +21,7 @@ export function RootLayout() {
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar />
-      <main className="flex-1 overflow-y-auto bg-neutral-100">
+      <main className="flex-1 overflow-y-auto bg-canvas">
         <Outlet />
       </main>
     </div>
