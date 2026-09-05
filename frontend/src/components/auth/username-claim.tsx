@@ -59,7 +59,7 @@ export function UsernameClaim() {
         <Dialog.Popup className="dialog-popup">
           <div className="admin-dialog-form">
             <Dialog.Title className="text-base font-semibold">Choose a username</Dialog.Title>
-            <p className="text-sm" style={{ color: "var(--color-fg-muted)" }}>
+            <p className="text-sm text-fg-muted">
               This is how you&apos;ll appear on the site. You can keep your provider handle or pick
               something new.
             </p>

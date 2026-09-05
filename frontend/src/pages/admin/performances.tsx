@@ -27,12 +27,11 @@ export function PerformancesAdminTab() {
   return (
     <div className="admin-layout">
       <div className="admin-panel">
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+        <div className="form-field">
           <div className="admin-panel-header">
             <input
               type="search"
-              className="form-input"
-              style={{ flex: 1 }}
+              className="form-input flex-1"
               placeholder="Search performances…"
               value={searchInput}
               onChange={(event) => {
@@ -51,8 +50,7 @@ export function PerformancesAdminTab() {
             </button>
           </div>
           <button
-            className="btn btn-secondary"
-            style={{ width: "100%" }}
+            className="btn w-full btn-secondary"
             onClick={() => {
               setImportKey((k) => k + 1);
               setImportOpen(true);
