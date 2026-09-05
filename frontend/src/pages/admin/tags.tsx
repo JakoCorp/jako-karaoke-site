@@ -60,8 +60,7 @@ export function TagsAdminTab() {
       <div className="admin-panel-header">
         <input
           type="search"
-          className="form-input"
-          style={{ flex: 1 }}
+          className="form-input flex-1"
           placeholder="Search tags…"
           value={search}
           onChange={(event) => {

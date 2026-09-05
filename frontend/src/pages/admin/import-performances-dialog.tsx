@@ -213,21 +213,17 @@ export function ImportPerformancesDialog({
                 <label className="form-label" htmlFor="import-csv-file">
                   CSV file
                 </label>
-                <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                <div className="admin-link-row">
                   <button
                     type="button"
-                    className="btn btn-secondary"
-                    style={{ flexShrink: 0 }}
+                    className="btn shrink-0 btn-secondary"
                     onClick={() => fileInputRef.current?.click()}
                   >
                     Choose file
                   </button>
                   <span
-                    className="form-input"
-                    style={{
-                      flex: 1,
-                      color: selectedFileName ? "var(--color-text)" : "var(--color-text-muted)",
-                    }}
+                    className="form-input flex-1"
+                    style={{ color: selectedFileName ? undefined : "var(--color-fg-muted)" }}
                   >
                     {selectedFileName ?? "No file chosen"}
                   </span>
@@ -237,13 +233,7 @@ export function ImportPerformancesDialog({
                   ref={fileInputRef}
                   type="file"
                   accept=".csv"
-                  style={{
-                    position: "absolute",
-                    width: 0,
-                    height: 0,
-                    opacity: 0,
-                    overflow: "hidden",
-                  }}
+                  className="absolute size-0 overflow-hidden opacity-0"
                   onChange={handleFileChange}
                 />
               </div>

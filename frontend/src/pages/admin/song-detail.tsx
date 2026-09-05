@@ -274,7 +274,7 @@ export function SongDetailPanel({
               <span className="admin-detail-label">Artists</span>
               <div className="admin-pills">
                 {songDetail.artists.map((artist) => (
-                  <span key={artist.id} className="admin-pill admin-pill--display">
+                  <span key={artist.id} className="admin-pill-display">
                     {artist.name}
                   </span>
                 ))}
@@ -286,7 +286,7 @@ export function SongDetailPanel({
               <span className="admin-detail-label">Tags</span>
               <div className="admin-pills">
                 {songDetail.tags.map((tag) => (
-                  <span key={tag.id} className="admin-pill admin-pill--display">
+                  <span key={tag.id} className="admin-pill-display">
                     {tag.name}
                     <span className="admin-pill-kind">{tag.kind}</span>
                   </span>

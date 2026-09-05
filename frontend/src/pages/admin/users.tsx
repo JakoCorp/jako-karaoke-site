@@ -78,7 +78,11 @@ export function UsersAdminTab() {
           {userResults?.map((u) => (
             <li key={u.id}>
               <button
-                className={`admin-user-item${selectedUser?.id === u.id ? " admin-user-item--active" : ""}`}
+                className={
+                  selectedUser?.id === u.id
+                    ? "admin-user-item admin-user-item--active"
+                    : "admin-user-item"
+                }
                 onClick={() => {
                   setSelectedUser(u);
                 }}

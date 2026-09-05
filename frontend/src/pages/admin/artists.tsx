@@ -26,8 +26,7 @@ export function ArtistsAdminTab() {
         <div className="admin-panel-header">
           <input
             type="search"
-            className="form-input"
-            style={{ flex: 1 }}
+            className="form-input flex-1"
             placeholder="Search artists…"
             value={searchInput}
             onChange={(event) => {
@@ -53,7 +52,11 @@ export function ArtistsAdminTab() {
           {artists.map((artist) => (
             <li key={artist.id}>
               <button
-                className={`admin-user-item${selectedArtist?.id === artist.id && !creating ? " admin-user-item--active" : ""}`}
+                className={
+                  selectedArtist?.id === artist.id && !creating
+                    ? "admin-user-item admin-user-item--active"
+                    : "admin-user-item"
+                }
                 onClick={() => {
                   setCreating(false);
                   setSelectedArtist(artist);

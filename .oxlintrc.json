@@ -16,14 +16,20 @@
     "promise",
     "jsdoc"
   ],
+  "jsPlugins": [
+    "eslint-plugin-better-tailwindcss"
+  ],
   "settings": {
+    "better-tailwindcss": {
+      "entryPoint": "src/index.css"
+    },
     "jsdoc": {
       "ignorePrivate": true
     }
   },
   "categories": {
     "correctness": "error",
-    "suspicious": "error"
+    "suspicious": "error",
   },
   "rules": {
     "max-lines-per-function": "off",
@@ -34,11 +40,22 @@
     "import/no-unassigned-import": ["error", { "allow": ["**/*.css"] }],
     "typescript/no-floating-promises": "error",
     "typescript/no-misused-promises": "error",
+
     "jsdoc/check-tag-names": "error",
     "jsdoc/require-param-name": "error",
     "jsdoc/require-param-description": "warn",
     "jsdoc/require-returns-description": "warn",
     "jsdoc/no-blank-blocks": "warn",
-    "jsdoc/require-property-type": "off"
+    "jsdoc/require-property-type": "off",
+
+    "better-tailwindcss/enforce-consistent-line-wrapping": "off", // Conflicts with oxfmt
+    "better-tailwindcss/enforce-consistent-class-order": "warn",
+    "better-tailwindcss/enforce-canonical-classes": "warn",
+    "better-tailwindcss/no-duplicate-classes": "warn",
+    "better-tailwindcss/no-deprecated-classes": "warn",
+    "better-tailwindcss/no-unnecessary-whitespace": "warn",
+    "better-tailwindcss/no-concatenated-classes": "error",
+    "better-tailwindcss/no-unknown-classes": "error",
+    "better-tailwindcss/no-conflicting-classes": "error"
   }
 }
