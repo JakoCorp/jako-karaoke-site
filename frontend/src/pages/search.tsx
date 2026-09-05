@@ -88,11 +88,13 @@ export function SearchPage() {
   const perPage = searchState.per_page ?? 20;
 
   const [inputValue, setInputValue] = useState(q);
+  const [prevQ, setPrevQ] = useState(q);
   const debouncedInput = useDebounced(inputValue);
 
-  useEffect(() => {
-    setInputValue(decodeSearchState(searchParams.get("query") ?? "").q ?? "");
-  }, [searchParams]);
+  if (q !== prevQ) {
+    setPrevQ(q);
+    setInputValue(q);
+  }
 
   useEffect(() => {
     setSearchParams(

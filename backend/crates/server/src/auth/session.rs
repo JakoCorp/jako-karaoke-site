@@ -5,7 +5,6 @@
 
 use chrono::{Duration, Utc};
 use cookie::{Cookie, SameSite};
-use rand_core::{OsRng, RngCore};
 use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
@@ -18,14 +17,14 @@ const SESSION_MAX_AGE: time::Duration = time::Duration::days(SESSION_DAYS);
 /// Generates a cryptographically random 64-char hex token.
 pub(crate) fn generate_token() -> String {
     let mut bytes = [0u8; TOKEN_BYTES];
-    OsRng.fill_bytes(&mut bytes);
+    getrandom::fill(&mut bytes).expect("OS RNG failed");
     hex::encode(bytes)
 }
 
 /// Creates a new session for `user_id` and returns the raw token to store in the cookie.
 pub async fn issue(pool: &MySqlPool, user_id: Uuid) -> Result<String, DbError> {
     let mut bytes = [0u8; TOKEN_BYTES];
-    OsRng.fill_bytes(&mut bytes);
+    getrandom::fill(&mut bytes).expect("OS RNG failed");
     let token = hex::encode(bytes);
     let expires_at = Utc::now() + Duration::days(SESSION_DAYS);
     queries::sessions::create(pool, &hash(&token), user_id, expires_at).await?;

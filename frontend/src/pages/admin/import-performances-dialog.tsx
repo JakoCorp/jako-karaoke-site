@@ -1,6 +1,6 @@
 import { Dialog } from "@base-ui/react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
 import { artistsApi } from "@/api/artists";
 import { performancesApi, type PerformanceTagKind } from "@/api/performances";
@@ -122,14 +122,6 @@ export function ImportPerformancesDialog({
   const [state, setState] = useState<ImportPhase>({ phase: "idle" });
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (open) {
-      setState({ phase: "idle" });
-      setSelectedFileName(null);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  }, [open]);
-
   function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -179,7 +171,7 @@ export function ImportPerformancesDialog({
       });
       if (error) {
         const message =
-          error && typeof error === "object" && "error" in error
+          typeof error === "object" && error !== null && "error" in error
             ? String((error as { error: unknown }).error)
             : `Failed on performance ${String(i + 1)}.`;
         setState({ phase: "import_error", message, done: i, total: resolved.length });
