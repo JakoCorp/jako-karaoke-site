@@ -171,7 +171,7 @@ export function ImportPerformancesDialog({
       });
       if (error) {
         const message =
-          typeof error === "object" && error !== null && "error" in error
+          typeof error === "object" && "error" in error
             ? String((error as { error: unknown }).error)
             : `Failed on performance ${String(i + 1)}.`;
         setState({ phase: "import_error", message, done: i, total: resolved.length });
