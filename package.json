@@ -15,6 +15,7 @@
   },
   "devDependencies": {
     "@j178/prek": "^0.5.2",
+    "eslint-plugin-better-tailwindcss": "^4.7.0",
     "oxfmt": "^0.66.0",
     "oxlint": "^1.81.0",
     "oxlint-tsgolint": "^7.0.2001",
