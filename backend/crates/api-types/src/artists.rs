@@ -106,6 +106,10 @@ pub struct ArtistResponse {
     pub description: Option<String>,
     pub images: Vec<ArtistImageInfo>,
     pub links: Vec<ArtistLinkInfo>,
+    /// Number of songs for which this artist is credited as an original artist.
+    pub song_count: u64,
+    /// Number of performances in which this artist appears as a singer.
+    pub performance_count: u64,
 }
 
 /// Request body for `POST /api/artists`.

@@ -135,9 +135,10 @@ fn link_info(link: db::models::ArtistLink) -> ArtistLinkInfo {
 }
 
 async fn hydrate(pool: &MySqlPool, artist: db::models::Artist) -> Result<ArtistResponse, ApiError> {
-    let (raw_images, links) = tokio::try_join!(
+    let (raw_images, links, performance_count) = tokio::try_join!(
         queries::artists::get_images(pool, artist.id),
         queries::artists::get_links(pool, artist.id),
+        queries::artists::performance_count(pool, artist.id),
     )?;
     Ok(ArtistResponse {
         id: artist.id,
@@ -148,6 +149,8 @@ async fn hydrate(pool: &MySqlPool, artist: db::models::Artist) -> Result<ArtistR
             .map(|(i, k)| image_info(i, k))
             .collect(),
         links: links.into_iter().map(link_info).collect(),
+        song_count: artist.song_count as u64,
+        performance_count,
     })
 }
 

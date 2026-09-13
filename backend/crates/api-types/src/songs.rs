@@ -99,4 +99,6 @@ pub struct SongResponse {
     pub artists: Vec<ArtistInfo>,
     pub tags: Vec<TagInfo>,
     pub images: Vec<SongImageInfo>,
+    /// Number of performances that reference this song.
+    pub performance_count: u64,
 }
