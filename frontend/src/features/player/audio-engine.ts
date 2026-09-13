@@ -39,7 +39,7 @@ export class NativeAudioEngine implements AudioEngine {
 
   stop(): void {
     this.audio.pause();
-    this.audio.src = "";
+    this.audio.currentTime = 0;
   }
 
   seek(time: number): void {

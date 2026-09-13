@@ -25,7 +25,7 @@ export function useAudioPlayback(): PlaybackProgress {
   const volume = usePlayerStore((s) => s.volume);
   const hasNext = usePlayerStore(selectHasNext);
   const next = usePlayerStore((s) => s.next);
-  const stop = usePlayerStore((s) => s.stop);
+  const pause = usePlayerStore((s) => s.pause);
 
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -48,7 +48,7 @@ export function useAudioPlayback(): PlaybackProgress {
       if (hasNext) {
         next();
       } else {
-        stop();
+        pause();
       }
     });
 
@@ -56,10 +56,10 @@ export function useAudioPlayback(): PlaybackProgress {
       if (hasNext) {
         next();
       } else {
-        stop();
+        pause();
       }
     });
-  }, [hasNext, next, stop]);
+  }, [hasNext, next, pause]);
 
   useEffect(() => {
     const engine = engineRef.current;
@@ -82,6 +82,22 @@ export function useAudioPlayback(): PlaybackProgress {
       engine.pause();
     }
   }, [currentAudioUrl, isPlaying]);
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    if (isPlaying && currentAudioUrl === null) {
+      timer = setTimeout(() => {
+        if (hasNext) {
+          next();
+        } else {
+          pause();
+        }
+      }, 3000); // Delay moving to next song by 3 sec if on empty
+    }
+
+    return () => clearTimeout(timer);
+  }, [isPlaying, currentAudioUrl, hasNext, next, pause]);
 
   useEffect(() => {
     const engine = engineRef.current;
