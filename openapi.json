@@ -4205,6 +4205,7 @@
                 "id",
                 "title",
                 "artists",
+                "images",
                 "performance_count"
               ],
               "properties": {
@@ -4217,6 +4218,12 @@
                 "id": {
                   "type": "string",
                   "format": "uuid"
+                },
+                "images": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SongImageInfo"
+                  }
                 },
                 "performance_count": {
                   "type": "integer",
@@ -4622,6 +4629,7 @@
           "id",
           "title",
           "artists",
+          "images",
           "performance_count"
         ],
         "properties": {
@@ -4634,6 +4642,12 @@
           "id": {
             "type": "string",
             "format": "uuid"
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SongImageInfo"
+            }
           },
           "performance_count": {
             "type": "integer",

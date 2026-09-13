@@ -348,6 +348,62 @@ pub async fn get_images(
     })
 }
 
+/// Returns images for multiple songs, keyed by song ID.
+///
+/// Songs with no images are absent from the returned map.
+pub async fn get_images_batch(
+    executor: impl Executor<'_, Database = MySql>,
+    song_ids: &[Uuid],
+) -> Result<HashMap<Uuid, Vec<(Image, String)>>> {
+    if song_ids.is_empty() {
+        return Ok(HashMap::new());
+    }
+
+    #[derive(sqlx::FromRow)]
+    struct Row {
+        song_id: Uuid,
+        id: Uuid,
+        hash: String,
+        public_url: String,
+        internal_path: Option<String>,
+        credits: Option<String>,
+        kind: String,
+    }
+
+    let mut builder = sqlx::QueryBuilder::new(
+        "SELECT si.song_id, i.id, i.hash, i.public_url, i.internal_path, i.credits, si.kind \
+         FROM images i \
+         JOIN song_images si ON si.image_id = i.id \
+         WHERE si.song_id IN (",
+    );
+    let mut separated = builder.separated(", ");
+    for song_id in song_ids {
+        separated.push_bind(song_id);
+    }
+    builder.push(")");
+
+    let rows: Vec<Row> = builder
+        .build_query_as()
+        .fetch_all(executor)
+        .await
+        .map_err(DbError::from)?;
+
+    let mut by_song: HashMap<Uuid, Vec<(Image, String)>> = HashMap::new();
+    for row in rows {
+        by_song.entry(row.song_id).or_default().push((
+            Image {
+                id: row.id,
+                hash: row.hash,
+                public_url: row.public_url,
+                internal_path: row.internal_path,
+                credits: row.credits,
+            },
+            row.kind,
+        ));
+    }
+    Ok(by_song)
+}
+
 /// Inserts a single `song_images` join row.
 pub async fn link_image(
     conn: &mut MySqlConnection,

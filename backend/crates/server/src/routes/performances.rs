@@ -20,7 +20,7 @@ use api_types::{
         PerformanceTagAssignment, UpdateAudioKindRequest, UpdatePerformanceRequest,
         UpdateVideoKindRequest, VideoInfo, VideoKind,
     },
-    songs::{SongRef, SongSummary},
+    songs::{SongImageInfo, SongRef, SongSummary},
     tags::PerformanceTagKind,
 };
 use db::{
@@ -243,13 +243,30 @@ async fn hydrate(
         queries::performance_videos::list_for_performance(pool, perf.id),
     )?;
 
+    let song_ids: Vec<Uuid> = songs.iter().map(|s| s.id).collect();
+    let mut images_by_song = queries::songs::get_images_batch(pool, &song_ids).await?;
+
     let songs = songs
         .into_iter()
-        .map(|s| SongSummary {
-            id: s.id,
-            title: s.title,
-            artists: vec![],
-            performance_count: 0,
+        .map(|s| {
+            let images = images_by_song
+                .remove(&s.id)
+                .unwrap_or_default()
+                .into_iter()
+                .map(|(i, kind)| SongImageInfo {
+                    id: i.id,
+                    public_url: i.public_url,
+                    credits: i.credits,
+                    kind,
+                })
+                .collect();
+            SongSummary {
+                id: s.id,
+                title: s.title,
+                artists: vec![],
+                images,
+                performance_count: 0,
+            }
         })
         .collect();
 
