@@ -1,32 +1,53 @@
 import { create } from "zustand";
 
-/** A performance queued for playback. Properties are readonly, update via store actions. */
-export interface QueuedPerformance {
-  readonly id: string;
-  readonly title: string | null;
-  readonly singers: readonly { readonly id: string; readonly name: string }[];
-  readonly duration: number | null;
-  readonly audioUrl: string | null;
-}
+import type { PerformanceSummary } from "@/api/performances";
+
+/** The context from which the current queue was initiated. */
+export type QueueSource =
+  | { readonly type: "search" }
+  | { readonly type: "playlist"; readonly id: string; readonly name: string }
+  | { readonly type: "single" };
 
 interface PlayerState {
-  current: QueuedPerformance | null;
-  isPlaying: boolean;
-  volume: number;
-  play: (performance: QueuedPerformance) => void;
+  readonly queue: readonly PerformanceSummary[];
+  readonly queueIndex: number;
+  readonly queueSource: QueueSource | null;
+  readonly isPlaying: boolean;
+  readonly volume: number;
+  playQueue: (
+    performances: readonly PerformanceSummary[],
+    startIndex: number,
+    source: QueueSource,
+  ) => void;
+  next: () => void;
+  prev: () => void;
   pause: () => void;
   resume: () => void;
   stop: () => void;
   setVolume: (volume: number) => void;
 }
 
-/** Global player store. Manages the currently playing performance and playback state. */
-export const usePlayerStore = create<PlayerState>((set) => ({
-  current: null,
+/** Global player store. Manages the queue, playback position, and playback state. */
+export const usePlayerStore = create<PlayerState>((set, get) => ({
+  queue: [],
+  queueIndex: -1,
+  queueSource: null,
   isPlaying: false,
   volume: 1,
-  play: (performance) => {
-    set({ current: performance, isPlaying: true });
+  playQueue: (performances, startIndex, source) => {
+    set({ queue: performances, queueIndex: startIndex, queueSource: source, isPlaying: true });
+  },
+  next: () => {
+    const { queueIndex, queue } = get();
+    if (queueIndex < queue.length - 1) {
+      set({ queueIndex: queueIndex + 1 });
+    }
+  },
+  prev: () => {
+    const { queueIndex } = get();
+    if (queueIndex > 0) {
+      set({ queueIndex: queueIndex - 1 });
+    }
   },
   pause: () => {
     set({ isPlaying: false });
@@ -35,9 +56,20 @@ export const usePlayerStore = create<PlayerState>((set) => ({
     set({ isPlaying: true });
   },
   stop: () => {
-    set({ current: null, isPlaying: false });
+    set({ queue: [], queueIndex: -1, queueSource: null, isPlaying: false });
   },
   setVolume: (volume) => {
     set({ volume });
   },
 }));
+
+/** Returns the currently active performance, or null if the queue is empty. */
+export const selectCurrent = (s: PlayerState): PerformanceSummary | null =>
+  s.queueIndex >= 0 ? (s.queue[s.queueIndex] ?? null) : null;
+
+/** True when there is a next track in the queue. */
+export const selectHasNext = (s: PlayerState): boolean =>
+  s.queueIndex >= 0 && s.queueIndex < s.queue.length - 1;
+
+/** True when there is a previous track in the queue. */
+export const selectHasPrev = (s: PlayerState): boolean => s.queueIndex > 0;

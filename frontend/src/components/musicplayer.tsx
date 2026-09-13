@@ -13,13 +13,17 @@ import {
   CornersOutIcon,
 } from "@phosphor-icons/react";
 
-import { usePlayerStore } from "@/store/player";
+import { selectCurrent, selectHasNext, selectHasPrev, usePlayerStore } from "@/store/player";
 
 export function MusicPlayer() {
-  const current = usePlayerStore((s) => s.current);
+  const current = usePlayerStore(selectCurrent);
   const isPlaying = usePlayerStore((s) => s.isPlaying);
   const pause = usePlayerStore((s) => s.pause);
   const resume = usePlayerStore((s) => s.resume);
+  const next = usePlayerStore((s) => s.next);
+  const prev = usePlayerStore((s) => s.prev);
+  const hasNext = usePlayerStore(selectHasNext);
+  const hasPrev = usePlayerStore(selectHasPrev);
   const volume = usePlayerStore((s) => s.volume);
   const setVolume = usePlayerStore((s) => s.setVolume);
 
@@ -47,7 +51,15 @@ export function MusicPlayer() {
             <ShuffleIcon size={18} />
           </button>
 
-          <button type="button" className="player-btn" aria-label="Previous">
+          <button
+            type="button"
+            className="player-btn"
+            aria-label="Previous"
+            disabled={!hasPrev}
+            onClick={() => {
+              prev();
+            }}
+          >
             <SkipBackIcon size={18} weight="fill" />
           </button>
 
@@ -64,7 +76,15 @@ export function MusicPlayer() {
             )}
           </button>
 
-          <button type="button" className="player-btn" aria-label="Next">
+          <button
+            type="button"
+            className="player-btn"
+            aria-label="Next"
+            disabled={!hasNext}
+            onClick={() => {
+              next();
+            }}
+          >
             <SkipForwardIcon size={18} weight="fill" />
           </button>
 
