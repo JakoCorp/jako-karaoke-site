@@ -14,6 +14,8 @@ interface PlayerState {
   readonly queueSource: QueueSource | null;
   readonly isPlaying: boolean;
   readonly volume: number;
+  readonly currentAudioUrl: string | null;
+  readonly currentThumbnailUrl: string | null;
   playQueue: (
     performances: readonly PerformanceSummary[],
     startIndex: number,
@@ -26,6 +28,8 @@ interface PlayerState {
   resume: () => void;
   stop: () => void;
   setVolume: (volume: number) => void;
+  setCurrentAudioUrl: (url: string | null) => void;
+  setCurrentThumbnailUrl: (url: string | null) => void;
 }
 
 /** Global player store. Manages the queue, playback position, and playback state. */
@@ -35,25 +39,34 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   queueSource: null,
   isPlaying: false,
   volume: 1,
+  currentAudioUrl: null,
+  currentThumbnailUrl: null,
   playQueue: (performances, startIndex, source) => {
-    set({ queue: performances, queueIndex: startIndex, queueSource: source, isPlaying: true });
+    set({
+      queue: performances,
+      queueIndex: startIndex,
+      queueSource: source,
+      isPlaying: true,
+      currentAudioUrl: null,
+      currentThumbnailUrl: null,
+    });
   },
   jumpTo: (index) => {
     const { queue } = get();
     if (index >= 0 && index < queue.length) {
-      set({ queueIndex: index, isPlaying: true });
+      set({ queueIndex: index, isPlaying: true, currentAudioUrl: null, currentThumbnailUrl: null });
     }
   },
   next: () => {
     const { queueIndex, queue } = get();
     if (queueIndex < queue.length - 1) {
-      set({ queueIndex: queueIndex + 1 });
+      set({ queueIndex: queueIndex + 1, currentAudioUrl: null, currentThumbnailUrl: null });
     }
   },
   prev: () => {
     const { queueIndex } = get();
     if (queueIndex > 0) {
-      set({ queueIndex: queueIndex - 1 });
+      set({ queueIndex: queueIndex - 1, currentAudioUrl: null, currentThumbnailUrl: null });
     }
   },
   pause: () => {
@@ -63,10 +76,23 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     set({ isPlaying: true });
   },
   stop: () => {
-    set({ queue: [], queueIndex: -1, queueSource: null, isPlaying: false });
+    set({
+      queue: [],
+      queueIndex: -1,
+      queueSource: null,
+      isPlaying: false,
+      currentAudioUrl: null,
+      currentThumbnailUrl: null,
+    });
   },
   setVolume: (volume) => {
     set({ volume });
+  },
+  setCurrentAudioUrl: (url) => {
+    set({ currentAudioUrl: url });
+  },
+  setCurrentThumbnailUrl: (url) => {
+    set({ currentThumbnailUrl: url });
   },
 }));
 

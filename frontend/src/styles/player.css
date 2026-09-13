@@ -12,6 +12,7 @@
   height: 4rem;
   width: 4rem;
   flex-shrink: 0;
+  object-fit: cover;
   background-color: var(--color-player-thumbnail-bg);
 }
 

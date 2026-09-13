@@ -15,8 +15,11 @@ import {
 import { selectCurrent, selectHasNext, selectHasPrev, usePlayerStore } from "@/store/player";
 
 import { QueuePopup } from "./queue-popup";
+import { useCurrentTrackResolver } from "./use-current-track-resolver";
 
 export function MusicPlayer() {
+  useCurrentTrackResolver();
+
   const current = usePlayerStore(selectCurrent);
   const isPlaying = usePlayerStore((s) => s.isPlaying);
   const pause = usePlayerStore((s) => s.pause);
@@ -27,6 +30,7 @@ export function MusicPlayer() {
   const hasPrev = usePlayerStore(selectHasPrev);
   const volume = usePlayerStore((s) => s.volume);
   const setVolume = usePlayerStore((s) => s.setVolume);
+  const currentThumbnailUrl = usePlayerStore((s) => s.currentThumbnailUrl);
 
   if (!current) return null;
 
@@ -36,7 +40,11 @@ export function MusicPlayer() {
   return (
     <div id="music-player" className="player-bar">
       <div id="song-info" className="flex min-w-0 items-center gap-4 pl-2">
-        <div className="player-thumbnail" />
+        {currentThumbnailUrl ? (
+          <img src={currentThumbnailUrl} alt="" className="player-thumbnail" />
+        ) : (
+          <div className="player-thumbnail" />
+        )}
         <div className="min-w-0">
           <p className="player-title">{title}</p>
           <p className="player-artist">{artists}</p>
