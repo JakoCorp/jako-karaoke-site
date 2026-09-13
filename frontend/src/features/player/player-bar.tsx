@@ -7,13 +7,14 @@ import {
   SkipBackIcon,
   SkipForwardIcon,
   SpeakerHighIcon,
-  QueueIcon,
   InfoIcon,
   ClockCountdownIcon,
   CornersOutIcon,
 } from "@phosphor-icons/react";
 
 import { selectCurrent, selectHasNext, selectHasPrev, usePlayerStore } from "@/store/player";
+
+import { QueuePopup } from "./queue-popup";
 
 export function MusicPlayer() {
   const current = usePlayerStore(selectCurrent);
@@ -110,9 +111,7 @@ export function MusicPlayer() {
           <InfoIcon size={20} />
         </button>
 
-        <button type="button" className="player-btn" aria-label="Queue">
-          <QueueIcon size={20} />
-        </button>
+        <QueuePopup />
 
         <div id="volume-control" className="player-volume-control">
           <button type="button" className="player-btn hidden lg:flex" aria-label="Volume">

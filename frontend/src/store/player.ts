@@ -19,6 +19,7 @@ interface PlayerState {
     startIndex: number,
     source: QueueSource,
   ) => void;
+  jumpTo: (index: number) => void;
   next: () => void;
   prev: () => void;
   pause: () => void;
@@ -36,6 +37,12 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   volume: 1,
   playQueue: (performances, startIndex, source) => {
     set({ queue: performances, queueIndex: startIndex, queueSource: source, isPlaying: true });
+  },
+  jumpTo: (index) => {
+    const { queue } = get();
+    if (index >= 0 && index < queue.length) {
+      set({ queueIndex: index, isPlaying: true });
+    }
   },
   next: () => {
     const { queueIndex, queue } = get();
