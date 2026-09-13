@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Outlet } from "react-router";
 
 import { authApi } from "@/api/auth";
-import { MusicPlayer } from "@/components/musicplayer";
+import { MusicPlayer } from "@/features/player";
 import { useAuthStore } from "@/store/auth";
 
 import { HeaderMobile } from "./header-mobile";
