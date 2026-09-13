@@ -11,14 +11,20 @@ import {
   ClockCountdownIcon,
   CornersOutIcon,
 } from "@phosphor-icons/react";
+import { useState } from "react";
 
+import { formatDuration } from "@/lib/format";
 import { selectCurrent, selectHasNext, selectHasPrev, usePlayerStore } from "@/store/player";
 
 import { QueuePopup } from "./queue-popup";
+import { useAudioPlayback } from "./use-audio-playback";
 import { useCurrentTrackResolver } from "./use-current-track-resolver";
 
 export function MusicPlayer() {
   useCurrentTrackResolver();
+  const { currentTime, duration, seek } = useAudioPlayback();
+  const [isSeeking, setIsSeeking] = useState(false);
+  const [seekValue, setSeekValue] = useState(0);
 
   const current = usePlayerStore(selectCurrent);
   const isPlaying = usePlayerStore((s) => s.isPlaying);
@@ -103,10 +109,30 @@ export function MusicPlayer() {
         </div>
 
         <div id="progress-control" className="hidden w-full max-w-xl items-center gap-3 lg:flex">
-          <span className="w-10 text-right player-time">0:00</span>
+          <span className="w-10 text-right player-time">
+            {formatDuration(isSeeking ? seekValue : currentTime)}
+          </span>
 
-          <input type="range" min="0" max="100" defaultValue="0" className="player-range" />
-          <span className="w-10 player-time">0:00</span>
+          <input
+            type="range"
+            min="0"
+            max={duration > 0 ? duration : 1}
+            step="0.5"
+            value={isSeeking ? seekValue : currentTime}
+            onChange={(e) => {
+              setSeekValue(e.target.valueAsNumber);
+            }}
+            onPointerDown={() => {
+              setIsSeeking(true);
+              setSeekValue(currentTime);
+            }}
+            onPointerUp={(e) => {
+              seek(e.currentTarget.valueAsNumber);
+              setIsSeeking(false);
+            }}
+            className="player-range"
+          />
+          <span className="w-10 player-time">{formatDuration(duration)}</span>
         </div>
       </div>
 
