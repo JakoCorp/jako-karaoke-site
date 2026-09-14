@@ -4,6 +4,7 @@ import {
   PauseIcon,
   PlayIcon,
   RepeatIcon,
+  RepeatOnceIcon,
   SkipBackIcon,
   SkipForwardIcon,
   SpeakerHighIcon,
@@ -39,6 +40,8 @@ export function MusicPlayer() {
   const currentThumbnailUrl = usePlayerStore((s) => s.currentThumbnailUrl);
   const shuffleEnabled = usePlayerStore((s) => s.shuffleEnabled);
   const toggleShuffle = usePlayerStore((s) => s.toggleShuffle);
+  const repeatMode = usePlayerStore((s) => s.repeatMode);
+  const cycleRepeatMode = usePlayerStore((s) => s.cycleRepeatMode);
 
   if (!current) return null;
 
@@ -114,8 +117,17 @@ export function MusicPlayer() {
             <SkipForwardIcon size={18} weight="fill" />
           </button>
 
-          <button type="button" className="player-btn hidden md:flex" aria-label="Repeat">
-            <RepeatIcon size={18} />
+          <button
+            type="button"
+            className={
+              repeatMode !== "none"
+                ? "player-btn hidden player-btn--active md:flex"
+                : "player-btn hidden md:flex"
+            }
+            aria-label="Repeat"
+            onClick={cycleRepeatMode}
+          >
+            {repeatMode === "one" ? <RepeatOnceIcon size={18} /> : <RepeatIcon size={18} />}
           </button>
         </div>
 

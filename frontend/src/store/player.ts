@@ -2,6 +2,8 @@ import { create } from "zustand";
 
 import type { PerformanceSummary } from "@/api/performances";
 
+export type RepeatMode = "none" | "all" | "one";
+
 /** The context from which the current queue was initiated. */
 export type QueueSource =
   | { readonly type: "search" }
@@ -17,6 +19,7 @@ interface PlayerState {
   readonly currentAudioUrl: string | null;
   readonly currentThumbnailUrl: string | null;
   readonly shuffleEnabled: boolean;
+  readonly repeatMode: RepeatMode;
   playQueue: (
     performances: readonly PerformanceSummary[],
     startIndex: number,
@@ -32,6 +35,7 @@ interface PlayerState {
   setCurrentAudioUrl: (url: string | null) => void;
   setCurrentThumbnailUrl: (url: string | null) => void;
   toggleShuffle: () => void;
+  cycleRepeatMode: () => void;
 }
 
 /** Global player store. Manages the queue, playback position, and playback state. */
@@ -44,6 +48,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   currentAudioUrl: null,
   currentThumbnailUrl: null,
   shuffleEnabled: false,
+  repeatMode: "none",
   playQueue: (performances, startIndex, source) => {
     set({
       queue: performances,
@@ -61,7 +66,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     }
   },
   next: () => {
-    const { queue, queueIndex, shuffleEnabled } = get();
+    const { queue, queueIndex, shuffleEnabled, repeatMode } = get();
     if (queue.length === 0) return;
 
     if (shuffleEnabled && queue.length > 1) {
@@ -83,12 +88,16 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
         currentThumbnailUrl: null,
         isPlaying: true,
       });
+    } else if (repeatMode === "all") {
+      set({ queueIndex: 0, currentAudioUrl: null, currentThumbnailUrl: null, isPlaying: true });
     }
   },
   prev: () => {
-    const { queueIndex } = get();
+    const { queueIndex, queue, repeatMode } = get();
     if (queueIndex > 0) {
       set({ queueIndex: queueIndex - 1, currentAudioUrl: null, currentThumbnailUrl: null });
+    } else if (repeatMode === "all" && queue.length > 0) {
+      set({ queueIndex: queue.length - 1, currentAudioUrl: null, currentThumbnailUrl: null });
     }
   },
   pause: () => {
@@ -119,6 +128,11 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   toggleShuffle: () => {
     set((s) => ({ shuffleEnabled: !s.shuffleEnabled }));
   },
+  cycleRepeatMode: () => {
+    set((s) => ({
+      repeatMode: s.repeatMode === "none" ? "all" : s.repeatMode === "all" ? "one" : "none",
+    }));
+  },
 }));
 
 /** Returns the currently active performance, or null if the queue is empty. */
@@ -128,9 +142,14 @@ export const selectCurrent = (s: PlayerState): PerformanceSummary | null =>
 /** True when the next action will advance playback. */
 export const selectHasNext = (s: PlayerState): boolean => {
   if (s.queue.length === 0 || s.queueIndex < 0) return false;
+  if (s.repeatMode === "all") return true;
   if (s.shuffleEnabled && s.queue.length > 1) return true;
   return s.queueIndex < s.queue.length - 1;
 };
 
-/** True when there is a previous track in the queue. */
-export const selectHasPrev = (s: PlayerState): boolean => s.queueIndex > 0;
+/** True when there is a previous track or the current track can be rewound. */
+export const selectHasPrev = (s: PlayerState): boolean => {
+  if (s.queueIndex < 0) return false;
+  if (s.repeatMode === "all") return true;
+  return s.queueIndex > 0;
+};

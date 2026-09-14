@@ -26,6 +26,7 @@ export function useAudioPlayback(): PlaybackProgress {
   const hasNext = usePlayerStore(selectHasNext);
   const next = usePlayerStore((s) => s.next);
   const pause = usePlayerStore((s) => s.pause);
+  const repeatMode = usePlayerStore((s) => s.repeatMode);
 
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -45,7 +46,10 @@ export function useAudioPlayback(): PlaybackProgress {
     if (engine === null) return;
 
     engine.onEnded(() => {
-      if (hasNext) {
+      if (repeatMode === "one") {
+        engine.seek(0);
+        engine.resume();
+      } else if (hasNext) {
         next();
       } else {
         pause();
@@ -53,13 +57,13 @@ export function useAudioPlayback(): PlaybackProgress {
     });
 
     engine.onError(() => {
-      if (hasNext) {
-        next();
-      } else {
+      if (repeatMode === "one" || !hasNext) {
         pause();
+      } else {
+        next();
       }
     });
-  }, [hasNext, next, pause]);
+  }, [hasNext, next, pause, repeatMode]);
 
   useEffect(() => {
     const engine = engineRef.current;
@@ -88,16 +92,16 @@ export function useAudioPlayback(): PlaybackProgress {
 
     if (isPlaying && currentAudioUrl === null) {
       timer = setTimeout(() => {
-        if (hasNext) {
-          next();
-        } else {
+        if (repeatMode === "one" || !hasNext) {
           pause();
+        } else {
+          next();
         }
       }, 3000); // Delay moving to next song by 3 sec if on empty
     }
 
     return () => clearTimeout(timer);
-  }, [isPlaying, currentAudioUrl, hasNext, next, pause]);
+  }, [isPlaying, currentAudioUrl, hasNext, next, pause, repeatMode]);
 
   useEffect(() => {
     const engine = engineRef.current;
