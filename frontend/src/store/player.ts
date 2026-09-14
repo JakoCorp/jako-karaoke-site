@@ -20,6 +20,7 @@ interface PlayerState {
   readonly currentThumbnailUrl: string | null;
   readonly shuffleEnabled: boolean;
   readonly repeatMode: RepeatMode;
+  readonly playHistory: readonly number[];
   playQueue: (
     performances: readonly PerformanceSummary[],
     startIndex: number,
@@ -38,6 +39,13 @@ interface PlayerState {
   cycleRepeatMode: () => void;
 }
 
+/** Appends `index` to `history`, deduplicating and capping at 50 entries. */
+function appendHistory(history: readonly number[], index: number): readonly number[] {
+  const filtered = history.filter((i) => i !== index);
+  const trimmed = filtered.length >= 50 ? filtered.slice(1) : filtered;
+  return [...trimmed, index];
+}
+
 /** Global player store. Manages the queue, playback position, and playback state. */
 export const usePlayerStore = create<PlayerState>((set, get) => ({
   queue: [],
@@ -49,7 +57,25 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   currentThumbnailUrl: null,
   shuffleEnabled: false,
   repeatMode: "none",
+  playHistory: [],
   playQueue: (performances, startIndex, source) => {
+    const { queue, queueIndex, playHistory } = get();
+    if (performances === queue) {
+      if (startIndex < 0 || startIndex >= performances.length) return;
+      const history =
+        queueIndex >= 0 && queueIndex !== startIndex
+          ? appendHistory(playHistory, queueIndex)
+          : playHistory;
+      set({
+        queueIndex: startIndex,
+        queueSource: source,
+        isPlaying: true,
+        currentAudioUrl: null,
+        currentThumbnailUrl: null,
+        playHistory: history,
+      });
+      return;
+    }
     set({
       queue: performances,
       queueIndex: startIndex,
@@ -57,16 +83,26 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       isPlaying: true,
       currentAudioUrl: null,
       currentThumbnailUrl: null,
+      playHistory: [],
     });
   },
   jumpTo: (index) => {
-    const { queue } = get();
-    if (index >= 0 && index < queue.length) {
-      set({ queueIndex: index, isPlaying: true, currentAudioUrl: null, currentThumbnailUrl: null });
-    }
+    const { queue, queueIndex, playHistory } = get();
+    if (index < 0 || index >= queue.length) return;
+    const history =
+      queueIndex >= 0 && queueIndex !== index
+        ? appendHistory(playHistory, queueIndex)
+        : playHistory;
+    set({
+      queueIndex: index,
+      isPlaying: true,
+      currentAudioUrl: null,
+      currentThumbnailUrl: null,
+      playHistory: history,
+    });
   },
   next: () => {
-    const { queue, queueIndex, shuffleEnabled, repeatMode } = get();
+    const { queue, queueIndex, shuffleEnabled, repeatMode, playHistory } = get();
     if (queue.length === 0) return;
 
     if (shuffleEnabled && queue.length > 1) {
@@ -77,6 +113,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
         currentAudioUrl: null,
         currentThumbnailUrl: null,
         isPlaying: true,
+        playHistory: appendHistory(playHistory, queueIndex),
       });
       return;
     }
@@ -87,17 +124,29 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
         currentAudioUrl: null,
         currentThumbnailUrl: null,
         isPlaying: true,
+        playHistory: appendHistory(playHistory, queueIndex),
       });
     } else if (repeatMode === "all") {
-      set({ queueIndex: 0, currentAudioUrl: null, currentThumbnailUrl: null, isPlaying: true });
+      set({
+        queueIndex: 0,
+        currentAudioUrl: null,
+        currentThumbnailUrl: null,
+        isPlaying: true,
+        playHistory: appendHistory(playHistory, queueIndex),
+      });
     }
   },
   prev: () => {
-    const { queueIndex, queue, repeatMode } = get();
-    if (queueIndex > 0) {
-      set({ queueIndex: queueIndex - 1, currentAudioUrl: null, currentThumbnailUrl: null });
-    } else if (repeatMode === "all" && queue.length > 0) {
-      set({ queueIndex: queue.length - 1, currentAudioUrl: null, currentThumbnailUrl: null });
+    const { playHistory } = get();
+    if (playHistory.length > 0) {
+      const prevIndex = playHistory[playHistory.length - 1]!;
+      set({
+        queueIndex: prevIndex,
+        playHistory: playHistory.slice(0, -1),
+        currentAudioUrl: null,
+        currentThumbnailUrl: null,
+        isPlaying: true,
+      });
     }
   },
   pause: () => {
@@ -114,6 +163,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       isPlaying: false,
       currentAudioUrl: null,
       currentThumbnailUrl: null,
+      playHistory: [],
     });
   },
   setVolume: (volume) => {
@@ -147,9 +197,5 @@ export const selectHasNext = (s: PlayerState): boolean => {
   return s.queueIndex < s.queue.length - 1;
 };
 
-/** True when there is a previous track or the current track can be rewound. */
-export const selectHasPrev = (s: PlayerState): boolean => {
-  if (s.queueIndex < 0) return false;
-  if (s.repeatMode === "all") return true;
-  return s.queueIndex > 0;
-};
+/** True when there is history to go back to or the current track can be rewound. */
+export const selectHasPrev = (s: PlayerState): boolean => s.queueIndex >= 0;

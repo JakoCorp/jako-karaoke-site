@@ -86,7 +86,12 @@ export function MusicPlayer() {
             aria-label="Previous"
             disabled={!hasPrev}
             onClick={() => {
-              prev();
+              if (currentTime > 5) {
+                // Reset current song if at least 5 seconds have passed
+                seek(0);
+              } else {
+                prev();
+              }
             }}
           >
             <SkipBackIcon size={18} weight="fill" />
