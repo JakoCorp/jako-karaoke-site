@@ -16,6 +16,7 @@ interface PlayerState {
   readonly volume: number;
   readonly currentAudioUrl: string | null;
   readonly currentThumbnailUrl: string | null;
+  readonly shuffleEnabled: boolean;
   playQueue: (
     performances: readonly PerformanceSummary[],
     startIndex: number,
@@ -30,6 +31,7 @@ interface PlayerState {
   setVolume: (volume: number) => void;
   setCurrentAudioUrl: (url: string | null) => void;
   setCurrentThumbnailUrl: (url: string | null) => void;
+  toggleShuffle: () => void;
 }
 
 /** Global player store. Manages the queue, playback position, and playback state. */
@@ -41,6 +43,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   volume: 1,
   currentAudioUrl: null,
   currentThumbnailUrl: null,
+  shuffleEnabled: false,
   playQueue: (performances, startIndex, source) => {
     set({
       queue: performances,
@@ -58,9 +61,28 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     }
   },
   next: () => {
-    const { queueIndex, queue } = get();
+    const { queue, queueIndex, shuffleEnabled } = get();
+    if (queue.length === 0) return;
+
+    if (shuffleEnabled && queue.length > 1) {
+      const indices = queue.map((_, i) => i).filter((i) => i !== queueIndex);
+      const randomIndex = indices[Math.floor(Math.random() * indices.length)]!;
+      set({
+        queueIndex: randomIndex,
+        currentAudioUrl: null,
+        currentThumbnailUrl: null,
+        isPlaying: true,
+      });
+      return;
+    }
+
     if (queueIndex < queue.length - 1) {
-      set({ queueIndex: queueIndex + 1, currentAudioUrl: null, currentThumbnailUrl: null });
+      set({
+        queueIndex: queueIndex + 1,
+        currentAudioUrl: null,
+        currentThumbnailUrl: null,
+        isPlaying: true,
+      });
     }
   },
   prev: () => {
@@ -94,15 +116,21 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   setCurrentThumbnailUrl: (url) => {
     set({ currentThumbnailUrl: url });
   },
+  toggleShuffle: () => {
+    set((s) => ({ shuffleEnabled: !s.shuffleEnabled }));
+  },
 }));
 
 /** Returns the currently active performance, or null if the queue is empty. */
 export const selectCurrent = (s: PlayerState): PerformanceSummary | null =>
   s.queueIndex >= 0 ? (s.queue[s.queueIndex] ?? null) : null;
 
-/** True when there is a next track in the queue. */
-export const selectHasNext = (s: PlayerState): boolean =>
-  s.queueIndex >= 0 && s.queueIndex < s.queue.length - 1;
+/** True when the next action will advance playback. */
+export const selectHasNext = (s: PlayerState): boolean => {
+  if (s.queue.length === 0 || s.queueIndex < 0) return false;
+  if (s.shuffleEnabled && s.queue.length > 1) return true;
+  return s.queueIndex < s.queue.length - 1;
+};
 
 /** True when there is a previous track in the queue. */
 export const selectHasPrev = (s: PlayerState): boolean => s.queueIndex > 0;

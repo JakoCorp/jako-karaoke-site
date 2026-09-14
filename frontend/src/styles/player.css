@@ -58,6 +58,13 @@
   }
 }
 
+@utility player-btn--active {
+  color: var(--color-player-accent);
+  &:hover {
+    color: var(--color-player-accent);
+  }
+}
+
 @utility player-btn-play {
   display: flex;
   height: 3rem;

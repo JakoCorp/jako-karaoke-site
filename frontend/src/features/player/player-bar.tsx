@@ -37,6 +37,8 @@ export function MusicPlayer() {
   const volume = usePlayerStore((s) => s.volume);
   const setVolume = usePlayerStore((s) => s.setVolume);
   const currentThumbnailUrl = usePlayerStore((s) => s.currentThumbnailUrl);
+  const shuffleEnabled = usePlayerStore((s) => s.shuffleEnabled);
+  const toggleShuffle = usePlayerStore((s) => s.toggleShuffle);
 
   if (!current) return null;
 
@@ -62,7 +64,16 @@ export function MusicPlayer() {
 
       <div className="player-col">
         <div id="playback-control" className="flex items-center gap-4">
-          <button type="button" className="player-btn hidden md:flex" aria-label="Shuffle">
+          <button
+            type="button"
+            className={
+              shuffleEnabled
+                ? "player-btn hidden player-btn--active md:flex"
+                : "player-btn hidden md:flex"
+            }
+            aria-label="Shuffle"
+            onClick={toggleShuffle}
+          >
             <ShuffleIcon size={18} />
           </button>
 
