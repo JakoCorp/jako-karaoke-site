@@ -40,7 +40,7 @@ export function MusicPlayer() {
 
   if (!current) return null;
 
-  const title = current.title ?? "No title";
+  const title = current.title?.trim() || current.songs.map((s) => s.title).join(", ") || "No title";
   const artists = current.singers.map((s) => s.name).join(", ") || "Unknown artist";
 
   return (
