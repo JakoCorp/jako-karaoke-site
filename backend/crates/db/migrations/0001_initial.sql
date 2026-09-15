@@ -91,7 +91,7 @@ CREATE TABLE IF NOT EXISTS artists (
     name VARCHAR(256) NOT NULL,
     description TEXT NULL,
     PRIMARY KEY (id),
-    INDEX (name)
+    UNIQUE INDEX (name)
 ) ENGINE = InnoDB;
 
 -- Artist external links (e.g. YouTube, website)
@@ -225,6 +225,7 @@ CREATE TABLE IF NOT EXISTS playlist_performances (
     playlist_id BINARY(16) NOT NULL REFERENCES playlists (id) ON DELETE CASCADE,
     performance_id BINARY(16) NOT NULL REFERENCES performances (id) ON DELETE CASCADE,
     sort_order INT NOT NULL DEFAULT 0,
+    added_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (playlist_id, performance_id),
     INDEX (performance_id)
 ) ENGINE = InnoDB;

@@ -1867,7 +1867,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/PerformanceSummary"
+                    "$ref": "#/components/schemas/PlaylistEntry"
                   }
                 }
               }
@@ -1915,6 +1915,16 @@
         "responses": {
           "204": {
             "description": "Performances added"
+          },
+          "400": {
+            "description": "Playlist would exceed the 1000-entry limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           },
           "404": {
             "description": "Playlist not found",
@@ -3189,7 +3199,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/PerformanceSummary"
+                    "$ref": "#/components/schemas/PlaylistEntry"
                   }
                 }
               }
@@ -4454,6 +4464,26 @@
           "misc"
         ]
       },
+      "PlaylistEntry": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PerformanceSummary"
+          },
+          {
+            "type": "object",
+            "required": [
+              "added_at"
+            ],
+            "properties": {
+              "added_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        ],
+        "description": "A performance within a playlist, including when it was added."
+      },
       "PlaylistKind": {
         "type": "string",
         "description": "Valid kind values for a playlist.\n\n`Favorites` playlists are created automatically on user registration and\ncannot be created or deleted through normal playlist endpoints.",
@@ -4470,7 +4500,8 @@
           "id",
           "title",
           "kind",
-          "is_public"
+          "is_public",
+          "performance_count"
         ],
         "properties": {
           "created_by": {
@@ -4496,6 +4527,12 @@
           },
           "kind": {
             "$ref": "#/components/schemas/PlaylistKind"
+          },
+          "performance_count": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Number of performances in this playlist.",
+            "minimum": 0
           },
           "title": {
             "type": "string"

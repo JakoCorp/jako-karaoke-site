@@ -9,6 +9,7 @@
 @import "./styles/search.css";
 @import "./styles/header-mobile.css";
 @import "./styles/player.css";
+@import "./styles/playlists.css";
 
 :root {
   color-scheme: light;
