@@ -7,6 +7,14 @@ export type SongResponse = components["schemas"]["SongResponse"];
 export type SongTagKind = components["schemas"]["SongTagKind"];
 export type SongImageInfo = components["schemas"]["SongImageInfo"];
 export type SongImageKind = components["schemas"]["SongImageKind"];
+export type SongSort = components["schemas"]["SongSort"];
+export type SongSortDir = components["schemas"]["SortDir"];
+
+/** Query parameters accepted by the songs list endpoint. */
+export type SongListParams = SearchPaginationParams & {
+  sort?: SongSort;
+  sort_dir?: SongSortDir;
+};
 
 export const SONG_IMAGE_KINDS = ["cover_art"] as const satisfies readonly SongImageKind[];
 
@@ -20,7 +28,7 @@ export const SONG_TAG_KINDS = [
 /** Song endpoints. */
 export const songsApi = {
   /** Returns a paginated list of songs. */
-  list: (params?: SearchPaginationParams) => api.GET("/api/songs", { params: { query: params } }),
+  list: (params?: SongListParams) => api.GET("/api/songs", { params: { query: params } }),
 
   /** Returns a single song by ID. */
   get: (id: string) => api.GET("/api/songs/{id}", { params: { path: { id } } }),

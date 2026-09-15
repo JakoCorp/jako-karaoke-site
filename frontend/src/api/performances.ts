@@ -9,6 +9,14 @@ export type AudioInfo = components["schemas"]["AudioInfo"];
 export type AudioKind = components["schemas"]["AudioKind"];
 export type VideoInfo = components["schemas"]["VideoInfo"];
 export type VideoKind = components["schemas"]["VideoKind"];
+export type PerformanceSortField = components["schemas"]["PerformanceSort"];
+export type PerformanceSortDir = components["schemas"]["SortDir"];
+
+/** Query parameters accepted by the performances list endpoint. */
+export type PerformanceListParams = SearchPaginationParams & {
+  sort?: PerformanceSortField;
+  sort_dir?: PerformanceSortDir;
+};
 
 export const PERFORMANCE_TAG_KINDS = [
   "instrument",
@@ -19,17 +27,6 @@ export const PERFORMANCE_TAG_KINDS = [
 export const AUDIO_KINDS = ["primary", "misc"] as const satisfies readonly AudioKind[];
 
 export const VIDEO_KINDS = ["clip", "vod", "misc"] as const satisfies readonly VideoKind[];
-
-/** Fields available for sorting the performances list. */
-export type PerformanceSortField = "performance_date" | "play_count" | "duration";
-
-/** Query parameters accepted by the performances list endpoint. */
-export type PerformanceListParams = SearchPaginationParams & {
-  /** Field to sort by. Defaults to performance_date. */
-  sort?: PerformanceSortField;
-  /** Sort direction. Defaults to desc. */
-  sort_dir?: "asc" | "desc";
-};
 
 /** Performance endpoints. */
 export const performancesApi = {

@@ -2004,10 +2004,28 @@
           {
             "name": "q",
             "in": "query",
-            "description": "Optional text search filter.",
+            "description": "Text search by title or original artist name.",
             "required": false,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Field to sort by. Defaults to `performance_count`.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/SongSort"
+            }
+          },
+          {
+            "name": "sort_dir",
+            "in": "query",
+            "description": "Sort direction. Defaults to `desc`.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/SortDir"
             }
           }
         ],
@@ -4172,7 +4190,8 @@
               "required": [
                 "id",
                 "title",
-                "artists"
+                "artists",
+                "performance_count"
               ],
               "properties": {
                 "artists": {
@@ -4184,6 +4203,12 @@
                 "id": {
                   "type": "string",
                   "format": "uuid"
+                },
+                "performance_count": {
+                  "type": "integer",
+                  "format": "int64",
+                  "description": "Number of performances that reference this song.",
+                  "minimum": 0
                 },
                 "title": {
                   "type": "string"
@@ -4562,13 +4587,21 @@
           }
         }
       },
+      "SongSort": {
+        "type": "string",
+        "description": "Field to sort songs by in list endpoints.",
+        "enum": [
+          "performance_count"
+        ]
+      },
       "SongSummary": {
         "type": "object",
         "description": "Lean song representation returned by list endpoints.\n\nContains enough to render a song card without a follow up request.",
         "required": [
           "id",
           "title",
-          "artists"
+          "artists",
+          "performance_count"
         ],
         "properties": {
           "artists": {
@@ -4580,6 +4613,12 @@
           "id": {
             "type": "string",
             "format": "uuid"
+          },
+          "performance_count": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Number of performances that reference this song.",
+            "minimum": 0
           },
           "title": {
             "type": "string"

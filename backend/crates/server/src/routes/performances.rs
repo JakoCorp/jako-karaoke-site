@@ -249,6 +249,7 @@ async fn hydrate(
             id: s.id,
             title: s.title,
             artists: vec![],
+            performance_count: 0,
         })
         .collect();
 

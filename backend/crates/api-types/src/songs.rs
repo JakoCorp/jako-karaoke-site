@@ -85,6 +85,8 @@ pub struct SongSummary {
     pub id: Uuid,
     pub title: String,
     pub artists: Vec<ArtistInfo>,
+    /// Number of performances that reference this song.
+    pub performance_count: u64,
 }
 
 /// Full song metadata returned by detail endpoints.

@@ -56,7 +56,9 @@ async fn list_returns_newest_first(pool: MySqlPool) {
     let song_a = create_song(&pool, "song_a", None).await;
     let song_b = create_song(&pool, "song_b", None).await;
 
-    let results = songs::list(&pool, 10, 0).await.unwrap();
+    let results = songs::search(&pool, None, "performance_count DESC, s.id DESC", 10, 0)
+        .await
+        .unwrap();
     assert_eq!(results[0].id, song_b.id);
     assert_eq!(results[1].id, song_a.id);
 }

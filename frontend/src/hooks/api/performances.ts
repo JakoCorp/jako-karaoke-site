@@ -9,7 +9,7 @@ export const performanceKeys = {
   detail: (id: string) => ["performances", "detail", id] as const,
 };
 
-export function usePerformances(params?: PerformanceListParams) {
+export function usePerformances(params?: PerformanceListParams, enabled = true) {
   return useQuery({
     queryKey: performanceKeys.list(params),
     queryFn: async () => {
@@ -17,6 +17,7 @@ export function usePerformances(params?: PerformanceListParams) {
       if (error) throw error;
       return data;
     },
+    enabled,
   });
 }
 

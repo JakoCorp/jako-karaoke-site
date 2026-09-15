@@ -21,69 +21,61 @@ pub async fn get_by_id(
     executor: impl Executor<'_, Database = MySql>,
     id: Uuid,
 ) -> Result<Option<Song>> {
-    sqlx::query_as::<_, Song>("SELECT id, title, created_by, lyrics_id FROM songs WHERE id = ?")
-        .bind(id)
-        .fetch_optional(executor)
-        .await
-        .map_err(DbError::from)
-}
-
-/// Returns the total number of songs.
-pub async fn count(executor: impl Executor<'_, Database = MySql>) -> Result<u64> {
-    sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM songs")
-        .fetch_one(executor)
-        .await
-        .map(|n| n as u64)
-        .map_err(DbError::from)
-}
-
-/// Returns a page of songs ordered by ID descending.
-pub async fn list(
-    executor: impl Executor<'_, Database = MySql>,
-    limit: u32,
-    offset: u32,
-) -> Result<Vec<Song>> {
     sqlx::query_as::<_, Song>(
-        "SELECT id, title, created_by, lyrics_id \
-         FROM songs ORDER BY id DESC LIMIT ? OFFSET ?",
+        "SELECT id, title, created_by, lyrics_id, \
+         (SELECT COUNT(*) FROM performance_songs WHERE song_id = s.id) AS performance_count \
+         FROM songs s WHERE s.id = ?",
     )
-    .bind(limit)
-    .bind(offset)
-    .fetch_all(executor)
+    .bind(id)
+    .fetch_optional(executor)
     .await
     .map_err(DbError::from)
 }
 
-/// Returns songs matching an optional text query, ordered by ID descending.
+/// Returns songs matching an optional text query with a caller-specified sort order.
 ///
 /// When `q` is `Some`, results are filtered by a case-insensitive substring match
 /// against the song title or any linked original artist name.
+/// `order_by` must be a trusted SQL fragment (e.g. `"performance_count DESC, s.id DESC"`).
 pub async fn search(
     executor: impl Executor<'_, Database = MySql>,
     q: Option<&str>,
+    order_by: &str,
     limit: u32,
     offset: u32,
 ) -> Result<Vec<Song>> {
-    let Some(q) = q else {
-        return list(executor, limit, offset).await;
+    let sql = if q.is_some() {
+        format!(
+            "SELECT id, title, created_by, lyrics_id, \
+             (SELECT COUNT(*) FROM performance_songs WHERE song_id = s.id) AS performance_count \
+             FROM songs s WHERE s.id IN ( \
+               SELECT id FROM songs WHERE title LIKE ? \
+               UNION \
+               SELECT soa.song_id FROM song_original_artists soa \
+               JOIN artists a ON a.id = soa.artist_id WHERE a.name LIKE ? \
+             ) ORDER BY {order_by} LIMIT ? OFFSET ?"
+        )
+    } else {
+        format!(
+            "SELECT id, title, created_by, lyrics_id, \
+             (SELECT COUNT(*) FROM performance_songs WHERE song_id = s.id) AS performance_count \
+             FROM songs s ORDER BY {order_by} LIMIT ? OFFSET ?"
+        )
     };
-    let pattern = format!("%{q}%");
-    sqlx::query_as::<_, Song>(
-        "SELECT id, title, created_by, lyrics_id \
-         FROM songs WHERE id IN ( \
-           SELECT id FROM songs WHERE title LIKE ? \
-           UNION \
-           SELECT soa.song_id FROM song_original_artists soa \
-           JOIN artists a ON a.id = soa.artist_id WHERE a.name LIKE ? \
-         ) ORDER BY id DESC LIMIT ? OFFSET ?",
-    )
-    .bind(&pattern)
-    .bind(&pattern)
-    .bind(limit)
-    .bind(offset)
-    .fetch_all(executor)
-    .await
-    .map_err(DbError::from)
+
+    let query = sqlx::query_as::<_, Song>(sqlx::AssertSqlSafe(sql.as_str()));
+    let query = if let Some(pattern) = q.map(|q| format!("%{q}%")) {
+        query.bind(pattern.clone()).bind(pattern)
+    } else {
+        query
+    };
+
+    query
+        .bind(limit)
+        .bind(offset)
+        .fetch_all(executor)
+        .await
+        .map_err(DbError::from)
 }
 
 /// Returns the total number of songs matching the optional text query.
@@ -91,24 +83,30 @@ pub async fn search_count(
     executor: impl Executor<'_, Database = MySql>,
     q: Option<&str>,
 ) -> Result<u64> {
-    let Some(q) = q else {
-        return count(executor).await;
-    };
-    let pattern = format!("%{q}%");
-    sqlx::query_scalar::<_, i64>(
-        "SELECT COUNT(*) FROM ( \
-           SELECT id FROM songs WHERE title LIKE ? \
-           UNION \
-           SELECT soa.song_id FROM song_original_artists soa \
-           JOIN artists a ON a.id = soa.artist_id WHERE a.name LIKE ? \
-         ) AS matched",
-    )
-    .bind(&pattern)
-    .bind(&pattern)
-    .fetch_one(executor)
-    .await
-    .map(|n| n as u64)
-    .map_err(DbError::from)
+    match q {
+        None => sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM songs")
+            .fetch_one(executor)
+            .await
+            .map(|n| n as u64)
+            .map_err(DbError::from),
+        Some(q) => {
+            let pattern = format!("%{q}%");
+            sqlx::query_scalar::<_, i64>(
+                "SELECT COUNT(*) FROM ( \
+                   SELECT id FROM songs WHERE title LIKE ? \
+                   UNION \
+                   SELECT soa.song_id FROM song_original_artists soa \
+                   JOIN artists a ON a.id = soa.artist_id WHERE a.name LIKE ? \
+                 ) AS matched",
+            )
+            .bind(&pattern)
+            .bind(&pattern)
+            .fetch_one(executor)
+            .await
+            .map(|n| n as u64)
+            .map_err(DbError::from)
+        }
+    }
 }
 
 /// Inserts a new song and returns the created row.
@@ -117,7 +115,7 @@ pub async fn search_count(
 pub async fn create(conn: &mut MySqlConnection, new: &NewSong) -> Result<Song> {
     sqlx::query_as::<_, Song>(
         "INSERT INTO songs (title, created_by, lyrics_id) VALUES (?, ?, ?) \
-         RETURNING id, title, created_by, lyrics_id",
+         RETURNING id, title, created_by, lyrics_id, 0 AS performance_count",
     )
     .bind(&new.title)
     .bind(new.created_by)
@@ -181,7 +179,7 @@ pub async fn get_original_artists(
     song_id: Uuid,
 ) -> Result<Vec<Artist>> {
     sqlx::query_as::<_, Artist>(
-        "SELECT a.id, a.name, a.description \
+        "SELECT a.id, a.name, a.description, 0 AS song_count \
          FROM artists a \
          JOIN song_original_artists soa ON soa.artist_id = a.id \
          WHERE soa.song_id = ?",

@@ -14,6 +14,8 @@ pub struct Song {
     /// User who created this song record. `None` if created by system.
     pub created_by: Option<Uuid>,
     pub lyrics_id: Option<Uuid>,
+    /// Number of performances that reference this song.
+    pub performance_count: i64,
 }
 
 /// Input for creating a new song.

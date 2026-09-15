@@ -284,7 +284,7 @@ pub async fn get_songs(
     performance_id: Uuid,
 ) -> Result<Vec<Song>> {
     sqlx::query_as::<_, Song>(
-        "SELECT s.id, s.title, s.created_by, s.lyrics_id \
+        "SELECT s.id, s.title, s.created_by, s.lyrics_id, 0 AS performance_count \
          FROM songs s \
          JOIN performance_songs ps ON ps.song_id = s.id \
          WHERE ps.performance_id = ?",
