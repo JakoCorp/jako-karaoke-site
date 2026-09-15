@@ -1,8 +1,11 @@
 //! Playlist resource types.
 
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
+
+use crate::performances::PerformanceSummary;
 
 /// Valid kind values for a playlist.
 ///
@@ -55,6 +58,16 @@ pub struct PlaylistResponse {
     pub is_public: bool,
     /// User who created this playlist. `None` for system generated playlists.
     pub created_by: Option<Uuid>,
+    /// Number of performances in this playlist.
+    pub performance_count: u64,
+}
+
+/// A performance within a playlist, including when it was added.
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct PlaylistEntry {
+    #[serde(flatten)]
+    pub performance: PerformanceSummary,
+    pub added_at: DateTime<Utc>,
 }
 
 /// Request body for `POST /api/playlists/{id}/performances`.
