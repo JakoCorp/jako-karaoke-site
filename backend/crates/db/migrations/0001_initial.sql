@@ -91,7 +91,7 @@ CREATE TABLE IF NOT EXISTS artists (
     name VARCHAR(256) NOT NULL,
     description TEXT NULL,
     PRIMARY KEY (id),
-    INDEX (name)
+    UNIQUE INDEX (name)
 ) ENGINE = InnoDB;
 
 -- Artist external links (e.g. YouTube, website)
