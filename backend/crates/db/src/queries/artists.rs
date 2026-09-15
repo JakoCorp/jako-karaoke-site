@@ -27,6 +27,19 @@ pub async fn get_by_id(
     .map_err(DbError::from)
 }
 
+/// Returns the number of performances in which the artist appears as a singer.
+pub async fn performance_count(
+    executor: impl Executor<'_, Database = MySql>,
+    id: Uuid,
+) -> Result<u64> {
+    sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM performance_singers WHERE artist_id = ?")
+        .bind(id)
+        .fetch_one(executor)
+        .await
+        .map(|n| n as u64)
+        .map_err(DbError::from)
+}
+
 /// Returns the total number of artists.
 pub async fn count(executor: impl Executor<'_, Database = MySql>) -> Result<u64> {
     sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM artists")

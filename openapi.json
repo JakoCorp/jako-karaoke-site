@@ -3606,7 +3606,9 @@
           "id",
           "name",
           "images",
-          "links"
+          "links",
+          "song_count",
+          "performance_count"
         ],
         "properties": {
           "description": {
@@ -3633,6 +3635,18 @@
           },
           "name": {
             "type": "string"
+          },
+          "performance_count": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Number of performances in which this artist appears as a singer.",
+            "minimum": 0
+          },
+          "song_count": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Number of songs for which this artist is credited as an original artist.",
+            "minimum": 0
           }
         }
       },
@@ -4557,7 +4571,8 @@
           "title",
           "artists",
           "tags",
-          "images"
+          "images",
+          "performance_count"
         ],
         "properties": {
           "artists": {
@@ -4575,6 +4590,12 @@
             "items": {
               "$ref": "#/components/schemas/SongImageInfo"
             }
+          },
+          "performance_count": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Number of performances that reference this song.",
+            "minimum": 0
           },
           "tags": {
             "type": "array",

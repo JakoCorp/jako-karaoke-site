@@ -169,6 +169,7 @@ async fn hydrate(pool: &MySqlPool, song: db::models::Song) -> Result<SongRespons
         artists,
         tags,
         images,
+        performance_count: song.performance_count as u64,
     })
 }
 
