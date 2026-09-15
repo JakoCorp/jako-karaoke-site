@@ -2,18 +2,20 @@ import { PauseIcon, PlayIcon } from "@phosphor-icons/react";
 
 import type { PerformanceSummary } from "@/api/performances";
 import { formatDuration, formatRelativeDate } from "@/lib/format";
-import { usePlayerStore } from "@/store/player";
+import { selectCurrent, usePlayerStore } from "@/store/player";
 
 interface Props {
   performance: PerformanceSummary;
+  performances: readonly PerformanceSummary[];
+  index: number;
 }
 
 /** A single row in the search results list. */
-export function PerformanceRow({ performance }: Props) {
-  const play = usePlayerStore((s) => s.play);
+export function PerformanceRow({ performance, performances, index }: Props) {
+  const playQueue = usePlayerStore((s) => s.playQueue);
   const pause = usePlayerStore((s) => s.pause);
   const resume = usePlayerStore((s) => s.resume);
-  const current = usePlayerStore((s) => s.current);
+  const current = usePlayerStore(selectCurrent);
   const isPlaying = usePlayerStore((s) => s.isPlaying);
 
   const isCurrent = current?.id === performance.id;
@@ -33,13 +35,7 @@ export function PerformanceRow({ performance }: Props) {
       }
       return;
     }
-    play({
-      id: performance.id,
-      title: primaryTitle,
-      singers: performance.singers,
-      duration: performance.duration ?? null,
-      audioUrl: null,
-    });
+    playQueue(performances, index, { type: "search" });
   }
 
   return (

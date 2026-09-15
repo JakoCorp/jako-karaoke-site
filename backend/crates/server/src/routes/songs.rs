@@ -203,8 +203,10 @@ pub(crate) async fn list_songs(
     )?;
 
     let song_ids: Vec<Uuid> = songs.iter().map(|s| s.id).collect();
-    let mut artists_by_song =
-        queries::songs::get_original_artists_batch(&state.pool, &song_ids).await?;
+    let (mut artists_by_song, mut images_by_song) = tokio::try_join!(
+        queries::songs::get_original_artists_batch(&state.pool, &song_ids),
+        queries::songs::get_images_batch(&state.pool, &song_ids),
+    )?;
 
     let items = songs
         .into_iter()
@@ -219,10 +221,22 @@ pub(crate) async fn list_songs(
                     description: a.description,
                 })
                 .collect();
+            let images = images_by_song
+                .remove(&s.id)
+                .unwrap_or_default()
+                .into_iter()
+                .map(|(i, kind)| SongImageInfo {
+                    id: i.id,
+                    public_url: i.public_url,
+                    credits: i.credits,
+                    kind,
+                })
+                .collect();
             SongSummary {
                 id: s.id,
                 title: s.title,
                 artists,
+                images,
                 performance_count: s.performance_count as u64,
             }
         })

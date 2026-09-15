@@ -255,8 +255,13 @@ export function SearchPage() {
                 onSort={handleSortChange}
               />
             </div>
-            {perfData?.items.map((perf) => (
-              <PerformanceRow key={perf.id} performance={perf} />
+            {perfData?.items.map((perf, index) => (
+              <PerformanceRow
+                key={perf.id}
+                performance={perf}
+                performances={perfData.items}
+                index={index}
+              />
             ))}
             {!perfLoading && perfData?.items.length === 0 && (
               <div className="search-empty">No performances found.</div>
