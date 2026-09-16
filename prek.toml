@@ -10,6 +10,7 @@ id = "end-of-file-fixer"
 
 [[repos.hooks]]
 id = "check-yaml"
+args = ["--allow-multiple-documents"]
 
 [[repos.hooks]]
 id = "check-toml"
