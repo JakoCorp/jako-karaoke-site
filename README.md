@@ -38,13 +38,13 @@ TWITCH_CLIENT_SECRET=
 DISCORD_CLIENT_ID=
 DISCORD_CLIENT_SECRET=
 
-# Default to *.localhost for local development
+# Defaults to *.localhost for local development
 SITE_DOMAIN=
 FRONTEND_URL=
 API_DOMAIN=
 BACKEND_URL=
 
-# Debug
+# Debug (optional)
 BACKEND_RUST_LOG="server=debug,tower_http=debug"
 ```
 
@@ -55,22 +55,21 @@ BACKEND_RUST_LOG="server=debug,tower_http=debug"
 
 `nginx` expects a cert at `nginx/certs/origin.crt` / `nginx/certs/origin.key`. In production this should be an origin cert issued by whatever CDN sits in front.
 
-For local development, generate a self-signed cert:
+For local development, use [`mkcert`](https://github.com/FiloSottile/mkcert) to generate a browser trusted cert:
 
 ```bash
-openssl req -x509 -newkey rsa:2048 -nodes -days 365 \
-  -keyout nginx/certs/origin.key -out nginx/certs/origin.crt \
-  -subj "/CN=localhost"
+mkcert -install
+mkcert -key-file nginx/certs/origin.key -cert-file nginx/certs/origin.crt localhost api.localhost
 ```
 
 #### Run
 
 ```bash
-docker compose up
+docker compose up --build
 ```
 
 Add the `debug` profile to also run `cadvisor` (container resource monitoring, exposed at `127.0.0.1:8080`):
 
 ```bash
-docker compose --profile debug up
+docker compose --profile debug up --build
 ```

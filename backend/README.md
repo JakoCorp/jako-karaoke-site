@@ -19,6 +19,7 @@ Configuration is read from environment variables at startup. For local developme
 | `DISCORD_CLIENT_ID` | Discord OAuth application client ID |
 | `DISCORD_CLIENT_SECRET` | Discord OAuth application client secret |
 | `RUST_LOG` | Log filter (e.g. `server=debug,tower_http=debug`) |
+| `DEV_AUTH` | Set to `true` or `1` to enable `GET /auth/dev-login`. Must never be set in production. |
 
 ## Database
 
