@@ -1,4 +1,15 @@
 services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        - VITE_API_URL=${VITE_API_URL:-https://${API_DOMAIN:-api.localhost}}
+    image: jako-karaoke/frontend:latest
+    volumes:
+      - frontend_dist:/output
+    restart: "no"
+
   backend:
     build: ./backend
     image: jako-karaoke/backend:latest
@@ -47,7 +58,10 @@ services:
     image: nginx:1.31.2-alpine-slim
     restart: unless-stopped
     depends_on:
-      - backend
+      backend:
+        condition: service_started
+      frontend:
+        condition: service_completed_successfully
     ports:
       - "80:80"
       - "443:443"
@@ -58,7 +72,7 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/templates:/etc/nginx/templates:ro
       - ./nginx/certs:/etc/nginx/certs:ro
-      # - ./frontend/dist:/usr/share/nginx/html:ro
+      - frontend_dist:/usr/share/nginx/html:ro
 
   # Debugging
   cadvisor:
@@ -74,3 +88,4 @@ services:
 
 volumes:
   data_db:
+  frontend_dist:
