@@ -1,0 +1,31 @@
+FROM ghcr.io/pnpm/pnpm:12.4.2 AS base
+
+FROM base AS build
+
+WORKDIR /app
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY frontend/package.json ./frontend/
+
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm install --frozen-lockfile --filter jako-karaoke-frontend --ignore-scripts
+
+COPY openapi.json ./
+
+WORKDIR /app/frontend
+
+COPY frontend/index.html ./
+COPY frontend/vite.config.ts ./
+COPY frontend/tsconfig.json frontend/tsconfig.app.json frontend/tsconfig.node.json ./
+COPY frontend/src ./src
+COPY frontend/public ./public
+
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
+
+RUN pnpm build
+
+FROM busybox:1.38.0 AS runtime
+
+COPY --from=build /app/frontend/dist /srv/dist
+CMD ["cp", "-r", "/srv/dist/.", "/output"]

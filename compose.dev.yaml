@@ -1,0 +1,38 @@
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./data/storage:/data/storage
+    environment:
+      DATABASE_URL: mysql://root:password@db:3306/jako
+      STORAGE_PATH: /data/storage
+      STORAGE_BASE_URL: http://localhost:3000/files
+      TWITCH_CLIENT_ID: dev_placeholder
+      TWITCH_CLIENT_SECRET: dev_placeholder
+      DISCORD_CLIENT_ID: dev_placeholder
+      DISCORD_CLIENT_SECRET: dev_placeholder
+      BASE_URL: http://localhost:3000
+      FRONTEND_URL: http://localhost:5173
+      DEV_AUTH: "true"
+      RUST_LOG: server=debug,tower_http=debug
+
+  db:
+    image: mariadb:13.0.1-ubi10-rc
+    environment:
+      MARIADB_DATABASE: jako
+      MARIADB_ROOT_PASSWORD: password
+    volumes:
+      - data_dev_db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  data_dev_db:
