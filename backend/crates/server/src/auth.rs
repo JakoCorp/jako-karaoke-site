@@ -44,6 +44,11 @@ fn validate_username(username: &str) -> Result<(), ApiError> {
     Ok(())
 }
 
+/// The UUID of the seeded dev admin user (`user_a` in `dev/seed.sql`).
+const DEV_ADMIN_USER_ID: uuid::Uuid = uuid::Uuid::from_bytes([
+    0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+]);
+
 #[derive(utoipa::OpenApi)]
 #[openapi(
     paths(
@@ -51,6 +56,7 @@ fn validate_username(username: &str) -> Result<(), ApiError> {
         claim,
         me,
         logout,
+        dev_login,
         twitch::initiate,
         twitch::callback,
         discord::initiate,
@@ -61,8 +67,8 @@ fn validate_username(username: &str) -> Result<(), ApiError> {
 pub(crate) struct AuthApi;
 
 /// Builds the `/auth` subrouter.
-pub fn router() -> Router<AppState> {
-    Router::new()
+pub fn router(dev_auth: bool) -> Router<AppState> {
+    let router = Router::new()
         .route("/pending", get(pending_check))
         .route("/claim", post(claim))
         .route("/twitch", get(twitch::initiate))
@@ -70,7 +76,12 @@ pub fn router() -> Router<AppState> {
         .route("/discord", get(discord::initiate))
         .route("/discord/callback", get(discord::callback))
         .route("/me", get(me))
-        .route("/logout", post(logout))
+        .route("/logout", post(logout));
+    if dev_auth {
+        router.route("/dev-login", get(dev_login))
+    } else {
+        router
+    }
 }
 
 #[utoipa::path(
@@ -215,4 +226,38 @@ pub(crate) async fn logout(
     let mut removal = Cookie::new("session", "");
     removal.set_path("/");
     Ok((jar.remove(removal), StatusCode::NO_CONTENT))
+}
+
+#[utoipa::path(
+    get,
+    path = "/auth/dev-login",
+    responses(
+        (status = 200, description = "Session issued for the seeded dev admin user", body = MeResponse),
+        (status = 404, description = "Dev seed data not present"),
+    ),
+    tag = "auth"
+)]
+async fn dev_login(
+    State(state): State<AppState>,
+    jar: CookieJar,
+) -> Result<(CookieJar, Json<MeResponse>), ApiError> {
+    let user = queries::users::get_by_id(&state.pool, DEV_ADMIN_USER_ID)
+        .await?
+        .ok_or(ApiError::NotFound)?;
+
+    let capabilities = queries::capabilities::list_for_user(&state.pool, user.id)
+        .await?
+        .into_iter()
+        .collect();
+
+    let session_token = session::issue(&state.pool, user.id).await?;
+
+    Ok((
+        jar.add(session::session_cookie(session_token)),
+        Json(MeResponse {
+            id: user.id,
+            username: user.username,
+            capabilities,
+        }),
+    ))
 }

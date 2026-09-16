@@ -3309,6 +3309,29 @@
         }
       }
     },
+    "/auth/dev-login": {
+      "get": {
+        "tags": [
+          "auth"
+        ],
+        "operationId": "dev_login",
+        "responses": {
+          "200": {
+            "description": "Session issued for the seeded dev admin user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Dev seed data not present"
+          }
+        }
+      }
+    },
     "/auth/discord": {
       "get": {
         "tags": [

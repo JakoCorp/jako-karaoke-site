@@ -38,7 +38,7 @@ pub fn build_router(state: AppState) -> Router {
         .nest("/api/songs", songs::router())
         .nest("/api/tags", tags::router())
         .nest("/api/users", users::router())
-        .nest("/auth", auth::router())
+        .nest("/auth", auth::router(state.config.dev_auth))
         .nest_service("/files", ServeDir::new(storage_path))
         .merge(docs::router())
         .layer(TraceLayer::new_for_http())

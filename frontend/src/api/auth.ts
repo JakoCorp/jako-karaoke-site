@@ -17,4 +17,10 @@ export const authApi = {
 
   /** Revokes the current session and clears the session cookie. */
   logout: () => api.POST("/auth/logout", {}),
+
+  /**
+   * Issues a session as the seeded dev admin user.
+   * Only available when the backend is running with `DEV_AUTH=true`.
+   */
+  devLogin: () => api.GET("/auth/dev-login", {}),
 };

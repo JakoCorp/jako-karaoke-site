@@ -20,6 +20,10 @@ pub struct Config {
     pub base_url: String,
     /// Origin of the frontend app. Used for CORS and post OAuth redirects.
     pub frontend_url: String,
+    /// Enables the `GET /auth/dev-login` endpoint for local development.
+    ///
+    /// Must never be enabled in production.
+    pub dev_auth: bool,
 }
 
 /// Errors that can occur when loading [`Config`].
@@ -73,6 +77,9 @@ impl Config {
                 .map_err(|_| ConfigError::Missing("DISCORD_CLIENT_SECRET"))?,
             base_url: env::var("BASE_URL").map_err(|_| ConfigError::Missing("BASE_URL"))?,
             frontend_url: env::var("FRONTEND_URL").unwrap_or_else(|_| "/".into()),
+            dev_auth: env::var("DEV_AUTH")
+                .map(|v| v == "true" || v == "1")
+                .unwrap_or(false),
         })
     }
 }
