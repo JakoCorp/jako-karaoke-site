@@ -4,8 +4,7 @@ use sqlx::{Executor, MySql, MySqlConnection};
 use uuid::Uuid;
 
 use crate::error::DbError;
-use crate::models::performance::Performance;
-use crate::models::playlist::{NewPlaylist, Playlist, UpdatePlaylist};
+use crate::models::playlist::{NewPlaylist, Playlist, PlaylistPerformanceRow, UpdatePlaylist};
 
 type Result<T> = std::result::Result<T, DbError>;
 
@@ -15,7 +14,9 @@ pub async fn get_by_id(
     id: Uuid,
 ) -> Result<Option<Playlist>> {
     sqlx::query_as::<_, Playlist>(
-        "SELECT id, title, description, kind, is_public, created_by FROM playlists WHERE id = ?",
+        "SELECT id, title, description, kind, is_public, created_by, \
+         (SELECT COUNT(*) FROM playlist_performances WHERE playlist_id = playlists.id) AS performance_count \
+         FROM playlists WHERE id = ?",
     )
     .bind(id)
     .fetch_optional(executor)
@@ -26,7 +27,9 @@ pub async fn get_by_id(
 /// Returns all playlists ordered by ID, including private.
 pub async fn list_all(executor: impl Executor<'_, Database = MySql>) -> Result<Vec<Playlist>> {
     sqlx::query_as::<_, Playlist>(
-        "SELECT id, title, description, kind, is_public, created_by FROM playlists ORDER BY id",
+        "SELECT id, title, description, kind, is_public, created_by, \
+         (SELECT COUNT(*) FROM playlist_performances WHERE playlist_id = playlists.id) AS performance_count \
+         FROM playlists ORDER BY id",
     )
     .fetch_all(executor)
     .await
@@ -36,8 +39,9 @@ pub async fn list_all(executor: impl Executor<'_, Database = MySql>) -> Result<V
 /// Returns only public playlists ordered by ID.
 pub async fn list_public(executor: impl Executor<'_, Database = MySql>) -> Result<Vec<Playlist>> {
     sqlx::query_as::<_, Playlist>(
-        "SELECT id, title, description, kind, is_public, created_by FROM playlists \
-         WHERE is_public = TRUE ORDER BY id",
+        "SELECT id, title, description, kind, is_public, created_by, \
+         (SELECT COUNT(*) FROM playlist_performances WHERE playlist_id = playlists.id) AS performance_count \
+         FROM playlists WHERE is_public = TRUE ORDER BY id",
     )
     .fetch_all(executor)
     .await
@@ -50,8 +54,9 @@ pub async fn list_by_user(
     user_id: Uuid,
 ) -> Result<Vec<Playlist>> {
     sqlx::query_as::<_, Playlist>(
-        "SELECT id, title, description, kind, is_public, created_by FROM playlists \
-         WHERE created_by = ? ORDER BY id",
+        "SELECT id, title, description, kind, is_public, created_by, \
+         (SELECT COUNT(*) FROM playlist_performances WHERE playlist_id = playlists.id) AS performance_count \
+         FROM playlists WHERE created_by = ? ORDER BY id",
     )
     .bind(user_id)
     .fetch_all(executor)
@@ -65,8 +70,9 @@ pub async fn list_public_by_user(
     user_id: Uuid,
 ) -> Result<Vec<Playlist>> {
     sqlx::query_as::<_, Playlist>(
-        "SELECT id, title, description, kind, is_public, created_by FROM playlists \
-         WHERE created_by = ? AND is_public = TRUE ORDER BY id",
+        "SELECT id, title, description, kind, is_public, created_by, \
+         (SELECT COUNT(*) FROM playlist_performances WHERE playlist_id = playlists.id) AS performance_count \
+         FROM playlists WHERE created_by = ? AND is_public = TRUE ORDER BY id",
     )
     .bind(user_id)
     .fetch_all(executor)
@@ -80,8 +86,9 @@ pub async fn get_favorites_by_user(
     user_id: Uuid,
 ) -> Result<Option<Playlist>> {
     sqlx::query_as::<_, Playlist>(
-        "SELECT id, title, description, kind, is_public, created_by FROM playlists \
-         WHERE created_by = ? AND kind = 'favorites'",
+        "SELECT id, title, description, kind, is_public, created_by, \
+         (SELECT COUNT(*) FROM playlist_performances WHERE playlist_id = playlists.id) AS performance_count \
+         FROM playlists WHERE created_by = ? AND kind = 'favorites'",
     )
     .bind(user_id)
     .fetch_optional(executor)
@@ -94,7 +101,7 @@ pub async fn create(conn: &mut MySqlConnection, new: &NewPlaylist) -> Result<Pla
     sqlx::query_as::<_, Playlist>(
         "INSERT INTO playlists (title, description, kind, is_public, created_by) \
          VALUES (?, ?, ?, ?, ?) \
-         RETURNING id, title, description, kind, is_public, created_by",
+         RETURNING id, title, description, kind, is_public, created_by, 0 AS performance_count",
     )
     .bind(&new.title)
     .bind(&new.description)
@@ -133,7 +140,7 @@ pub async fn create_favorites(conn: &mut MySqlConnection, user_id: Uuid) -> Resu
     sqlx::query_as::<_, Playlist>(
         "INSERT INTO playlists (title, kind, is_public, created_by) \
          VALUES ('Favorites', 'favorites', FALSE, ?) \
-         RETURNING id, title, description, kind, is_public, created_by",
+         RETURNING id, title, description, kind, is_public, created_by, 0 AS performance_count",
     )
     .bind(user_id)
     .fetch_one(conn)
@@ -155,10 +162,10 @@ pub async fn delete(executor: impl Executor<'_, Database = MySql>, id: Uuid) -> 
 pub async fn get_performances_in_playlist(
     executor: impl Executor<'_, Database = MySql>,
     playlist_id: Uuid,
-) -> Result<Vec<Performance>> {
-    sqlx::query_as::<_, Performance>(
+) -> Result<Vec<PlaylistPerformanceRow>> {
+    sqlx::query_as::<_, PlaylistPerformanceRow>(
         "SELECT p.id, p.created_by, p.title, p.lyrics_id, p.play_count, p.duration, p.stream_time, \
-         p.performance_date, p.stream_number, p.performance_number \
+         p.performance_date, p.stream_number, p.performance_number, pp.added_at \
          FROM performances p \
          JOIN playlist_performances pp ON pp.performance_id = p.id \
          WHERE pp.playlist_id = ? \

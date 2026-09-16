@@ -1,7 +1,10 @@
 //! Playlist model.
 
+use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
+use super::performance::Performance;
 
 /// A playlist of performances.
 #[derive(Debug, Clone, sqlx::FromRow, Serialize, Deserialize)]
@@ -13,6 +16,16 @@ pub struct Playlist {
     pub is_public: bool,
     /// User who created this playlist. `None` for system generated playlists.
     pub created_by: Option<Uuid>,
+    /// Number of performances currently in this playlist.
+    pub performance_count: i64,
+}
+
+/// A performance with playlist metadata.
+#[derive(Debug, Clone, sqlx::FromRow)]
+pub struct PlaylistPerformanceRow {
+    #[sqlx(flatten)]
+    pub performance: Performance,
+    pub added_at: NaiveDateTime,
 }
 
 /// Input for creating a new playlist.

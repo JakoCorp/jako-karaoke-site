@@ -1,7 +1,10 @@
 //! Conversions from database models to API response types.
 
+use chrono::NaiveDateTime;
+
 use api_types::{
-    playlists::{PlaylistKind, PlaylistResponse},
+    performances::PerformanceSummary,
+    playlists::{PlaylistEntry, PlaylistKind, PlaylistResponse},
     tags::TagResponse,
 };
 use db::models::{Tag, playlist::Playlist};
@@ -29,7 +32,19 @@ pub(crate) fn playlist_response(playlist: Playlist) -> Result<PlaylistResponse, 
         kind,
         is_public: playlist.is_public,
         created_by: playlist.created_by,
+        performance_count: playlist.performance_count as u64,
     })
+}
+
+/// Wraps a [`PerformanceSummary`] with its playlist metadata.
+pub(crate) fn playlist_entry(
+    performance: PerformanceSummary,
+    added_at: NaiveDateTime,
+) -> PlaylistEntry {
+    PlaylistEntry {
+        performance,
+        added_at: added_at.and_utc(),
+    }
 }
 
 /// Converts a [`Tag`] model to a [`TagResponse`].

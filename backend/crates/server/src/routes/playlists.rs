@@ -12,8 +12,8 @@ use api_types::{
     common::ErrorResponse,
     performances::PerformanceSummary,
     playlists::{
-        AddPerformancesRequest, CreatePlaylistRequest, PlaylistKind, PlaylistResponse,
-        RemovePerformancesRequest, UpdatePlaylistRequest,
+        AddPerformancesRequest, CreatePlaylistRequest, PlaylistEntry, PlaylistKind,
+        PlaylistResponse, RemovePerformancesRequest, UpdatePlaylistRequest,
     },
 };
 use db::{
@@ -38,6 +38,7 @@ use crate::{auth::middleware::AuthUser, capabilities, convert, error::ApiError, 
     ),
     components(schemas(
         PlaylistResponse,
+        PlaylistEntry,
         PlaylistKind,
         CreatePlaylistRequest,
         UpdatePlaylistRequest,
@@ -256,7 +257,7 @@ pub(crate) async fn delete_playlist(
     path = "/api/playlists/{id}/performances",
     params(("id" = Uuid, Path, description = "Playlist ID")),
     responses(
-        (status = 200, description = "Ordered performances in this playlist", body = Vec<PerformanceSummary>),
+        (status = 200, description = "Ordered performances in this playlist", body = Vec<PlaylistEntry>),
         (status = 404, description = "Not found", body = ErrorResponse),
     ),
     tag = "playlists"
@@ -264,14 +265,21 @@ pub(crate) async fn delete_playlist(
 pub(crate) async fn list_playlist_performances(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
-) -> Result<Json<Vec<PerformanceSummary>>, ApiError> {
+) -> Result<Json<Vec<PlaylistEntry>>, ApiError> {
     queries::playlists::get_by_id(&state.pool, id)
         .await?
         .ok_or(ApiError::NotFound)?;
 
-    let performances = queries::playlists::get_performances_in_playlist(&state.pool, id).await?;
-    let items =
+    let rows = queries::playlists::get_performances_in_playlist(&state.pool, id).await?;
+    let added_ats: Vec<_> = rows.iter().map(|r| r.added_at).collect();
+    let performances: Vec<_> = rows.into_iter().map(|r| r.performance).collect();
+    let summaries =
         crate::routes::performances::build_performance_summaries(&state.pool, performances).await?;
+    let items = summaries
+        .into_iter()
+        .zip(added_ats)
+        .map(|(summary, added_at)| convert::playlist_entry(summary, added_at))
+        .collect();
 
     Ok(Json(items))
 }
@@ -283,6 +291,7 @@ pub(crate) async fn list_playlist_performances(
     request_body = AddPerformancesRequest,
     responses(
         (status = 204, description = "Performances added"),
+        (status = 400, description = "Playlist would exceed the 1000-entry limit", body = ErrorResponse),
         (status = 404, description = "Playlist not found", body = ErrorResponse),
     ),
     tag = "playlists"
@@ -292,9 +301,14 @@ pub(crate) async fn add_playlist_performances(
     Path(id): Path<Uuid>,
     Json(req): Json<AddPerformancesRequest>,
 ) -> Result<StatusCode, ApiError> {
-    queries::playlists::get_by_id(&state.pool, id)
+    let playlist = queries::playlists::get_by_id(&state.pool, id)
         .await?
         .ok_or(ApiError::NotFound)?;
+    if playlist.performance_count as u64 + req.performance_ids.len() as u64 > 1000 {
+        return Err(ApiError::BadRequest(
+            "playlist would exceed the 1000-entry limit".to_owned(),
+        ));
+    }
     let mut conn = state.pool.acquire().await.map_err(DbError::Sqlx)?;
     queries::playlists::add_performances(&mut conn, id, &req.performance_ids).await?;
     Ok(StatusCode::NO_CONTENT)

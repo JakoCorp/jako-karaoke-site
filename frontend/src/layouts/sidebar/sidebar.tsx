@@ -30,18 +30,17 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       <nav className="sidebar-nav">
         <NavItem to="/" label="Home" />
         <NavItem to="/search" label="Search" />
-        <NavItem to="/randomsong" label="Random Songs" />
-        <NavItem to="/explore" label="Explore" />
+        <NavItem to="/random-song" label="Random Songs" />
+        <NavItem to="/public-playlists" label="Public Playlists" />
         <NavItem to="/artists" label="Artists" />
-        <NavItem to="/playlists" label="Playlists" />
-        <NavItem to="/dashboard" label="Dashboard" />
+        <NavItem to="/about" label="About" />
         <div className="nav-divider" />
 
         <p className="sidebar-section-label">Your Library</p>
 
         <NavItem to="/favorites" label="Favorites" />
-        <NavItem to="/download" label="Download" />
-        <NavItem to="/playlists" label="Playlists" />
+        <NavItem to="/my-playlists" label="My Playlists" />
+        <NavItem to="/local" label="Local" />
 
         <div className="nav-divider" />
       </nav>

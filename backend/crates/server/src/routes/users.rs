@@ -12,7 +12,7 @@ use uuid::Uuid;
 use api_types::{
     common::ErrorResponse,
     performances::PerformanceSummary,
-    playlists::{PlaylistKind, PlaylistResponse},
+    playlists::{PlaylistEntry, PlaylistKind, PlaylistResponse},
     users::{GrantCapabilityRequest, UserSummary},
 };
 use db::queries;
@@ -33,6 +33,7 @@ use crate::{auth::middleware::AuthUser, capabilities, convert, error::ApiError, 
         UserSummary,
         GrantCapabilityRequest,
         PlaylistResponse,
+        PlaylistEntry,
         PlaylistKind,
         PerformanceSummary,
         ErrorResponse,
@@ -142,7 +143,7 @@ pub(crate) async fn list_user_playlists(
     path = "/api/users/{id}/favorites",
     params(("id" = Uuid, Path, description = "User ID")),
     responses(
-        (status = 200, description = "Ordered performances in this user's favorites playlist.", body = Vec<PerformanceSummary>),
+        (status = 200, description = "Ordered performances in this user's favorites playlist.", body = Vec<PlaylistEntry>),
         (status = 403, description = "Forbidden", body = ErrorResponse),
         (status = 404, description = "User not found", body = ErrorResponse),
     ),
@@ -152,7 +153,7 @@ pub(crate) async fn get_user_favorites(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
     auth: Option<AuthUser>,
-) -> Result<Json<Vec<PerformanceSummary>>, ApiError> {
+) -> Result<Json<Vec<PlaylistEntry>>, ApiError> {
     if !can_view_private(&auth, id) {
         return Err(ApiError::Forbidden);
     }
@@ -165,10 +166,16 @@ pub(crate) async fn get_user_favorites(
         .await?
         .ok_or(ApiError::NotFound)?;
 
-    let performances =
-        queries::playlists::get_performances_in_playlist(&state.pool, playlist.id).await?;
-    let items =
+    let rows = queries::playlists::get_performances_in_playlist(&state.pool, playlist.id).await?;
+    let added_ats: Vec<_> = rows.iter().map(|r| r.added_at).collect();
+    let performances: Vec<_> = rows.into_iter().map(|r| r.performance).collect();
+    let summaries =
         crate::routes::performances::build_performance_summaries(&state.pool, performances).await?;
+    let items = summaries
+        .into_iter()
+        .zip(added_ats)
+        .map(|(summary, added_at)| convert::playlist_entry(summary, added_at))
+        .collect();
 
     Ok(Json(items))
 }
