@@ -1,7 +1,9 @@
-import { useState } from "react";
-import { useNavigate } from "react-router";
+import { MagnifyingGlassIcon } from "@phosphor-icons/react";
+import { useEffect, useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router";
 
-import { useUserPlaylists } from "@/hooks/api/playlists";
+import { useInfiniteUserPlaylists } from "@/hooks/api/playlists";
+import { useDebounced } from "@/hooks/use-debounced";
 import { useAuthStore } from "@/store/auth";
 
 import { CreatePlaylistDialog } from "../components/create-playlist-dialog";
@@ -9,15 +11,63 @@ import { PlaylistGrid } from "../components/playlist-grid";
 
 export function MyPlaylistsPage() {
   const user = useAuthStore((s) => s.user);
-  const { data, isLoading } = useUserPlaylists(user?.id ?? null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const navigate = useNavigate();
 
-  const userPlaylists = data?.filter((p) => p.kind === "user") ?? [];
+  const [searchParams, setSearchParams] = useSearchParams();
+  const q = searchParams.get("q") ?? "";
+
+  const [inputValue, setInputValue] = useState(q);
+  const [prevQ, setPrevQ] = useState(q);
+  const debouncedInput = useDebounced(inputValue);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  if (q !== prevQ) {
+    setPrevQ(q);
+    setInputValue(q);
+  }
+
+  useEffect(() => {
+    setSearchParams(
+      (prev) => {
+        const params = new URLSearchParams(prev);
+        const trimmed = debouncedInput.trim();
+        if (trimmed) {
+          params.set("q", trimmed);
+        } else {
+          params.delete("q");
+        }
+        return params;
+      },
+      { replace: true },
+    );
+  }, [debouncedInput, setSearchParams]);
+
+  const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } =
+    useInfiniteUserPlaylists(user?.id ?? null, q || undefined);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && hasNextPage && !isFetchingNextPage) {
+          void fetchNextPage();
+        }
+      },
+      { rootMargin: "200px" },
+    );
+    if (sentinelRef.current) observer.observe(sentinelRef.current);
+    return () => {
+      observer.disconnect();
+    };
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   if (!user) {
     return <div className="playlist-empty">Sign in to see your playlists.</div>;
   }
+
+  const total = data?.pages[0]?.total ?? 0;
+  const items =
+    data?.pages.flatMap((page) => page?.items ?? []).filter((p) => p.kind === "user") ?? [];
 
   return (
     <div>
@@ -28,22 +78,30 @@ export function MyPlaylistsPage() {
             New playlist
           </button>
         </div>
+        <div className="playlist-search-wrapper">
+          <MagnifyingGlassIcon size={16} className="playlist-search-icon" />
+          <input
+            type="search"
+            className="form-input playlist-search-input"
+            placeholder="Search playlists…"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            aria-label="Search playlists"
+          />
+        </div>
         {!isLoading && (
           <div className="playlist-page-sub">
-            {userPlaylists.length.toLocaleString()}{" "}
-            {userPlaylists.length === 1 ? "playlist" : "playlists"}
+            {total.toLocaleString()} {total === 1 ? "playlist" : "playlists"}
           </div>
         )}
       </div>
       {isLoading ? (
         <div className="playlist-empty">Loading…</div>
       ) : (
-        <PlaylistGrid
-          playlists={userPlaylists}
-          showVisibility
-          emptyMessage="You have no playlists."
-        />
+        <PlaylistGrid playlists={items} showVisibility emptyMessage="You have no playlists." />
       )}
+      <div ref={sentinelRef} />
+      {isFetchingNextPage && <div className="playlist-empty">Loading more…</div>}
       <CreatePlaylistDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}

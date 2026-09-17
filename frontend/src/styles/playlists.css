@@ -2,7 +2,7 @@
   padding: 1.5rem 1.5rem 0;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.5rem;
 }
 
 @utility playlist-page-title {
@@ -146,6 +146,25 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+@utility playlist-search-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+@utility playlist-search-icon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-fg-muted);
+  pointer-events: none;
+}
+
+@utility playlist-search-input {
+  width: 100%;
+  padding-left: 2.25rem;
 }
 
 @utility playlist-create-visibility-label {

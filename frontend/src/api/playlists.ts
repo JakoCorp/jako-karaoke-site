@@ -6,10 +6,16 @@ export type PlaylistEntry = components["schemas"]["PlaylistEntry"];
 export type PlaylistKind = components["schemas"]["PlaylistKind"];
 export type CreatePlaylistRequest = components["schemas"]["CreatePlaylistRequest"];
 
+export type PlaylistListParams = {
+  page?: number;
+  per_page?: number;
+  q?: string;
+};
+
 /** Playlist endpoints. */
 export const playlists = {
-  /** Returns all publicly visible playlists. */
-  list: () => api.GET("/api/playlists", {}),
+  /** Returns a paginated, optionally filtered list of public playlists. */
+  list: (params?: PlaylistListParams) => api.GET("/api/playlists", { params: { query: params } }),
 
   /** Returns a single playlist by ID. */
   get: (id: string) => api.GET("/api/playlists/{id}", { params: { path: { id } } }),
@@ -18,9 +24,9 @@ export const playlists = {
   getPerformances: (id: string) =>
     api.GET("/api/playlists/{id}/performances", { params: { path: { id } } }),
 
-  /** Returns all playlists for a user. */
-  listByUser: (userId: string) =>
-    api.GET("/api/users/{id}/playlists", { params: { path: { id: userId } } }),
+  /** Returns a paginated, optionally filtered list of playlists for a user. */
+  listByUser: (userId: string, params?: PlaylistListParams) =>
+    api.GET("/api/users/{id}/playlists", { params: { path: { id: userId }, query: params } }),
 
   /** Returns the ordered entries in a user's favorites playlist. */
   getFavorites: (userId: string) =>
