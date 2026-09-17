@@ -5,7 +5,7 @@ import { PlaylistGrid } from "../components/playlist-grid";
 export function PublicPlaylistsPage() {
   const { data, isLoading } = usePublicPlaylists();
 
-  const publicPlaylists = data?.filter((p) => p.kind !== "favorites") ?? [];
+  const publicPlaylists = data?.filter((p) => p.is_public && p.kind !== "favorites") ?? [];
 
   return (
     <div>
