@@ -3,7 +3,10 @@ import createClient from "openapi-fetch";
 import type { paths } from "./generated";
 
 /** Typed OpenAPI client bound to the app's backend spec. */
-export const api = createClient<paths>({ baseUrl: "" });
+export const api = createClient<paths>({
+  baseUrl: import.meta.env.VITE_API_URL ?? "",
+  credentials: "include",
+});
 
 /** Represents a failed API response with an HTTP status and detail payload. */
 export class ApiError extends Error {

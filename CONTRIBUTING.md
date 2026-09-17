@@ -6,9 +6,11 @@ This project is open to contributions. The following guide will help set up the 
 
 ## Setup
 
-[`pnpm`](https://pnpm.io/) is required.
+[`pnpm`](https://pnpm.io/) and [`Docker`](https://docs.docker.com/get-docker/) are required.
 
-[`Rust`](https://rustup.rs/) is required if working on the backend.
+[`mkcert`](https://github.com/FiloSottile/mkcert) is required *only* for `compose.yaml`, but not `compose.dev.yaml`:
+
+[`Rust`](https://rustup.rs/) is required only if working on the backend.
 
 1. Fork the project
 
@@ -25,14 +27,37 @@ This project is open to contributions. The following guide will help set up the 
     pnpm install
     ```
 
-4. OPTIONAL: If also working on the backend
+    This also runs the `prepare` script, which adds [`prek`](https://prek.j178.dev/) pre-commit hooks that enforce code quality checks.
+
+## Frontend Development
+
+No Rust or OAuth credentials required. Docker provides the database and backend.
+
+1. Start the database and backend
 
     ```bash
-    cd backend
-    cargo install
+    docker compose -f compose.dev.yaml up --build -d
     ```
 
-Step 3 will run the `prepare` project script. This adds [`prek`](https://prek.j178.dev/) pre-commit hooks that enforce code quality checks on the project.
+    The first run builds the backend image, which takes a bit. Subsequent runs use the cached image.
+
+2. Seed the database (first time or after `docker compose -f compose.dev.yaml down -v` to reset)
+
+    ```bash
+    docker compose -f compose.dev.yaml exec -T db mariadb -u root -ppassword jako < dev/seed.sql
+    ```
+
+3. Start the frontend dev server
+
+    ```bash
+    pnpm dev
+    ```
+
+4. Open the site and click **Dev Login** to authenticate as the seeded admin user.
+
+## Backend Development
+
+See the [backend](./backend).
 
 ## Checks and Linting
 

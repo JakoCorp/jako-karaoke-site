@@ -3,22 +3,31 @@
   "version": "1.0.0",
   "private": true,
   "license": "AGPL-3.0-only",
-  "packageManager": "pnpm@11.9.0",
-  "engines": {
-    "node": "26"
-  },
   "scripts": {
     "lint": "pnpm -r lint",
     "prepare": "prek install",
     "spec:export": "cargo run --manifest-path backend/Cargo.toml --bin export-spec > openapi.json",
-    "api:gen": "pnpm spec:export && pnpm --filter jako-karaoke-frontend api:gen"
+    "api:gen": "pnpm spec:export && pnpm --filter jako-karaoke-frontend api:gen",
+    "dev": "pnpm -C frontend dev"
   },
   "devDependencies": {
-    "@j178/prek": "^0.5.2",
+    "@j178/prek": "^0.5.3",
     "eslint-plugin-better-tailwindcss": "^4.7.0",
     "oxfmt": "^0.66.0",
-    "oxlint": "^1.81.0",
+    "oxlint": "^1.83.0",
     "oxlint-tsgolint": "^7.0.2001",
     "tsx": "^4.23.13"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "12.4.2",
+      "onFail": "download"
+    },
+    "runtime": {
+      "name": "node",
+      "version": "26.8.2",
+      "onFail": "download"
+    }
   }
 }
