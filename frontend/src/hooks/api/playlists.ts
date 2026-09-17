@@ -1,6 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { playlists } from "@/api/playlists";
+import { type CreatePlaylistRequest, playlists } from "@/api/playlists";
 
 export const playlistKeys = {
   all: () => ["playlists"] as const,
@@ -65,5 +65,22 @@ export function useUserFavorites(userId: string | null) {
       return data ?? [];
     },
     enabled: !!userId,
+  });
+}
+
+export function useCreatePlaylist() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: CreatePlaylistRequest) => playlists.create(body),
+    onSuccess: (result) => {
+      if (result.data) {
+        void queryClient.invalidateQueries({ queryKey: playlistKeys.list() });
+        if (result.data.created_by) {
+          void queryClient.invalidateQueries({
+            queryKey: playlistKeys.listByUser(result.data.created_by),
+          });
+        }
+      }
+    },
   });
 }
