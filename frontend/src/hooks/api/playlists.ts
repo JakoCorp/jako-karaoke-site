@@ -136,6 +136,17 @@ export function useAddToPlaylist() {
   });
 }
 
+export function useDeletePlaylist() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => playlists.delete(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["playlists", "infinite"] });
+      void queryClient.invalidateQueries({ queryKey: ["playlists", "picker"] });
+    },
+  });
+}
+
 export function useCreatePlaylist() {
   const queryClient = useQueryClient();
   return useMutation({

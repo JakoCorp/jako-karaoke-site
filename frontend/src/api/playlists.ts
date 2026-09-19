@@ -54,4 +54,7 @@ export const playlists = {
     api.GET("/api/users/{id}/playlists/containing/{performance_id}", {
       params: { path: { id: userId, performance_id: performanceId } },
     }),
+
+  /** Deletes a playlist by ID. */
+  delete: (id: string) => api.DELETE("/api/playlists/{id}", { params: { path: { id } } }),
 };

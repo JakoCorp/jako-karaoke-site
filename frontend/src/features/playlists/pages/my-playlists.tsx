@@ -2,7 +2,7 @@ import { MagnifyingGlassIcon } from "@phosphor-icons/react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 
-import { useInfiniteUserPlaylists } from "@/hooks/api/playlists";
+import { useDeletePlaylist, useInfiniteUserPlaylists } from "@/hooks/api/playlists";
 import { useDebounced } from "@/hooks/use-debounced";
 import { useAuthStore } from "@/store/auth";
 
@@ -42,6 +42,8 @@ export function MyPlaylistsPage() {
       { replace: true },
     );
   }, [debouncedInput, setSearchParams]);
+
+  const deletePlaylist = useDeletePlaylist();
 
   const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } =
     useInfiniteUserPlaylists(user?.id ?? null, q || undefined);
@@ -98,7 +100,12 @@ export function MyPlaylistsPage() {
       {isLoading ? (
         <div className="playlist-empty">Loading…</div>
       ) : (
-        <PlaylistGrid playlists={items} showVisibility emptyMessage="You have no playlists." />
+        <PlaylistGrid
+          playlists={items}
+          showVisibility
+          emptyMessage="You have no playlists."
+          onDelete={(id) => deletePlaylist.mutate(id)}
+        />
       )}
       <div ref={sentinelRef} />
       {isFetchingNextPage && <div className="playlist-empty">Loading more…</div>}

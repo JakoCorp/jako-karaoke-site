@@ -2,14 +2,18 @@ import { Link } from "react-router";
 
 import type { PlaylistResponse } from "@/api/playlists";
 
+import { PlaylistCardMenu } from "./playlist-menu";
+
 interface Props {
   playlist: PlaylistResponse;
   showVisibility?: boolean;
+  onDelete?: () => void;
 }
 
-export function PlaylistCard({ playlist, showVisibility = false }: Props) {
+export function PlaylistCard({ playlist, showVisibility = false, onDelete }: Props) {
   const count = playlist.performance_count;
-  return (
+
+  const cardContent = (
     <Link to={`/playlist/${playlist.id}`} className="playlist-card">
       <div className="playlist-card-title" title={playlist.title}>
         {playlist.title}
@@ -25,4 +29,14 @@ export function PlaylistCard({ playlist, showVisibility = false }: Props) {
       </div>
     </Link>
   );
+
+  if (onDelete) {
+    return (
+      <PlaylistCardMenu playlistTitle={playlist.title} onDelete={onDelete}>
+        {cardContent}
+      </PlaylistCardMenu>
+    );
+  }
+
+  return cardContent;
 }
