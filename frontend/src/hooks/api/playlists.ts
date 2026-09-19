@@ -88,6 +88,40 @@ export function useUserFavorites(userId: string | null) {
   });
 }
 
+/** Fetches all of a user's playlists (excluding favorites) for use in picker UI. */
+export function useUserPlaylistsForPicker(userId: string | null) {
+  return useQuery({
+    queryKey: ["playlists", "picker", userId],
+    queryFn: async () => {
+      const { data, error } = await playlists.listByUser(userId!, { per_page: 200 });
+      if (error) throw error;
+      const items = data?.items ?? [];
+      return [
+        ...items.filter((p) => p.kind === "favorites"),
+        ...items.filter((p) => p.kind !== "favorites"),
+      ];
+    },
+    enabled: !!userId,
+  });
+}
+
+/** Adds one or more performances to a playlist. */
+export function useAddToPlaylist() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      playlistId,
+      performanceIds,
+    }: {
+      playlistId: string;
+      performanceIds: string[];
+    }) => playlists.addPerformances(playlistId, performanceIds),
+    onSuccess: (_, { playlistId }) => {
+      void queryClient.invalidateQueries({ queryKey: playlistKeys.performances(playlistId) });
+    },
+  });
+}
+
 export function useCreatePlaylist() {
   const queryClient = useQueryClient();
   return useMutation({

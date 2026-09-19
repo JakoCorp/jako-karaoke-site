@@ -167,6 +167,89 @@
   padding-left: 2.25rem;
 }
 
+@utility playlist-picker-popup {
+  width: 15rem;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  z-index: 50;
+}
+
+@utility playlist-picker-filter {
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+@utility playlist-picker-filter-input {
+  width: 100%;
+  font-size: 0.8125rem;
+}
+
+@utility playlist-picker-list {
+  max-height: 16rem;
+  overflow-y: auto;
+}
+
+@utility playlist-picker-empty {
+  padding: 0.75rem 0.875rem;
+  font-size: 0.8125rem;
+  color: var(--color-fg-muted);
+}
+
+@utility playlist-picker-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.5rem 0.5rem 0.875rem;
+  transition: background-color 0.1s;
+
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.04);
+  }
+}
+
+@utility playlist-picker-item-name {
+  font-size: 0.875rem;
+  color: var(--color-fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  flex: 1;
+}
+
+@utility playlist-picker-add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex-shrink: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 0.25rem;
+  background: none;
+  color: var(--color-fg-muted);
+  cursor: pointer;
+  transition:
+    color 0.1s,
+    border-color 0.1s,
+    background-color 0.1s;
+
+  &:hover:not(:disabled) {
+    color: var(--color-fg);
+    border-color: var(--color-fg-muted);
+  }
+
+  &:disabled {
+    color: var(--color-fg-muted);
+    cursor: default;
+    opacity: 0.6;
+  }
+}
+
 @utility playlist-create-visibility-label {
   display: flex;
   align-items: center;
