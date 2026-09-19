@@ -39,3 +39,12 @@
     opacity: 0.85;
   }
 }
+
+@utility btn-danger {
+  background-color: var(--color-danger);
+  color: var(--color-danger-fg);
+
+  &:not(:disabled):hover {
+    opacity: 0.85;
+  }
+}

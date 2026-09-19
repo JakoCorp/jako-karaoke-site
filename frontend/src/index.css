@@ -36,6 +36,9 @@
   --color-error: rgba(239, 68, 68, 0.1);
   --color-error-fg: #dc2626;
 
+  --color-danger: #dc2626;
+  --color-danger-fg: #ffffff;
+
   --color-playing: #6d28d9;
 
   --color-sidebar: #404040;
