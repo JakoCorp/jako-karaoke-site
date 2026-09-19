@@ -3331,6 +3331,67 @@
         }
       }
     },
+    "/api/users/{id}/playlists/containing/{performance_id}": {
+      "get": {
+        "tags": [
+          "users"
+        ],
+        "operationId": "get_user_playlists_containing_performance",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "User ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "performance_id",
+            "in": "path",
+            "description": "Performance ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "IDs of this user's playlists that contain the given performance.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
     "/auth/claim": {
       "post": {
         "tags": [

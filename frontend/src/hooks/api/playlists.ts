@@ -88,6 +88,19 @@ export function useUserFavorites(userId: string | null) {
   });
 }
 
+/** Returns the set of a user's playlist IDs that contain a given performance. */
+export function usePlaylistsContaining(userId: string | null, performanceId: string) {
+  return useQuery({
+    queryKey: ["playlists", "containing", userId, performanceId],
+    queryFn: async () => {
+      const { data, error } = await playlists.getPlaylistsContaining(userId!, performanceId);
+      if (error) throw error;
+      return new Set<string>((data ?? []).map(String));
+    },
+    enabled: !!userId && !!performanceId,
+  });
+}
+
 /** Fetches all of a user's playlists (excluding favorites) for use in picker UI. */
 export function useUserPlaylistsForPicker(userId: string | null) {
   return useQuery({
@@ -118,6 +131,7 @@ export function useAddToPlaylist() {
     }) => playlists.addPerformances(playlistId, performanceIds),
     onSuccess: (_, { playlistId }) => {
       void queryClient.invalidateQueries({ queryKey: playlistKeys.performances(playlistId) });
+      void queryClient.invalidateQueries({ queryKey: ["playlists", "containing"] });
     },
   });
 }
@@ -129,6 +143,7 @@ export function useCreatePlaylist() {
     onSuccess: (result) => {
       if (result.data) {
         void queryClient.invalidateQueries({ queryKey: ["playlists", "infinite", "public"] });
+        void queryClient.invalidateQueries({ queryKey: ["playlists", "picker"] });
         if (result.data.created_by) {
           void queryClient.invalidateQueries({
             queryKey: ["playlists", "infinite", "user", result.data.created_by],

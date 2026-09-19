@@ -28,6 +28,7 @@ use crate::{
     paths(
         search_users,
         list_user_playlists,
+        get_user_playlists_containing_performance,
         get_user_favorites,
         list_user_capabilities,
         grant_capability,
@@ -50,6 +51,10 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .route("/", get(search_users))
         .route("/{id}/playlists", get(list_user_playlists))
+        .route(
+            "/{id}/playlists/containing/{performance_id}",
+            get(get_user_playlists_containing_performance),
+        )
         .route("/{id}/favorites", get(get_user_favorites))
         .route(
             "/{id}/capabilities",
@@ -148,6 +153,41 @@ pub(crate) async fn list_user_playlists(
         page: params.page,
         per_page: limit,
     }))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/users/{id}/playlists/containing/{performance_id}",
+    params(
+        ("id" = Uuid, Path, description = "User ID"),
+        ("performance_id" = Uuid, Path, description = "Performance ID"),
+    ),
+    responses(
+        (status = 200, description = "IDs of this user's playlists that contain the given performance.", body = Vec<Uuid>),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+    ),
+    tag = "users",
+    security(("session" = []))
+)]
+pub(crate) async fn get_user_playlists_containing_performance(
+    State(state): State<AppState>,
+    Path((id, performance_id)): Path<(Uuid, Uuid)>,
+    auth: AuthUser,
+) -> Result<Json<Vec<Uuid>>, ApiError> {
+    if auth.user_id != id
+        && !auth
+            .capabilities
+            .contains(capabilities::PLAYLISTS_VIEW_PRIVATE)
+    {
+        return Err(ApiError::Forbidden);
+    }
+    let ids = queries::playlists::get_user_playlist_ids_containing_performance(
+        &state.pool,
+        id,
+        performance_id,
+    )
+    .await?;
+    Ok(Json(ids))
 }
 
 #[utoipa::path(

@@ -194,6 +194,24 @@ pub async fn delete(executor: impl Executor<'_, Database = MySql>, id: Uuid) -> 
         .map_err(DbError::from)
 }
 
+/// Returns the IDs of playlists owned by `user_id` that contain `performance_id`.
+pub async fn get_user_playlist_ids_containing_performance(
+    executor: impl Executor<'_, Database = MySql>,
+    user_id: Uuid,
+    performance_id: Uuid,
+) -> Result<Vec<Uuid>> {
+    sqlx::query_scalar::<_, Uuid>(
+        "SELECT playlist_id FROM playlist_performances \
+         WHERE performance_id = ? \
+         AND playlist_id IN (SELECT id FROM playlists WHERE created_by = ?)",
+    )
+    .bind(performance_id)
+    .bind(user_id)
+    .fetch_all(executor)
+    .await
+    .map_err(DbError::from)
+}
+
 /// Returns performances in a playlist, ordered by `sort_order`.
 pub async fn get_performances_in_playlist(
     executor: impl Executor<'_, Database = MySql>,

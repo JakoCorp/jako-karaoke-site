@@ -2,7 +2,11 @@ import { Popover } from "@base-ui/react";
 import { CheckIcon, HeartIcon, PlusIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 
-import { useAddToPlaylist, useUserPlaylistsForPicker } from "@/hooks/api/playlists";
+import {
+  useAddToPlaylist,
+  usePlaylistsContaining,
+  useUserPlaylistsForPicker,
+} from "@/hooks/api/playlists";
 import { useAuthStore } from "@/store/auth";
 
 type Props = {
@@ -13,10 +17,16 @@ type Props = {
 export function PlaylistPickerPopover({ performanceId, children }: Props) {
   const user = useAuthStore((s) => s.user);
   const [filter, setFilter] = useState("");
-  const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
+  const [sessionAddedIds, setSessionAddedIds] = useState<Set<string>>(new Set());
 
   const { data: allPlaylists = [], isLoading } = useUserPlaylistsForPicker(user?.id ?? null);
+  const { data: existingIds = new Set<string>() } = usePlaylistsContaining(
+    user?.id ?? null,
+    performanceId,
+  );
   const addToPlaylist = useAddToPlaylist();
+
+  const addedIds = new Set([...existingIds, ...sessionAddedIds]);
 
   const filtered = allPlaylists.filter((p) => p.title.toLowerCase().includes(filter.toLowerCase()));
 
@@ -30,7 +40,7 @@ export function PlaylistPickerPopover({ performanceId, children }: Props) {
       { playlistId, performanceIds: [performanceId] },
       {
         onSuccess: () => {
-          setAddedIds((prev) => new Set([...prev, playlistId]));
+          setSessionAddedIds((prev) => new Set([...prev, playlistId]));
         },
       },
     );

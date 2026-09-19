@@ -48,4 +48,10 @@ export const playlists = {
       params: { path: { id } },
       body: { performance_ids: performanceIds },
     }),
+
+  /** Returns IDs of a user's playlists that contain the given performance. */
+  getPlaylistsContaining: (userId: string, performanceId: string) =>
+    api.GET("/api/users/{id}/playlists/containing/{performance_id}", {
+      params: { path: { id: userId, performance_id: performanceId } },
+    }),
 };
