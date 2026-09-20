@@ -254,6 +254,7 @@ export function SearchPage() {
                 sortDir={perfSortDir}
                 onSort={handleSortChange}
               />
+              <div />
             </div>
             {perfData?.items.map((perf, index) => (
               <PerformanceRow

@@ -1,6 +1,7 @@
 import { PauseIcon, PlayIcon } from "@phosphor-icons/react";
 
 import type { PerformanceSummary } from "@/api/performances";
+import { PerformanceRowMenu } from "@/features/performances";
 import { formatDuration, formatRelativeDate } from "@/lib/format";
 import { selectCurrent, usePlayerStore } from "@/store/player";
 
@@ -39,7 +40,7 @@ export function PerformanceRow({ performance, performances, index }: Props) {
   }
 
   return (
-    <div className="perf-row">
+    <PerformanceRowMenu performanceId={performance.id}>
       <button
         className={isCurrent ? "perf-row-play perf-row-play--active" : "perf-row-play"}
         onClick={handlePlay}
@@ -61,6 +62,6 @@ export function PerformanceRow({ performance, performances, index }: Props) {
           : null}
       </div>
       <div className="perf-row-date">{formatRelativeDate(performance.performance_date)}</div>
-    </div>
+    </PerformanceRowMenu>
   );
 }

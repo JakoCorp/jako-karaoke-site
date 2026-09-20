@@ -1,10 +1,11 @@
-import { MusicNotesPlusIcon, PlayIcon } from "@phosphor-icons/react";
+import { PlayIcon } from "@phosphor-icons/react";
 import { Link } from "react-router";
 
 import type { PerformanceResponse } from "@/api/performances";
-import { PlaylistPickerPopover } from "@/features/playlists";
 import { formatDate, formatDuration, formatStreamTime } from "@/lib/format";
 import { usePlayerStore } from "@/store/player";
+
+import { PerformanceDetailMenu } from "./performance-menu";
 
 interface Props {
   performance: PerformanceResponse;
@@ -84,11 +85,7 @@ export function PerformanceDetailView({ performance, lyricsContent }: Props) {
               <PlayIcon size={16} weight="fill" />
               Play
             </button>
-            <PlaylistPickerPopover performanceId={performance.id}>
-              <button type="button" className="perf-detail-action-btn" aria-label="Add to playlist">
-                <MusicNotesPlusIcon size={20} />
-              </button>
-            </PlaylistPickerPopover>
+            <PerformanceDetailMenu performanceId={performance.id} />
           </div>
         </div>
       </div>
