@@ -4,8 +4,8 @@
   flex-shrink: 0;
   flex-direction: column;
   width: var(--spacing-sidebar);
-  background-color: var(--color-alt-sidebar);
-  color: var(--color-alt-input);
+  background-color: var(--color-sidebar);
+  color: var(--color-input);
 }
 
 @utility sidebar-header {
@@ -47,7 +47,7 @@
 
 @utility nav-divider {
   margin: 1.25rem 0;
-  border-top: 1px solid var(--color-alt-sidebar-border);
+  border-top: 1px solid var(--color-sidebar-border);
 }
 
 @utility sidebar-section-label {
@@ -55,12 +55,12 @@
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.05em;
-  color: var(--color-alt-fg-muted);
+  color: var(--color-fg-muted);
   text-transform: uppercase;
 }
 
 @utility sidebar-footer {
-  border-top: 1px solid var(--color-alt-sidebar-border);
+  border-top: 1px solid var(--color-sidebar-border);
 }
 
 @utility nav-item {
@@ -68,18 +68,18 @@
   border-radius: 0.375rem;
   padding: 0.5rem 0.75rem;
   font-size: 0.875rem;
-  color: var(--color-alt-sidebar-fg-muted);
+  color: var(--color-sidebar-fg-muted);
   transition:
     background-color 0.15s,
     color 0.15s;
 
   &:hover {
-    background-color: var(--color-alt-sidebar-item-hover);
-    color: var(--color-alt-sidebar-fg);
+    background-color: var(--color-sidebar-item-hover);
+    color: var(--color-sidebar-fg);
   }
 }
 
 @utility nav-item--active {
-  background-color: var(--color-alt-sidebar-item-active);
-  color: var(--color-alt-sidebar-fg);
+  background-color: var(--color-sidebar-item-active);
+  color: var(--color-sidebar-fg);
 }

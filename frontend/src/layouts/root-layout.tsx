@@ -30,7 +30,7 @@ export function RootLayout() {
       <div className="flex min-w-0 flex-1 flex-col">
         <HeaderMobile onOpenSidebar={() => setSidebarOpen(true)} />
 
-        <main className="flex-1 overflow-y-auto bg-alt-canvas">
+        <main className="flex-1 overflow-y-auto bg-canvas">
           <Outlet />
         </main>
 
