@@ -32,3 +32,16 @@ export function usePerformance(id: string, enabled = true) {
     enabled,
   });
 }
+
+export function usePerformanceLyrics(id: string, enabled = true) {
+  return useQuery({
+    queryKey: ["performances", "lyrics", id],
+    queryFn: async () => {
+      const { data, error, response } = await performancesApi.getLyrics(id);
+      if (response.status === 404) return null;
+      if (error) throw error;
+      return data ?? null;
+    },
+    enabled,
+  });
+}
