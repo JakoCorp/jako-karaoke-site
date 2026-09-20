@@ -16,19 +16,27 @@
   left: 0.75rem;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--color-alt-fg-muted);
+  color: var(--color-fg-muted);
   pointer-events: none;
 }
 
 @utility search-input {
   width: 100%;
   padding-left: 2.25rem;
-  background-color: var(--color-alt-fill);
-  color: var(--color-alt-input);
-  border-color: var(--color-alt-border);
+  background-color: var(--color-canvas);
+  color: var(--color-input);
+  border-color: var(--color-border);
 
   &::placeholder {
-    color: var(--color-alt-fg-muted);
+    color: var(--color-fg-muted);
+  }
+
+  &:focus {
+    border-color: var(--color-pink);
+    outline: none;
+    box-shadow:
+    0 0 5px var(--color-pink),
+    0 0 12px color-mix(in srgb, var(--color-pink) 50%, transparent);
   }
 }
 
@@ -38,7 +46,7 @@
   justify-content: space-between;
   padding: 0.75rem 1.5rem;
   font-size: 0.8125rem;
-  color: var(--color-alt-fg-muted);
+  color: var(--color-fg-muted);
 }
 
 @utility search-per-page-label {
@@ -46,22 +54,22 @@
   align-items: center;
   gap: 0.375rem;
   font-size: 0.8125rem;
-  color: var(--color-alt-fg-muted);
+  color: var(--color-fg-muted);
   cursor: default;
 }
 
 @utility search-per-page-select {
   padding: 0.125rem 0.375rem;
-  border: 1px solid var(--color-alt-border);
+  border: 1px solid var(--color-border);
   border-radius: 0.25rem;
-  background-color: var(--color-alt-fill);
-  color: var(--color-alt-input);
+  background-color: var(--color-canvas);
+  color: var(--color-input);
   font-size: 0.8125rem;
   cursor: pointer;
 }
 
 @utility search-results {
-  border-top: 1px solid var(--color-alt-border);
+  border-top: 1px solid var(--color-border);
   margin: 0 1.5rem;
   padding: 1.25rem 0;
 }
@@ -72,7 +80,7 @@
   gap: 0.75rem;
   align-items: center;
   padding: 0.75rem 1.5rem 0.75rem 0.75rem;
-  border-bottom: 1px solid var(--color-alt-border);
+  border-bottom: 1px solid var(--color-border);
   transition: background-color 0.1s;
 
   &:hover {
@@ -87,13 +95,13 @@
   align-items: center;
 
   padding: 0.5rem 1.5rem 0.5rem 0.75rem;
-  border-bottom: 2px solid var(--color-alt-border);
+  border-bottom: 2px solid var(--color-border);
 }
 
 @utility perf-header-label {
   font-size: 0.6875rem;
   font-weight: 600;
-  color: var(--color-alt-input);
+  color: var(--color-input);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -114,24 +122,24 @@
   cursor: pointer;
   font-size: 0.6875rem;
   font-weight: 600;
-  color: var(--color-alt-fg-muted);
+  color: var(--color-input);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   transition: color 0.1s;
 
   &:hover {
-    color: var(--color-alt-fg);
+    color: var(--color-fg);
   }
 
   &:focus-visible {
-    outline: 2px solid var(--color-alt-fg);
+    outline: 2px solid var(--color-fg);
     outline-offset: 2px;
     border-radius: 2px;
   }
 }
 
 @utility perf-header-sort-btn--active {
-  color: var(--color-alt-item-active);
+  color: var(--color-green);
 }
 
 @utility perf-row-play {
@@ -142,8 +150,7 @@
   height: 2rem;
   border-radius: 50%;
   border: none;
-  background-color: var(--color-alt-accent);
-  color: var(--color-alt-accent-fg);
+  color: var(--color-player-play-bg);
   cursor: pointer;
   flex-shrink: 0;
   transition: opacity 0.15s;
@@ -153,13 +160,13 @@
   }
 
   &:focus-visible {
-    outline: 2px solid var(--color-alt-fg);
+    outline: 2px solid var(--color-fg);
     outline-offset: 2px;
   }
 }
 
 @utility perf-row-play--active {
-  background-color: var(--color-alt-playing);
+  background-color: var(--color-playing);
 }
 
 @utility perf-row-info {
@@ -172,7 +179,7 @@
 @utility perf-row-title {
   font-size: 0.875rem;
   font-weight: 500;
-  color: var(--color-alt-fg);
+  color: var(--color-fg);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -180,7 +187,7 @@
 
 @utility perf-row-sub {
   font-size: 0.75rem;
-  color: var(--color-alt-fg-muted);
+  color: var(--color-fg-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -188,21 +195,21 @@
 
 @utility perf-row-plays {
   font-size: 0.75rem;
-  color: var(--color-alt-fg-muted);
+  color: var(--color-fg-muted);
   text-align: right;
   white-space: nowrap;
 }
 
 @utility perf-row-duration {
   font-size: 0.75rem;
-  color: var(--color-alt-fg-muted);
+  color: var(--color-fg-muted);
   text-align: right;
   white-space: nowrap;
 }
 
 @utility perf-row-date {
   font-size: 0.75rem;
-  color: var(--color-alt-fg-muted);
+  color: var(--color-fg-muted);
   text-align: right;
   white-space: nowrap;
 }
@@ -222,15 +229,15 @@
   width: 2rem;
   height: 2rem;
   border-radius: 0.375rem;
-  border: 1px solid var(--color-alt-border);
-  background-color: var(--color-alt-surface);
-  color: var(--color-alt-fg);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  color: var(--color-fg);
   font-size: 0.875rem;
   cursor: pointer;
   transition: background-color 0.1s;
 
   &:hover:not(:disabled) {
-    background-color: var(--color-alt-subtle);
+    background-color: var(--color-subtle);
   }
 
   &:disabled {
@@ -240,15 +247,15 @@
 }
 
 @utility page-btn--active {
-  background-color: var(--color-alt-accent);
-  color: var(--color-alt-accent-fg);
-  border-color: var(--color-alt-accent);
+  background-color: var(--color-accent);
+  color: var(--color-accent-f);
+  border-color: var(--color-accent);
 }
 
 @utility search-empty {
   padding: 4rem 1.5rem;
   text-align: center;
-  color: var(--color-alt-fg-muted);
+  color: var(--color-fg-muted);
   font-size: 0.875rem;
 }
 
@@ -262,8 +269,8 @@
 @utility search-mode-btn {
   padding: 0.3125rem 0.75rem;
   border: 1px solid var(--color-border);
-  background-color: var(--color-surface);
-  color: var(--color-fg-muted);
+  background-color: var(--color-sidebar);
+  color: var(--color-accent-fg);
   font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;
@@ -280,18 +287,18 @@
   }
 
   &:hover:not(.search-mode-btn--active) {
-    background-color: var(--color-subtle);
+    background-color: var(--color-item-hover);
     color: var(--color-fg);
   }
 
   &:focus-visible {
-    outline: 2px solid var(--color-fg);
+    outline: 2px solid var(--color-side);
     outline-offset: 2px;
   }
 }
 
 @utility search-mode-btn--active {
-  background-color: var(--color-accent);
+  background-color: var(--color-green);
   color: var(--color-accent-fg);
   border-color: var(--color-accent);
 }

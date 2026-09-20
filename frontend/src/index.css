@@ -23,6 +23,7 @@
   --color-teal: #4ba5a7;
   --color-green: #63c99b;
   --color-light-green: #85e596;
+
   --color-pink: #ff9ebb;
 
   --color-fg: #f5f5f5;
@@ -33,7 +34,8 @@
   --color-input: #ffffff;
 
   /* green */
-  --color-item-active: #63c99b;
+  --color-item-active-bg: #29483d;
+  --color-item-hover: #3f725f;
 
   --color-accent: #111827;
   --color-accent-fg: #ffffff;
