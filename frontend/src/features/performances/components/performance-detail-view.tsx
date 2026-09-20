@@ -90,17 +90,17 @@ export function PerformanceDetailView({ performance, lyricsContent }: Props) {
         </div>
       </div>
 
-      {lyricsContent && (
-        <div className="perf-detail-section">
-          <div className="perf-detail-card">
-            <div className="perf-detail-card-title">Lyrics</div>
-            <div className="perf-detail-lyrics-body">{lyricsContent}</div>
-          </div>
+      <div className="perf-detail-layout">
+        <div className="perf-detail-main">
+          {lyricsContent && (
+            <div className="perf-detail-card">
+              <div className="perf-detail-card-title">Lyrics</div>
+              <div className="perf-detail-lyrics-body">{lyricsContent}</div>
+            </div>
+          )}
         </div>
-      )}
 
-      {(hasTags || hasSongs) && (
-        <div className="perf-detail-cards">
+        <div className="perf-detail-aside">
           {hasTags && (
             <div className="perf-detail-card">
               <div className="perf-detail-card-title">Tags</div>
@@ -139,7 +139,7 @@ export function PerformanceDetailView({ performance, lyricsContent }: Props) {
             </div>
           )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
