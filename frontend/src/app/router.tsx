@@ -7,6 +7,7 @@ import { HomePage } from "@/features/home";
 import { PerformanceDetailPage } from "@/features/performances";
 import { MyPlaylistsPage, PlaylistDetailPage, PublicPlaylistsPage } from "@/features/playlists";
 import { SearchPage } from "@/features/search";
+import { SongDetailPage } from "@/features/songs";
 import { RootLayout } from "@/layouts/root-layout";
 
 export const router = createBrowserRouter([
@@ -23,6 +24,7 @@ export const router = createBrowserRouter([
       { path: "playlist/:id", element: <PlaylistDetailPage /> },
       { path: "public-playlists", element: <PublicPlaylistsPage /> },
       { path: "search", element: <SearchPage /> },
+      { path: "song/:id", element: <SongDetailPage /> },
     ],
   },
 ]);

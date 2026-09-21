@@ -11,6 +11,7 @@
 @import "./styles/player.css";
 @import "./styles/performances.css";
 @import "./styles/playlists.css";
+@import "./styles/songs.css";
 
 :root {
   color-scheme: light;
