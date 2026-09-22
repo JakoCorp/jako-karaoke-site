@@ -648,6 +648,16 @@
             }
           },
           {
+            "name": "song_id",
+            "in": "query",
+            "description": "Filter by song ID. Returns only performances that include this song.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
             "name": "sort",
             "in": "query",
             "description": "Field to sort by. Defaults to `performance_date`.",

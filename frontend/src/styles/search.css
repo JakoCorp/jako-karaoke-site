@@ -363,6 +363,15 @@
   text-overflow: ellipsis;
 }
 
+@utility song-row-title-link {
+  color: var(--color-fg);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
 @utility song-row-sub {
   font-size: 0.75rem;
   color: var(--color-fg-muted);
