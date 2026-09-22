@@ -1,6 +1,6 @@
 //! Conversions from database models to API response types.
 
-use chrono::NaiveDateTime;
+use chrono::{DateTime, Utc};
 
 use api_types::{
     performances::PerformanceSummary,
@@ -39,11 +39,11 @@ pub(crate) fn playlist_response(playlist: Playlist) -> Result<PlaylistResponse, 
 /// Wraps a [`PerformanceSummary`] with its playlist metadata.
 pub(crate) fn playlist_entry(
     performance: PerformanceSummary,
-    added_at: NaiveDateTime,
+    added_at: DateTime<Utc>,
 ) -> PlaylistEntry {
     PlaylistEntry {
         performance,
-        added_at: added_at.and_utc(),
+        added_at,
     }
 }
 

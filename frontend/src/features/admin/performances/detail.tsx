@@ -656,13 +656,14 @@ export function PerformanceDetailPanel({
       </div>
       <ConfirmDialog
         open={deleteOpen}
-        onClose={() => {
-          setDeleteOpen(false);
-          deleteMutation.reset();
+        onOpenChange={(nextOpen) => {
+          setDeleteOpen(nextOpen);
+          if (!nextOpen) deleteMutation.reset();
         }}
         onConfirm={() => {
           deleteMutation.mutate();
         }}
+        variant="danger"
         isPending={deleteMutation.isPending}
         error={deleteMutation.isError ? "Failed to delete performance." : null}
       />

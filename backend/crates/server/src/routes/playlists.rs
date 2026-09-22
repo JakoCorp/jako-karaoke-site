@@ -2,7 +2,7 @@
 
 use axum::{
     Json, Router,
-    extract::{Path, State},
+    extract::{Path, Query, State},
     http::StatusCode,
     routing::get,
 };
@@ -10,6 +10,7 @@ use uuid::Uuid;
 
 use api_types::{
     common::ErrorResponse,
+    pagination::{PagedResponse, defaults as pagination_defaults},
     performances::PerformanceSummary,
     playlists::{
         AddPerformancesRequest, CreatePlaylistRequest, PlaylistEntry, PlaylistKind,
@@ -22,7 +23,23 @@ use db::{
     queries,
 };
 
-use crate::{auth::middleware::AuthUser, capabilities, convert, error::ApiError, state::AppState};
+use crate::{
+    auth::middleware::AuthUser, capabilities, convert, error::ApiError, pagination, state::AppState,
+};
+
+/// Query parameters for `GET /api/playlists` and `GET /api/users/{id}/playlists`.
+#[derive(Debug, Clone, serde::Deserialize, utoipa::IntoParams)]
+#[into_params(parameter_in = Query)]
+pub(crate) struct PlaylistListParams {
+    /// Page number, 1-indexed. Defaults to 1.
+    #[serde(default = "pagination_defaults::page")]
+    pub page: u32,
+    /// Items per page. Defaults to 20. The server enforces a maximum.
+    #[serde(default = "pagination_defaults::per_page")]
+    pub per_page: u32,
+    /// Optional text search filter against playlist title.
+    pub q: Option<String>,
+}
 
 #[derive(utoipa::OpenApi)]
 #[openapi(
@@ -46,6 +63,7 @@ use crate::{auth::middleware::AuthUser, capabilities, convert, error::ApiError, 
         RemovePerformancesRequest,
         PerformanceSummary,
         ErrorResponse,
+        PagedResponse<PlaylistResponse>,
     ))
 )]
 pub(crate) struct PlaylistsApi;
@@ -70,29 +88,37 @@ pub fn router() -> Router<AppState> {
 #[utoipa::path(
     get,
     path = "/api/playlists",
+    params(PlaylistListParams),
     responses(
-        (status = 200, description = "Returns public playlists, or all playlists for users with sufficient permissions.", body = Vec<PlaylistResponse>),
+        (status = 200, description = "Returns public playlists, or all playlists for users with sufficient permissions.", body = PagedResponse<PlaylistResponse>),
     ),
     tag = "playlists"
 )]
 pub(crate) async fn list_playlists(
     State(state): State<AppState>,
+    Query(params): Query<PlaylistListParams>,
     auth: Option<AuthUser>,
-) -> Result<Json<Vec<PlaylistResponse>>, ApiError> {
-    let can_view_private = auth.is_some_and(|u| {
+) -> Result<Json<PagedResponse<PlaylistResponse>>, ApiError> {
+    let include_private = auth.is_some_and(|u| {
         u.capabilities
             .contains(capabilities::PLAYLISTS_VIEW_PRIVATE)
     });
-    let playlists = if can_view_private {
-        queries::playlists::list_all(&state.pool).await?
-    } else {
-        queries::playlists::list_public(&state.pool).await?
-    };
-    let items = playlists
+    let (limit, offset) = pagination::limit_offset(params.page, params.per_page);
+    let q = params.q.as_deref().filter(|s| !s.is_empty());
+    let (rows, total) = tokio::try_join!(
+        queries::playlists::search(&state.pool, q, include_private, None, limit, offset),
+        queries::playlists::search_count(&state.pool, q, include_private, None),
+    )?;
+    let items = rows
         .into_iter()
         .map(convert::playlist_response)
         .collect::<Result<Vec<_>, _>>()?;
-    Ok(Json(items))
+    Ok(Json(PagedResponse {
+        items,
+        total: total as u64,
+        page: params.page,
+        per_page: limit,
+    }))
 }
 
 #[utoipa::path(

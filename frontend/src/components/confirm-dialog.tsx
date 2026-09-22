@@ -1,54 +1,58 @@
-import { Dialog } from "@base-ui/react";
+import { AlertDialog } from "@base-ui/react";
 
 interface ConfirmDialogProps {
   open: boolean;
-  onClose: () => void;
+  onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
+  title?: string;
+  description?: string;
+  confirmLabel?: string;
+  variant?: "primary" | "danger";
   isPending?: boolean;
-  label?: string;
   error?: string | null;
 }
 
 export function ConfirmDialog({
   open,
-  onClose,
+  onOpenChange,
   onConfirm,
+  title = "Are you sure?",
+  description,
+  confirmLabel = "Yes",
+  variant = "primary",
   isPending = false,
-  label = "Are you sure?",
   error,
 }: ConfirmDialogProps) {
+  const confirmClass = variant === "danger" ? "btn btn-danger" : "btn btn-primary";
+
   return (
-    <Dialog.Root
+    <AlertDialog.Root
       open={open}
       onOpenChange={(nextOpen) => {
-        if (!nextOpen && !isPending) onClose();
+        if (!nextOpen && !isPending) onOpenChange(false);
+        else if (nextOpen) onOpenChange(true);
       }}
     >
-      <Dialog.Portal>
-        <Dialog.Backdrop className="dialog-backdrop" />
-        <Dialog.Popup className="dialog-popup">
-          <Dialog.Title className="dialog-title">{label}</Dialog.Title>
+      <AlertDialog.Portal>
+        <AlertDialog.Backdrop className="dialog-backdrop" />
+        <AlertDialog.Popup className="dialog-popup">
+          <AlertDialog.Title className="dialog-title">{title}</AlertDialog.Title>
+          {description && (
+            <AlertDialog.Description className="dialog-description">
+              {description}
+            </AlertDialog.Description>
+          )}
           {error != null && <p className="form-error">{error}</p>}
           <div className="dialog-actions">
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={onClose}
-              disabled={isPending}
-            >
+            <AlertDialog.Close className="btn btn-secondary" disabled={isPending}>
               Cancel
-            </button>
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={onConfirm}
-              disabled={isPending}
-            >
-              {isPending ? "Deleting…" : "Yes"}
+            </AlertDialog.Close>
+            <button type="button" className={confirmClass} onClick={onConfirm} disabled={isPending}>
+              {isPending ? "Deleting…" : confirmLabel}
             </button>
           </div>
-        </Dialog.Popup>
-      </Dialog.Portal>
-    </Dialog.Root>
+        </AlertDialog.Popup>
+      </AlertDialog.Portal>
+    </AlertDialog.Root>
   );
 }

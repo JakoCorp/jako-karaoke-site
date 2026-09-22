@@ -1,6 +1,6 @@
 //! Query functions for the `playlists` table and its `playlist_performances` join table.
 
-use sqlx::{Executor, MySql, MySqlConnection};
+use sqlx::{Executor, MySql, MySqlConnection, QueryBuilder};
 use uuid::Uuid;
 
 use crate::error::DbError;
@@ -24,60 +24,96 @@ pub async fn get_by_id(
     .map_err(DbError::from)
 }
 
-/// Returns all playlists ordered by ID, including private.
-pub async fn list_all(executor: impl Executor<'_, Database = MySql>) -> Result<Vec<Playlist>> {
-    sqlx::query_as::<_, Playlist>(
-        "SELECT id, title, description, kind, is_public, created_by, \
-         (SELECT COUNT(*) FROM playlist_performances WHERE playlist_id = playlists.id) AS performance_count \
-         FROM playlists ORDER BY id",
-    )
-    .fetch_all(executor)
-    .await
-    .map_err(DbError::from)
-}
-
-/// Returns only public playlists ordered by ID.
-pub async fn list_public(executor: impl Executor<'_, Database = MySql>) -> Result<Vec<Playlist>> {
-    sqlx::query_as::<_, Playlist>(
-        "SELECT id, title, description, kind, is_public, created_by, \
-         (SELECT COUNT(*) FROM playlist_performances WHERE playlist_id = playlists.id) AS performance_count \
-         FROM playlists WHERE is_public = TRUE ORDER BY id",
-    )
-    .fetch_all(executor)
-    .await
-    .map_err(DbError::from)
-}
-
-/// Returns all playlists created by a specific user.
-pub async fn list_by_user(
+/// Returns a page of playlists matching the given filters.
+///
+/// When `include_private` is `false`, only public playlists are returned.
+/// When `created_by` is `Some`, only playlists owned by that user are returned.
+/// When `q` is `Some`, results are filtered by a case-insensitive substring match against the title.
+pub async fn search(
     executor: impl Executor<'_, Database = MySql>,
-    user_id: Uuid,
+    q: Option<&str>,
+    include_private: bool,
+    created_by: Option<Uuid>,
+    limit: u32,
+    offset: u32,
 ) -> Result<Vec<Playlist>> {
-    sqlx::query_as::<_, Playlist>(
+    let mut builder = QueryBuilder::new(
         "SELECT id, title, description, kind, is_public, created_by, \
          (SELECT COUNT(*) FROM playlist_performances WHERE playlist_id = playlists.id) AS performance_count \
-         FROM playlists WHERE created_by = ? ORDER BY id",
-    )
-    .bind(user_id)
-    .fetch_all(executor)
-    .await
-    .map_err(DbError::from)
+         FROM playlists",
+    );
+    let mut where_started = false;
+    let mut push_where = |builder: &mut QueryBuilder<MySql>| {
+        if where_started {
+            builder.push(" AND");
+        } else {
+            builder.push(" WHERE");
+            where_started = true;
+        }
+    };
+    if !include_private {
+        push_where(&mut builder);
+        builder.push(" is_public = TRUE");
+    }
+    if let Some(user_id) = created_by {
+        push_where(&mut builder);
+        builder.push(" created_by = ");
+        builder.push_bind(user_id);
+    }
+    if let Some(query) = q {
+        push_where(&mut builder);
+        builder.push(" title LIKE ");
+        builder.push_bind(format!("%{query}%"));
+    }
+    builder.push(" ORDER BY title LIMIT ");
+    builder.push_bind(limit);
+    builder.push(" OFFSET ");
+    builder.push_bind(offset);
+    builder
+        .build_query_as::<Playlist>()
+        .fetch_all(executor)
+        .await
+        .map_err(DbError::from)
 }
 
-/// Returns only public playlists created by a specific user.
-pub async fn list_public_by_user(
+/// Returns the total count of playlists matching the given filters.
+///
+/// Parameters have the same semantics as [`search`].
+pub async fn search_count(
     executor: impl Executor<'_, Database = MySql>,
-    user_id: Uuid,
-) -> Result<Vec<Playlist>> {
-    sqlx::query_as::<_, Playlist>(
-        "SELECT id, title, description, kind, is_public, created_by, \
-         (SELECT COUNT(*) FROM playlist_performances WHERE playlist_id = playlists.id) AS performance_count \
-         FROM playlists WHERE created_by = ? AND is_public = TRUE ORDER BY id",
-    )
-    .bind(user_id)
-    .fetch_all(executor)
-    .await
-    .map_err(DbError::from)
+    q: Option<&str>,
+    include_private: bool,
+    created_by: Option<Uuid>,
+) -> Result<i64> {
+    let mut builder = QueryBuilder::new("SELECT COUNT(*) FROM playlists");
+    let mut where_started = false;
+    let mut push_where = |builder: &mut QueryBuilder<MySql>| {
+        if where_started {
+            builder.push(" AND");
+        } else {
+            builder.push(" WHERE");
+            where_started = true;
+        }
+    };
+    if !include_private {
+        push_where(&mut builder);
+        builder.push(" is_public = TRUE");
+    }
+    if let Some(user_id) = created_by {
+        push_where(&mut builder);
+        builder.push(" created_by = ");
+        builder.push_bind(user_id);
+    }
+    if let Some(query) = q {
+        push_where(&mut builder);
+        builder.push(" title LIKE ");
+        builder.push_bind(format!("%{query}%"));
+    }
+    builder
+        .build_query_scalar()
+        .fetch_one(executor)
+        .await
+        .map_err(DbError::from)
 }
 
 /// Fetches the favorites playlist for a user, returning `None` if it does not exist.
@@ -156,6 +192,24 @@ pub async fn delete(executor: impl Executor<'_, Database = MySql>, id: Uuid) -> 
         .await
         .map(|r| r.rows_affected() > 0)
         .map_err(DbError::from)
+}
+
+/// Returns the IDs of playlists owned by `user_id` that contain `performance_id`.
+pub async fn get_user_playlist_ids_containing_performance(
+    executor: impl Executor<'_, Database = MySql>,
+    user_id: Uuid,
+    performance_id: Uuid,
+) -> Result<Vec<Uuid>> {
+    sqlx::query_scalar::<_, Uuid>(
+        "SELECT playlist_id FROM playlist_performances \
+         WHERE performance_id = ? \
+         AND playlist_id IN (SELECT id FROM playlists WHERE created_by = ?)",
+    )
+    .bind(performance_id)
+    .bind(user_id)
+    .fetch_all(executor)
+    .await
+    .map_err(DbError::from)
 }
 
 /// Returns performances in a playlist, ordered by `sort_order`.

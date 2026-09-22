@@ -11,19 +11,24 @@ use uuid::Uuid;
 
 use api_types::{
     common::ErrorResponse,
+    pagination::PagedResponse,
     performances::PerformanceSummary,
     playlists::{PlaylistEntry, PlaylistKind, PlaylistResponse},
     users::{GrantCapabilityRequest, UserSummary},
 };
 use db::queries;
 
-use crate::{auth::middleware::AuthUser, capabilities, convert, error::ApiError, state::AppState};
+use crate::{
+    auth::middleware::AuthUser, capabilities, convert, error::ApiError, pagination,
+    routes::playlists::PlaylistListParams, state::AppState,
+};
 
 #[derive(utoipa::OpenApi)]
 #[openapi(
     paths(
         search_users,
         list_user_playlists,
+        get_user_playlists_containing_performance,
         get_user_favorites,
         list_user_capabilities,
         grant_capability,
@@ -37,6 +42,7 @@ use crate::{auth::middleware::AuthUser, capabilities, convert, error::ApiError, 
         PlaylistKind,
         PerformanceSummary,
         ErrorResponse,
+        PagedResponse<PlaylistResponse>,
     ))
 )]
 pub(crate) struct UsersApi;
@@ -45,6 +51,10 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .route("/", get(search_users))
         .route("/{id}/playlists", get(list_user_playlists))
+        .route(
+            "/{id}/playlists/containing/{performance_id}",
+            get(get_user_playlists_containing_performance),
+        )
         .route("/{id}/favorites", get(get_user_favorites))
         .route(
             "/{id}/capabilities",
@@ -109,9 +119,9 @@ pub(crate) async fn search_users(
 #[utoipa::path(
     get,
     path = "/api/users/{id}/playlists",
-    params(("id" = Uuid, Path, description = "User ID")),
+    params(("id" = Uuid, Path, description = "User ID"), PlaylistListParams),
     responses(
-        (status = 200, description = "Playlists for this user. Returns all playlists when viewing your own profile or with sufficient permissions, otherwise public only.", body = Vec<PlaylistResponse>),
+        (status = 200, description = "Playlists for this user. Returns all playlists when viewing your own profile or with sufficient permissions, otherwise public only.", body = PagedResponse<PlaylistResponse>),
         (status = 404, description = "User not found", body = ErrorResponse),
     ),
     tag = "users"
@@ -119,23 +129,65 @@ pub(crate) async fn search_users(
 pub(crate) async fn list_user_playlists(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
+    Query(params): Query<PlaylistListParams>,
     auth: Option<AuthUser>,
-) -> Result<Json<Vec<PlaylistResponse>>, ApiError> {
+) -> Result<Json<PagedResponse<PlaylistResponse>>, ApiError> {
     queries::users::get_by_id(&state.pool, id)
         .await?
         .ok_or(ApiError::NotFound)?;
 
-    let playlists = if can_view_private(&auth, id) {
-        queries::playlists::list_by_user(&state.pool, id).await?
-    } else {
-        queries::playlists::list_public_by_user(&state.pool, id).await?
-    };
-
-    let items = playlists
+    let include_private = can_view_private(&auth, id);
+    let (limit, offset) = pagination::limit_offset(params.page, params.per_page);
+    let q = params.q.as_deref().filter(|s| !s.is_empty());
+    let (rows, total) = tokio::try_join!(
+        queries::playlists::search(&state.pool, q, include_private, Some(id), limit, offset),
+        queries::playlists::search_count(&state.pool, q, include_private, Some(id)),
+    )?;
+    let items = rows
         .into_iter()
         .map(convert::playlist_response)
         .collect::<Result<Vec<_>, _>>()?;
-    Ok(Json(items))
+    Ok(Json(PagedResponse {
+        items,
+        total: total as u64,
+        page: params.page,
+        per_page: limit,
+    }))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/users/{id}/playlists/containing/{performance_id}",
+    params(
+        ("id" = Uuid, Path, description = "User ID"),
+        ("performance_id" = Uuid, Path, description = "Performance ID"),
+    ),
+    responses(
+        (status = 200, description = "IDs of this user's playlists that contain the given performance.", body = Vec<Uuid>),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+    ),
+    tag = "users",
+    security(("session" = []))
+)]
+pub(crate) async fn get_user_playlists_containing_performance(
+    State(state): State<AppState>,
+    Path((id, performance_id)): Path<(Uuid, Uuid)>,
+    auth: AuthUser,
+) -> Result<Json<Vec<Uuid>>, ApiError> {
+    if auth.user_id != id
+        && !auth
+            .capabilities
+            .contains(capabilities::PLAYLISTS_VIEW_PRIVATE)
+    {
+        return Err(ApiError::Forbidden);
+    }
+    let ids = queries::playlists::get_user_playlist_ids_containing_performance(
+        &state.pool,
+        id,
+        performance_id,
+    )
+    .await?;
+    Ok(Json(ids))
 }
 
 #[utoipa::path(

@@ -14,6 +14,7 @@ import {
 } from "@phosphor-icons/react";
 import { useState } from "react";
 
+import { PlaylistPickerPopover } from "@/features/playlists";
 import { formatDuration } from "@/lib/format";
 import { selectCurrent, selectHasNext, selectHasPrev, usePlayerStore } from "@/store/player";
 
@@ -60,9 +61,11 @@ export function MusicPlayer() {
           <p className="player-title">{title}</p>
           <p className="player-artist">{artists}</p>
         </div>
-        <button type="button" className="player-btn-sm" aria-label="Add to favorite">
-          <MusicNotesPlusIcon size={20} />
-        </button>
+        <PlaylistPickerPopover performanceId={current.id}>
+          <button type="button" className="player-btn-sm" aria-label="Add to playlist">
+            <MusicNotesPlusIcon size={20} />
+          </button>
+        </PlaylistPickerPopover>
       </div>
 
       <div className="player-col">
