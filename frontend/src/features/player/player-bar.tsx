@@ -48,6 +48,7 @@ export function MusicPlayer() {
 
   const title = current.title?.trim() || current.songs.map((s) => s.title).join(", ") || "No title";
   const artists = current.singers.map((s) => s.name).join(", ") || "Unknown artist";
+  const initial = title[0]?.toUpperCase() ?? "?";
 
   return (
     <div id="music-player" className="player-bar">
@@ -55,7 +56,9 @@ export function MusicPlayer() {
         {currentThumbnailUrl ? (
           <img src={currentThumbnailUrl} alt="" className="player-thumbnail" />
         ) : (
-          <div className="player-thumbnail" />
+          <div className="player-thumbnail-ph player-thumbnail" aria-hidden="true">
+            {initial}
+          </div>
         )}
         <div className="min-w-0">
           <p className="player-title">{title}</p>
