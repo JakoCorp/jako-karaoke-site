@@ -8,6 +8,7 @@ interface Props {
 
 export function SongDetailView({ song, lyricsContent }: Props) {
   const coverImage = song.images.find((i) => i.kind === "cover_art")?.public_url;
+  const initial = song.title.trimStart()[0]?.toUpperCase() ?? "?";
   const artistNames = song.artists.map((a) => a.name).join(", ");
 
   const tagsByKind = song.tags.reduce<Record<string, typeof song.tags>>((acc, tag) => {
@@ -25,7 +26,9 @@ export function SongDetailView({ song, lyricsContent }: Props) {
         {coverImage ? (
           <img src={coverImage} alt="" className="song-detail-thumbnail" />
         ) : (
-          <div className="song-detail-thumbnail-ph" />
+          <div className="song-detail-thumbnail-ph" aria-hidden="true">
+            {initial}
+          </div>
         )}
         <div className="song-detail-info">
           <div className="song-detail-title">{song.title}</div>

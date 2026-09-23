@@ -5,7 +5,7 @@ import type { PerformanceResponse } from "@/api/performances";
 import { formatDate, formatDuration, formatStreamTime } from "@/lib/format";
 import { usePlayerStore } from "@/store/player";
 
-import { PerformanceDetailMenu } from "./performance-menu";
+import { PerformanceDetailMenu } from "./menu";
 
 interface Props {
   performance: PerformanceResponse;
@@ -19,6 +19,7 @@ export function PerformanceDetailView({ performance, lyricsContent }: Props) {
 
   const title =
     performance.title?.trim() || performance.songs.map((s) => s.title).join(" / ") || "Untitled";
+  const initial = title[0]?.toUpperCase() ?? "?";
 
   const singerNames = performance.singers.map((s) => s.name).join(", ");
 
@@ -46,7 +47,9 @@ export function PerformanceDetailView({ performance, lyricsContent }: Props) {
         {coverImage ? (
           <img src={coverImage} alt="" className="perf-detail-thumbnail" />
         ) : (
-          <div className="perf-detail-thumbnail-ph" />
+          <div className="perf-detail-thumbnail-ph" aria-hidden="true">
+            {initial}
+          </div>
         )}
         <div className="perf-detail-info">
           <div className="perf-detail-title">{title}</div>

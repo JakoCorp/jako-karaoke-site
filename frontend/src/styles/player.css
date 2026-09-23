@@ -16,6 +16,16 @@
   background-color: var(--color-player-thumbnail-bg);
 }
 
+@utility player-thumbnail-ph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: var(--color-player-fg-muted);
+  user-select: none;
+}
+
 @utility player-title {
   overflow: hidden;
   text-overflow: ellipsis;

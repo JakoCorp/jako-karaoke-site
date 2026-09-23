@@ -5,7 +5,7 @@ import { useSearchParams } from "react-router";
 import { useInfinitePublicPlaylists } from "@/hooks/api/playlists";
 import { useDebounced } from "@/hooks/use-debounced";
 
-import { PlaylistGrid } from "../components/playlist-grid";
+import { PlaylistGrid } from "../components/grid";
 
 export function PublicPlaylistsPage() {
   const [searchParams, setSearchParams] = useSearchParams();

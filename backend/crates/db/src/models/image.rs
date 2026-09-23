@@ -13,6 +13,7 @@ pub struct Image {
     pub public_url: String,
     /// Absolute filesystem path used for actual file.
     pub internal_path: Option<String>,
+    /// Optional attribution text for the image creator.
     pub credits: Option<String>,
 }
 
@@ -22,6 +23,7 @@ pub struct NewImage {
     pub hash: String,
     pub public_url: String,
     pub internal_path: Option<String>,
+    /// Optional attribution text for the image creator.
     pub credits: Option<String>,
 }
 
@@ -30,5 +32,6 @@ pub struct NewImage {
 pub struct UpdateImage {
     pub public_url: String,
     pub internal_path: Option<String>,
+    /// Optional attribution text for the image creator.
     pub credits: Option<String>,
 }

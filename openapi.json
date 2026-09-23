@@ -3638,7 +3638,8 @@
             "items": {
               "type": "string",
               "format": "uuid"
-            }
+            },
+            "description": "IDs of performances to append. Duplicates are silently skipped. Returns 400 if the new total would exceed 1000."
           }
         }
       },
@@ -3655,14 +3656,17 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Optional attribution text for the image creator."
           },
           "id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "description": "Unique identifier of the image record."
           },
           "kind": {
-            "type": "string"
+            "type": "string",
+            "description": "Serialized [`ArtistImageKind`] value indicating the image's semantic role."
           },
           "public_url": {
             "type": "string",
@@ -3689,14 +3693,17 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Optional freeform bio or description."
           },
           "id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "description": "Unique identifier."
           },
           "name": {
-            "type": "string"
+            "type": "string",
+            "description": "Display name."
           }
         }
       },
@@ -3711,19 +3718,23 @@
         "properties": {
           "id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "description": "Unique identifier of the link record."
           },
           "kind": {
-            "type": "string"
+            "type": "string",
+            "description": "Serialized [`ArtistLinkKind`] value indicating the platform."
           },
           "label": {
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Optional display override label."
           },
           "url": {
-            "type": "string"
+            "type": "string",
+            "description": "Fully qualified URL."
           }
         }
       },
@@ -3736,16 +3747,19 @@
         ],
         "properties": {
           "kind": {
-            "$ref": "#/components/schemas/ArtistLinkKind"
+            "$ref": "#/components/schemas/ArtistLinkKind",
+            "description": "Platform this link points to."
           },
           "label": {
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Optional display override label."
           },
           "url": {
-            "type": "string"
+            "type": "string",
+            "description": "Fully qualified URL."
           }
         }
       },
@@ -3777,26 +3791,31 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Optional freeform bio or description."
           },
           "id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "description": "Unique identifier."
           },
           "images": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ArtistImageInfo"
-            }
+            },
+            "description": "Images attached to this artist."
           },
           "links": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ArtistLinkInfo"
-            }
+            },
+            "description": "External links for this artist."
           },
           "name": {
-            "type": "string"
+            "type": "string",
+            "description": "Display name."
           },
           "performance_count": {
             "type": "integer",
@@ -3834,24 +3853,29 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Optional freeform bio or description."
           },
           "id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "description": "Unique identifier."
           },
           "images": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ArtistImageInfo"
-            }
+            },
+            "description": "Images attached to this artist."
           },
           "name": {
-            "type": "string"
+            "type": "string",
+            "description": "Display name."
           },
           "song_count": {
             "type": "integer",
             "format": "int64",
+            "description": "Number of songs for which this artist is credited as an original artist.",
             "minimum": 0
           }
         }
@@ -3867,10 +3891,12 @@
         "properties": {
           "id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "description": "Unique identifier of the audio record."
           },
           "kind": {
-            "type": "string"
+            "type": "string",
+            "description": "Serialized [`AudioKind`] value."
           },
           "public_url": {
             "type": "string",
@@ -3929,16 +3955,19 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Optional freeform bio or description."
           },
           "links": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ArtistLinkInput"
-            }
+            },
+            "description": "External links to create alongside the artist."
           },
           "name": {
-            "type": "string"
+            "type": "string",
+            "description": "Display name."
           }
         }
       },
@@ -3972,7 +4001,8 @@
           },
           "performance_date": {
             "type": "string",
-            "format": "date"
+            "format": "date",
+            "description": "Calendar date of the stream in which this performance occurred."
           },
           "performance_number": {
             "type": "integer",
@@ -3985,14 +4015,16 @@
             "items": {
               "type": "string",
               "format": "uuid"
-            }
+            },
+            "description": "IDs of artists who sang in this performance."
           },
           "song_ids": {
             "type": "array",
             "items": {
               "type": "string",
               "format": "uuid"
-            }
+            },
+            "description": "IDs of songs featured in this performance."
           },
           "stream_number": {
             "type": "integer",
@@ -4013,13 +4045,15 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/PerformanceTagAssignment"
-            }
+            },
+            "description": "Tags to apply at creation time."
           },
           "title": {
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Optional display title override."
           }
         }
       },
@@ -4036,16 +4070,20 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Optional freeform description."
           },
           "is_public": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "When false, only the creator and users with `playlists:view_private` can access this playlist."
           },
           "kind": {
-            "$ref": "#/components/schemas/PlaylistKind"
+            "$ref": "#/components/schemas/PlaylistKind",
+            "description": "Determines visibility rules and creation permissions."
           },
           "title": {
-            "type": "string"
+            "type": "string",
+            "description": "Display title."
           }
         }
       },
@@ -4063,7 +4101,8 @@
             "items": {
               "type": "string",
               "format": "uuid"
-            }
+            },
+            "description": "IDs of original artists (composers or creators) to credit."
           },
           "lyrics": {
             "type": [
@@ -4076,10 +4115,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/SongTagAssignment"
-            }
+            },
+            "description": "Tags to apply at creation time."
           },
           "title": {
-            "type": "string"
+            "type": "string",
+            "description": "Unique display title."
           }
         }
       },
@@ -4103,7 +4144,8 @@
         ],
         "properties": {
           "error": {
-            "type": "string"
+            "type": "string",
+            "description": "Human readable description of the error."
           }
         }
       },
@@ -4115,7 +4157,8 @@
         ],
         "properties": {
           "capability": {
-            "type": "string"
+            "type": "string",
+            "description": "Capability string to grant. Must be one of the values in `ALL_CAPABILITIES`."
           }
         }
       },
@@ -4151,7 +4194,8 @@
         ],
         "properties": {
           "content": {
-            "type": "string"
+            "type": "string",
+            "description": "The full lyrics text."
           }
         }
       },
@@ -4173,10 +4217,12 @@
           },
           "id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "description": "Unique identifier of the authenticated user."
           },
           "username": {
-            "type": "string"
+            "type": "string",
+            "description": "Display name chosen during registration."
           }
         }
       },
@@ -4206,28 +4252,34 @@
                   "type": [
                     "string",
                     "null"
-                  ]
+                  ],
+                  "description": "Optional freeform bio or description."
                 },
                 "id": {
                   "type": "string",
-                  "format": "uuid"
+                  "format": "uuid",
+                  "description": "Unique identifier."
                 },
                 "images": {
                   "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/ArtistImageInfo"
-                  }
+                  },
+                  "description": "Images attached to this artist."
                 },
                 "name": {
-                  "type": "string"
+                  "type": "string",
+                  "description": "Display name."
                 },
                 "song_count": {
                   "type": "integer",
                   "format": "int64",
+                  "description": "Number of songs for which this artist is credited as an original artist.",
                   "minimum": 0
                 }
               }
-            }
+            },
+            "description": "Items on the current page."
           },
           "page": {
             "type": "integer",
@@ -4285,11 +4337,13 @@
                 },
                 "id": {
                   "type": "string",
-                  "format": "uuid"
+                  "format": "uuid",
+                  "description": "Unique identifier."
                 },
                 "performance_date": {
                   "type": "string",
-                  "format": "date"
+                  "format": "date",
+                  "description": "Calendar date of the stream."
                 },
                 "performance_number": {
                   "type": "integer",
@@ -4299,19 +4353,22 @@
                 },
                 "play_count": {
                   "type": "integer",
-                  "format": "int32"
+                  "format": "int32",
+                  "description": "Number of times this performance has been played."
                 },
                 "singers": {
                   "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/ArtistInfo"
-                  }
+                  },
+                  "description": "Artists who sang in this performance."
                 },
                 "songs": {
                   "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/SongRef"
-                  }
+                  },
+                  "description": "Songs featured in this performance."
                 },
                 "stream_number": {
                   "type": "integer",
@@ -4323,10 +4380,12 @@
                   "type": [
                     "string",
                     "null"
-                  ]
+                  ],
+                  "description": "Optional display title. Absent when no explicit title has been set."
                 }
               }
-            }
+            },
+            "description": "Items on the current page."
           },
           "page": {
             "type": "integer",
@@ -4383,17 +4442,21 @@
                   "type": [
                     "string",
                     "null"
-                  ]
+                  ],
+                  "description": "Optional freeform description."
                 },
                 "id": {
                   "type": "string",
-                  "format": "uuid"
+                  "format": "uuid",
+                  "description": "Unique identifier."
                 },
                 "is_public": {
-                  "type": "boolean"
+                  "type": "boolean",
+                  "description": "When false, only the creator and users with `playlists:view_private` can access this playlist."
                 },
                 "kind": {
-                  "$ref": "#/components/schemas/PlaylistKind"
+                  "$ref": "#/components/schemas/PlaylistKind",
+                  "description": "Playlist type affecting visibility and permission rules."
                 },
                 "performance_count": {
                   "type": "integer",
@@ -4402,10 +4465,12 @@
                   "minimum": 0
                 },
                 "title": {
-                  "type": "string"
+                  "type": "string",
+                  "description": "Display title."
                 }
               }
-            }
+            },
+            "description": "Items on the current page."
           },
           "page": {
             "type": "integer",
@@ -4454,17 +4519,20 @@
                   "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/ArtistInfo"
-                  }
+                  },
+                  "description": "Original artists credited for this song."
                 },
                 "id": {
                   "type": "string",
-                  "format": "uuid"
+                  "format": "uuid",
+                  "description": "Unique identifier."
                 },
                 "images": {
                   "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/SongImageInfo"
-                  }
+                  },
+                  "description": "Cover images attached to this song."
                 },
                 "performance_count": {
                   "type": "integer",
@@ -4473,10 +4541,12 @@
                   "minimum": 0
                 },
                 "title": {
-                  "type": "string"
+                  "type": "string",
+                  "description": "Display title."
                 }
               }
-            }
+            },
+            "description": "Items on the current page."
           },
           "page": {
             "type": "integer",
@@ -4518,7 +4588,8 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/AudioInfo"
-            }
+            },
+            "description": "Audio files attached to this performance."
           },
           "duration": {
             "type": [
@@ -4531,11 +4602,13 @@
           },
           "id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "description": "Unique identifier."
           },
           "performance_date": {
             "type": "string",
-            "format": "date"
+            "format": "date",
+            "description": "Calendar date of the stream."
           },
           "performance_number": {
             "type": "integer",
@@ -4545,19 +4618,22 @@
           },
           "play_count": {
             "type": "integer",
-            "format": "int32"
+            "format": "int32",
+            "description": "Number of times this performance has been played."
           },
           "singers": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ArtistInfo"
-            }
+            },
+            "description": "Artists who sang in this performance."
           },
           "songs": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/SongSummary"
-            }
+            },
+            "description": "Songs featured in this performance."
           },
           "stream_number": {
             "type": "integer",
@@ -4578,19 +4654,22 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/TagInfo"
-            }
+            },
+            "description": "Tags applied to this performance."
           },
           "title": {
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Optional display title. Absent when no explicit title has been set."
           },
           "video": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/VideoInfo"
-            }
+            },
+            "description": "Video files attached to this performance."
           }
         }
       },
@@ -4627,11 +4706,13 @@
           },
           "id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "description": "Unique identifier."
           },
           "performance_date": {
             "type": "string",
-            "format": "date"
+            "format": "date",
+            "description": "Calendar date of the stream."
           },
           "performance_number": {
             "type": "integer",
@@ -4641,19 +4722,22 @@
           },
           "play_count": {
             "type": "integer",
-            "format": "int32"
+            "format": "int32",
+            "description": "Number of times this performance has been played."
           },
           "singers": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ArtistInfo"
-            }
+            },
+            "description": "Artists who sang in this performance."
           },
           "songs": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/SongRef"
-            }
+            },
+            "description": "Songs featured in this performance."
           },
           "stream_number": {
             "type": "integer",
@@ -4665,7 +4749,8 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Optional display title. Absent when no explicit title has been set."
           }
         }
       },
@@ -4678,11 +4763,13 @@
         ],
         "properties": {
           "kind": {
-            "$ref": "#/components/schemas/PerformanceTagKind"
+            "$ref": "#/components/schemas/PerformanceTagKind",
+            "description": "Semantic category of this tag on the performance."
           },
           "tag_id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "description": "ID of the tag to apply."
           }
         }
       },
@@ -4698,7 +4785,8 @@
       "PlaylistEntry": {
         "allOf": [
           {
-            "$ref": "#/components/schemas/PerformanceSummary"
+            "$ref": "#/components/schemas/PerformanceSummary",
+            "description": "The performance in this slot."
           },
           {
             "type": "object",
@@ -4708,7 +4796,8 @@
             "properties": {
               "added_at": {
                 "type": "string",
-                "format": "date-time"
+                "format": "date-time",
+                "description": "Timestamp when this performance was added to the playlist."
               }
             }
           }
@@ -4747,17 +4836,21 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Optional freeform description."
           },
           "id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "description": "Unique identifier."
           },
           "is_public": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "When false, only the creator and users with `playlists:view_private` can access this playlist."
           },
           "kind": {
-            "$ref": "#/components/schemas/PlaylistKind"
+            "$ref": "#/components/schemas/PlaylistKind",
+            "description": "Playlist type affecting visibility and permission rules."
           },
           "performance_count": {
             "type": "integer",
@@ -4766,7 +4859,8 @@
             "minimum": 0
           },
           "title": {
-            "type": "string"
+            "type": "string",
+            "description": "Display title."
           }
         }
       },
@@ -4782,7 +4876,8 @@
             "items": {
               "type": "string",
               "format": "uuid"
-            }
+            },
+            "description": "IDs of performances to remove. IDs not in the playlist are silently ignored."
           }
         }
       },
@@ -4799,14 +4894,17 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Optional attribution text for the image creator."
           },
           "id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "description": "Unique identifier of the image record."
           },
           "kind": {
-            "type": "string"
+            "type": "string",
+            "description": "Serialized [`SongImageKind`] value indicating the image's semantic role."
           },
           "public_url": {
             "type": "string",
@@ -4831,10 +4929,12 @@
         "properties": {
           "id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "description": "Unique identifier."
           },
           "title": {
-            "type": "string"
+            "type": "string",
+            "description": "Display title."
           }
         }
       },
@@ -4854,17 +4954,20 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ArtistInfo"
-            }
+            },
+            "description": "Original artists credited for this song."
           },
           "id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "description": "Unique identifier."
           },
           "images": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/SongImageInfo"
-            }
+            },
+            "description": "Cover images attached to this song."
           },
           "performance_count": {
             "type": "integer",
@@ -4876,10 +4979,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/TagInfo"
-            }
+            },
+            "description": "Tags applied to this song."
           },
           "title": {
-            "type": "string"
+            "type": "string",
+            "description": "Display title."
           }
         }
       },
@@ -4905,17 +5010,20 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ArtistInfo"
-            }
+            },
+            "description": "Original artists credited for this song."
           },
           "id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "description": "Unique identifier."
           },
           "images": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/SongImageInfo"
-            }
+            },
+            "description": "Cover images attached to this song."
           },
           "performance_count": {
             "type": "integer",
@@ -4924,7 +5032,8 @@
             "minimum": 0
           },
           "title": {
-            "type": "string"
+            "type": "string",
+            "description": "Display title."
           }
         }
       },
@@ -4937,11 +5046,13 @@
         ],
         "properties": {
           "kind": {
-            "$ref": "#/components/schemas/SongTagKind"
+            "$ref": "#/components/schemas/SongTagKind",
+            "description": "Semantic category of this tag on the song."
           },
           "tag_id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "description": "ID of the tag to apply."
           }
         }
       },
@@ -4974,14 +5085,16 @@
         "properties": {
           "id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "description": "Unique identifier."
           },
           "kind": {
             "type": "string",
             "description": "Freeform category string (e.g. `\"genre\"`, `\"mood\"`)."
           },
           "name": {
-            "type": "string"
+            "type": "string",
+            "description": "Display name of the tag."
           }
         }
       },
@@ -5010,7 +5123,8 @@
         ],
         "properties": {
           "kind": {
-            "type": "string"
+            "type": "string",
+            "description": "Serialized [`ArtistImageKind`] value to assign."
           }
         }
       },
@@ -5026,16 +5140,19 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Optional freeform bio or description."
           },
           "links": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ArtistLinkInput"
-            }
+            },
+            "description": "Replaces all existing external links."
           },
           "name": {
-            "type": "string"
+            "type": "string",
+            "description": "Display name."
           }
         }
       },
@@ -5047,7 +5164,8 @@
         ],
         "properties": {
           "kind": {
-            "type": "string"
+            "type": "string",
+            "description": "Serialized [`AudioKind`] value to assign."
           }
         }
       },
@@ -5059,7 +5177,8 @@
         ],
         "properties": {
           "content": {
-            "type": "string"
+            "type": "string",
+            "description": "The full lyrics text to store, replacing any existing content."
           }
         }
       },
@@ -5086,7 +5205,8 @@
           },
           "performance_date": {
             "type": "string",
-            "format": "date"
+            "format": "date",
+            "description": "Calendar date of the stream in which this performance occurred."
           },
           "performance_number": {
             "type": "integer",
@@ -5099,14 +5219,16 @@
             "items": {
               "type": "string",
               "format": "uuid"
-            }
+            },
+            "description": "IDs of artists who sang in this performance."
           },
           "song_ids": {
             "type": "array",
             "items": {
               "type": "string",
               "format": "uuid"
-            }
+            },
+            "description": "IDs of songs featured in this performance."
           },
           "stream_number": {
             "type": "integer",
@@ -5127,13 +5249,15 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/PerformanceTagAssignment"
-            }
+            },
+            "description": "Replaces all existing tags."
           },
           "title": {
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Optional display title override."
           }
         }
       },
@@ -5150,16 +5274,20 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Optional freeform description."
           },
           "is_public": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "When false, only the creator and users with `playlists:view_private` can access this playlist."
           },
           "kind": {
-            "$ref": "#/components/schemas/PlaylistKind"
+            "$ref": "#/components/schemas/PlaylistKind",
+            "description": "Determines visibility rules and creation permissions."
           },
           "title": {
-            "type": "string"
+            "type": "string",
+            "description": "Display title."
           }
         }
       },
@@ -5171,7 +5299,8 @@
         ],
         "properties": {
           "kind": {
-            "type": "string"
+            "type": "string",
+            "description": "Serialized [`SongImageKind`] value to assign."
           }
         }
       },
@@ -5189,16 +5318,19 @@
             "items": {
               "type": "string",
               "format": "uuid"
-            }
+            },
+            "description": "Replaces the full set of credited original artists."
           },
           "tags": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/SongTagAssignment"
-            }
+            },
+            "description": "Replaces all existing tags."
           },
           "title": {
-            "type": "string"
+            "type": "string",
+            "description": "Unique display title."
           }
         }
       },
@@ -5210,7 +5342,8 @@
         ],
         "properties": {
           "kind": {
-            "type": "string"
+            "type": "string",
+            "description": "Serialized [`VideoKind`] value to assign."
           }
         }
       },
@@ -5224,10 +5357,12 @@
         "properties": {
           "id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "description": "Unique identifier."
           },
           "username": {
-            "type": "string"
+            "type": "string",
+            "description": "Display name chosen during registration."
           }
         }
       },
@@ -5242,10 +5377,12 @@
         "properties": {
           "id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "description": "Unique identifier of the video record."
           },
           "kind": {
-            "type": "string"
+            "type": "string",
+            "description": "Serialized [`VideoKind`] value."
           },
           "public_url": {
             "type": "string",

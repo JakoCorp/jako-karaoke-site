@@ -15,7 +15,7 @@ import { ConfirmDialog } from "@/components/confirm-dialog";
 import { artistKeys, useArtist } from "@/hooks/api/artists";
 import { applyAll } from "@/lib/staging";
 
-import { ImageEditSection } from "../shared/image-edit-section";
+import { ImageEditSection } from "../components/image-edit-section";
 
 type LinkDraft = { url: string; kind: ArtistLinkKind; label: string };
 

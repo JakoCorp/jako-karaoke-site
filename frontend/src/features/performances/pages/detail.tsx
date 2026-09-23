@@ -2,7 +2,7 @@ import { useParams } from "react-router";
 
 import { usePerformance, usePerformanceLyrics } from "@/hooks/api/performances";
 
-import { PerformanceDetailView } from "../components/performance-detail-view";
+import { PerformanceDetailView } from "../components/detail-view";
 
 export function PerformanceDetailPage() {
   const { id } = useParams<{ id: string }>();

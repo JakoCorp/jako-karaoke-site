@@ -2,7 +2,7 @@ import { useParams } from "react-router";
 
 import { useSong, useSongLyrics } from "@/hooks/api/songs";
 
-import { SongDetailView } from "../components/song-detail-view";
+import { SongDetailView } from "../components/detail-view";
 
 export function SongDetailPage() {
   const { id } = useParams<{ id: string }>();

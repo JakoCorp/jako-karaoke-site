@@ -5,7 +5,7 @@ import type { PerformanceSortDir, PerformanceSortField } from "@/api/performance
 import { useInfinitePerformances } from "@/hooks/api/performances";
 import { useDebounced } from "@/hooks/use-debounced";
 
-import { PerformanceRow } from "./performance-row";
+import { PerformanceRow } from "./row";
 import { SortHeader } from "./sort-header";
 
 interface FilteredPerformanceListProps {

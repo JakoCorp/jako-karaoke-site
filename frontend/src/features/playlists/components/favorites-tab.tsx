@@ -1,6 +1,6 @@
 import { useUserFavorites } from "@/hooks/api/playlists";
 
-import { PlaylistPerfTable } from "./playlist-perf-table";
+import { PlaylistPerfTable } from "./perf-table";
 
 interface Props {
   userId: string;

@@ -1,7 +1,7 @@
 import type { PlaylistEntry } from "@/api/playlists";
 
-import { PlaylistDetailMenu } from "./playlist-menu";
-import { PlaylistPerfTable } from "./playlist-perf-table";
+import { PlaylistDetailMenu } from "./menu";
+import { PlaylistPerfTable } from "./perf-table";
 
 interface Props {
   playlistId: string;

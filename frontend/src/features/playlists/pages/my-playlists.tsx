@@ -7,7 +7,7 @@ import { useDebounced } from "@/hooks/use-debounced";
 import { useAuthStore } from "@/store/auth";
 
 import { CreatePlaylistDialog } from "../components/create-playlist-dialog";
-import { PlaylistGrid } from "../components/playlist-grid";
+import { PlaylistGrid } from "../components/grid";
 
 export function MyPlaylistsPage() {
   const user = useAuthStore((s) => s.user);

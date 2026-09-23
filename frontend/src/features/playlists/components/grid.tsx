@@ -1,6 +1,6 @@
 import type { PlaylistResponse } from "@/api/playlists";
 
-import { PlaylistCard } from "./playlist-card";
+import { PlaylistCard } from "./card";
 
 interface Props {
   playlists: PlaylistResponse[];

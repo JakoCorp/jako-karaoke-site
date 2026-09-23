@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router";
 import { useDeletePlaylist, usePlaylist, usePlaylistEntries } from "@/hooks/api/playlists";
 import { useAuthStore } from "@/store/auth";
 
-import { PlaylistDetailView } from "../components/playlist-detail-view";
+import { PlaylistDetailView } from "../components/detail-view";
 
 export function PlaylistDetailPage() {
   const { id } = useParams<{ id: string }>();
