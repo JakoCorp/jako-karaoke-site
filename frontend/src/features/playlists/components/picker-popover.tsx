@@ -1,6 +1,6 @@
 import { Popover } from "@base-ui/react";
 
-import { PlaylistPickerContent } from "./playlist-picker-content";
+import { PlaylistPickerContent } from "./picker-content";
 
 type Props = {
   performanceId: string;

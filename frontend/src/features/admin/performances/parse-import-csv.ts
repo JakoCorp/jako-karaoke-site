@@ -84,6 +84,14 @@ function isValidDate(s: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(s) && !isNaN(Date.parse(s + "T00:00:00"));
 }
 
+/**
+ * Parses a performance import CSV into structured rows.
+ *
+ * Expected columns: performance_date, stream_number, performance_number, stream_time,
+ * duration, title, songs, singers, tags. Multi-value fields (songs, singers, tags) are
+ * pipe-delimited. Tags use `name:kind` format. Row errors are collected rather than thrown,
+ * so all failures across the file are returned together in `errors`.
+ */
 export function parseImportCsv(text: string): ParseImportCsvResult {
   const lines = text
     .replace(/\r\n/g, "\n")

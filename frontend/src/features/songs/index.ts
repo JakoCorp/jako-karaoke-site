@@ -1,1 +1,1 @@
-export { SongDetailPage } from "./pages/song-detail";
+export { SongDetailPage } from "./pages/detail";

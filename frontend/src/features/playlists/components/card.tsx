@@ -2,7 +2,7 @@ import { Link } from "react-router";
 
 import type { PlaylistResponse } from "@/api/playlists";
 
-import { PlaylistCardMenu } from "./playlist-menu";
+import { PlaylistCardMenu } from "./menu";
 
 interface Props {
   playlist: PlaylistResponse;

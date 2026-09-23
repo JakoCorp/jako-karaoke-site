@@ -1,5 +1,5 @@
-export { PerformanceDetailPage } from "./pages/performance-detail";
-export { PerformanceDetailMenu, PerformanceRowMenu } from "./components/performance-menu";
-export { PerformanceRow } from "./components/performance-row";
+export { PerformanceDetailPage } from "./pages/detail";
+export { PerformanceDetailMenu, PerformanceRowMenu } from "./components/menu";
+export { PerformanceRow } from "./components/row";
 export { SortHeader } from "./components/sort-header";
-export { FilteredPerformanceList } from "./components/filtered-performance-list";
+export { FilteredPerformanceList } from "./components/filtered-list";

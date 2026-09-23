@@ -1,9 +1,11 @@
+/** Formats a duration as `M:SS`. Hours are not shown. Use `formatStreamTime` for h:mm:ss output. */
 export function formatDuration(totalSeconds: number): string {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = Math.floor(totalSeconds % 60);
   return `${String(minutes)}:${String(seconds).padStart(2, "0")}`;
 }
 
+/** Formats a date string as `Mon D, YYYY` using the `en-US` locale. Treats bare dates as local time. */
 export function formatDate(dateString: string): string {
   // Force local timezone interpretation.
   const date = dateString.includes("T") ? new Date(dateString) : new Date(dateString + "T00:00:00");
@@ -18,11 +20,13 @@ function padTwo(n: number): string {
   return String(n).padStart(2, "0");
 }
 
+/** Converts an ISO timestamp to the `YYYY-MM-DDTHH:MM` format expected by `<input type="datetime-local">`. Strips timezone. */
 export function isoToDatetimeLocal(isoString: string): string {
   const date = new Date(isoString);
   return `${String(date.getFullYear())}-${padTwo(date.getMonth() + 1)}-${padTwo(date.getDate())}T${padTwo(date.getHours())}:${padTwo(date.getMinutes())}`;
 }
 
+/** Formats a stream offset as `H:MM:SS`. */
 export function formatStreamTime(totalSeconds: number): string {
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -55,6 +59,7 @@ export function parseStreamTime(input: string): number | null {
   return null;
 }
 
+/** Returns a relative label for dates within the last 7 days ("Today", "Yesterday", "N days ago"), then falls back to `formatDate`. */
 export function formatRelativeDate(isoString: string): string {
   const date = new Date(isoString);
   const now = new Date();

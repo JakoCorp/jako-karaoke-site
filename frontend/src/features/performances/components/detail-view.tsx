@@ -5,7 +5,7 @@ import type { PerformanceResponse } from "@/api/performances";
 import { formatDate, formatDuration, formatStreamTime } from "@/lib/format";
 import { usePlayerStore } from "@/store/player";
 
-import { PerformanceDetailMenu } from "./performance-menu";
+import { PerformanceDetailMenu } from "./menu";
 
 interface Props {
   performance: PerformanceResponse;
