@@ -16,7 +16,7 @@ export function SongRow({ song }: Props) {
         <Link to={`/song/${song.id}`} className="song-row-title song-row-title-link">
           {song.title}
         </Link>
-        {artists && <span className="song-row-sub">{artists}</span>}
+        <span className="song-row-sub">{artists}</span>
       </div>
       <div className="song-row-count">{song.performance_count.toLocaleString()}</div>
     </div>
