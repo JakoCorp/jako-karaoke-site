@@ -27,8 +27,8 @@
   display: flex;
   flex-direction: column;
   padding: 1.125rem 1.125rem 1rem;
-  background-color: var(--color-accent);
-  border: 1px solid var(--color-accent);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 0.75rem;
   text-decoration: none;
   color: inherit;
@@ -247,7 +247,7 @@
   transition: background-color 0.1s;
 
   &:hover {
-    background-color: rgba(0, 0, 0, 0.03);
+    background-color: rgba(255, 255, 255, 0.05);
   }
 }
 
@@ -287,11 +287,6 @@
   pointer-events: none;
 }
 
-@utility playlist-search-input {
-  width: 100%;
-  padding-left: 2.25rem;
-}
-
 @utility playlist-picker-popup {
   width: 15rem;
   background-color: var(--color-surface);
@@ -310,6 +305,8 @@
 @utility playlist-picker-filter-input {
   width: 100%;
   font-size: 0.8125rem;
+  background: transparent;
+  border-color: transparent;
 }
 
 @utility playlist-picker-list {
@@ -332,7 +329,7 @@
   transition: background-color 0.1s;
 
   &:hover {
-    background-color: rgba(0, 0, 0, 0.04);
+    background-color: rgba(255, 255, 255, 0.08);
   }
 }
 

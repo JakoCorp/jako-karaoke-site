@@ -23,7 +23,7 @@
   justify-content: center;
   font-size: 1.375rem;
   font-weight: 700;
-  color: var(--color-player-fg-muted);
+  color: var(--color-green);
   user-select: none;
 }
 
@@ -52,7 +52,7 @@
   justify-content: center;
   color: var(--color-player-btn-fg);
   &:hover {
-    color: var(--color-rplayer-fg);
+    color: var(--color-player-fg);
   }
 }
 

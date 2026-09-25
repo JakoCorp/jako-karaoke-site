@@ -84,7 +84,7 @@ export function MyPlaylistsPage() {
           <MagnifyingGlassIcon size={16} className="playlist-search-icon" />
           <input
             type="search"
-            className="form-input playlist-search-input"
+            className="form-input search-input"
             placeholder="Search playlists…"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}

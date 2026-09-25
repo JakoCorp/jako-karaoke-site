@@ -5,7 +5,7 @@
   flex-direction: column;
   width: var(--spacing-sidebar);
   background-color: var(--color-sidebar);
-  color: var(--color-input);
+  color: var(--color-sidebar-fg-muted);
 }
 
 @utility sidebar-header {

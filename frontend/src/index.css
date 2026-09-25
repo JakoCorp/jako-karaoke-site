@@ -19,7 +19,7 @@
 
 @theme {
   --color-canvas: #2d2a33;
-  --color-surface: #ffffff;
+  --color-surface: #38333e;
   --color-overlay: rgba(0, 0, 0, 0.5);
   --color-blue: #2f6283;
   --color-teal: #4ba5a7;
@@ -31,7 +31,7 @@
   --color-fg: #f5f5f5;
   --color-fg-muted: #c2bdc7;
 
-  --color-border: #cad2c5;
+  --color-border: #3d3a44;
 
   --color-input: #ffffff;
 
@@ -41,8 +41,8 @@
   --color-accent: #111827;
   --color-accent-fg: #ffffff;
 
-  --color-subtle: #f3f4f6;
-  --color-subtle-fg: #111827;
+  --color-subtle: rgba(255, 255, 255, 0.1);
+  --color-subtle-fg: #f5f5f5;
 
   --color-error: rgba(239, 68, 68, 0.1);
   --color-error-fg: #dc2626;
@@ -50,7 +50,7 @@
   --color-danger: #dc2626;
   --color-danger-fg: #ffffff;
 
-  --color-playing: #2d2a33;
+  --color-playing: #63c99b;
 
   --color-sidebar: #3c313d;
   --color-sidebar-fg: #63c99b;
@@ -64,7 +64,7 @@
   --color-player-fg-muted: #c2bdc7;
   --color-player-fg-dim: #c2bdc7;
   --color-player-btn-fg: #c2bdc7;
-  --color-player-thumbnail-bg: #f5f5f5;
+  --color-player-thumbnail-bg: #29483d;
   --color-player-play-bg: #63c99b;
   --color-player-play-bg-hover: #63c99b;
   --color-player-accent: #63c99b;

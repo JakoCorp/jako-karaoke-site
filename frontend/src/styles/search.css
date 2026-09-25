@@ -24,7 +24,7 @@
   width: 100%;
   padding-left: 2.25rem;
   background-color: var(--color-canvas);
-  color: var(--color-input);
+  color: var(--color-fg);
   border-color: var(--color-border);
 
   &::placeholder {
@@ -63,7 +63,7 @@
   border: 1px solid var(--color-border);
   border-radius: 0.25rem;
   background-color: var(--color-canvas);
-  color: var(--color-input);
+  color: var(--color-fg);
   font-size: 0.8125rem;
   cursor: pointer;
 }
@@ -86,7 +86,7 @@
   transition: background-color 0.1s;
 
   &:hover {
-    background-color: rgba(0, 0, 0, 0.03);
+    background-color: rgba(255, 255, 255, 0.05);
   }
 }
 
@@ -140,7 +140,7 @@
 @utility perf-header-label {
   font-size: 0.6875rem;
   font-weight: 600;
-  color: var(--color-input);
+  color: var(--color-fg-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -161,7 +161,7 @@
   cursor: pointer;
   font-size: 0.6875rem;
   font-weight: 600;
-  color: var(--color-input);
+  color: var(--color-fg-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   transition: color 0.1s;
@@ -198,7 +198,7 @@
 
 @utility perf-row-indicator--active {
   opacity: 1;
-  color: var(--color-accent);
+  color: var(--color-green);
 }
 
 @utility perf-row-indicator--playing {
@@ -297,7 +297,7 @@
 
 @utility page-btn--active {
   background-color: var(--color-accent);
-  color: var(--color-accent-f);
+  color: var(--color-accent-fg);
   border-color: var(--color-accent);
 }
 
@@ -341,7 +341,7 @@
   }
 
   &:focus-visible {
-    outline: 2px solid var(--color-side);
+    outline: 2px solid var(--color-green);
     outline-offset: 2px;
   }
 }
@@ -362,7 +362,7 @@
   transition: background-color 0.1s;
 
   &:hover {
-    background-color: rgba(0, 0, 0, 0.03);
+    background-color: rgba(255, 255, 255, 0.05);
   }
 }
 
