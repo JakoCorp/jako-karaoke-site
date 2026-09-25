@@ -9,7 +9,9 @@
 @import "./styles/search.css";
 @import "./styles/header-mobile.css";
 @import "./styles/player.css";
+@import "./styles/performances.css";
 @import "./styles/playlists.css";
+@import "./styles/songs.css";
 
 :root {
   color-scheme: light;
@@ -33,7 +35,6 @@
 
   --color-input: #ffffff;
 
-  /* green */
   --color-item-active-bg: #29483d;
   --color-item-hover: #3f725f;
 
@@ -45,6 +46,9 @@
 
   --color-error: rgba(239, 68, 68, 0.1);
   --color-error-fg: #dc2626;
+
+  --color-danger: #dc2626;
+  --color-danger-fg: #ffffff;
 
   --color-playing: #2d2a33;
 

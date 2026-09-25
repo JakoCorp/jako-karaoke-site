@@ -17,7 +17,9 @@ pub struct ClaimRequest {
 /// Response body for `GET /auth/me`.
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct MeResponse {
+    /// Unique identifier of the authenticated user.
     pub id: Uuid,
+    /// Display name chosen during registration.
     pub username: String,
     /// Capability titles embedded in the session JWT.
     pub capabilities: Vec<String>,

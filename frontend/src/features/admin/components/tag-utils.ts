@@ -1,5 +1,6 @@
 import type { TagAssignment } from "./pickers";
 
+/** Resolves tag assignments to `{ tag_id, kind }` pairs, creating pending tags via `createTag` before returning. */
 export async function resolveTagAssignments<K extends string>(
   assignments: TagAssignment<K>[],
   createTag: (name: string) => Promise<string>,

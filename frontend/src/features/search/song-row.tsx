@@ -1,3 +1,5 @@
+import { Link } from "react-router";
+
 import type { SongSummary } from "@/api/songs";
 
 interface Props {
@@ -11,8 +13,10 @@ export function SongRow({ song }: Props) {
   return (
     <div className="song-row">
       <div className="song-row-info">
-        <span className="song-row-title">{song.title}</span>
-        {artists && <span className="song-row-sub">{artists}</span>}
+        <Link to={`/song/${song.id}`} className="song-row-title song-row-title-link">
+          {song.title}
+        </Link>
+        <span className="song-row-sub">{artists}</span>
       </div>
       <div className="song-row-count">{song.performance_count.toLocaleString()}</div>
     </div>

@@ -100,13 +100,16 @@ export function TagsAdminTab() {
 
       <ConfirmDialog
         open={confirmDeleteId !== null}
-        onClose={() => {
-          setConfirmDeleteId(null);
-          deleteMutation.reset();
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) {
+            setConfirmDeleteId(null);
+            deleteMutation.reset();
+          }
         }}
         onConfirm={() => {
           if (confirmDeleteId) deleteMutation.mutate(confirmDeleteId);
         }}
+        variant="danger"
         isPending={deleteMutation.isPending}
         error={deleteMutation.isError ? "Failed to delete tag." : null}
       />

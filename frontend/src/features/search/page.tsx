@@ -4,12 +4,12 @@ import { useSearchParams } from "react-router";
 
 import type { PerformanceSortDir, PerformanceSortField } from "@/api/performances";
 import type { SongSortDir } from "@/api/songs";
+import { PerformanceRow, SortHeader } from "@/features/performances";
 import { usePerformances } from "@/hooks/api/performances";
 import { useSongs } from "@/hooks/api/songs";
 import { useDebounced } from "@/hooks/use-debounced";
 import { createStateCodec } from "@/lib/url-state";
 
-import { PerformanceRow } from "./performance-row";
 import { SongRow } from "./song-row";
 
 type SearchMode = "performances" | "songs";
@@ -254,6 +254,7 @@ export function SearchPage() {
                 sortDir={perfSortDir}
                 onSort={handleSortChange}
               />
+              <div />
             </div>
             {perfData?.items.map((perf, index) => (
               <PerformanceRow
@@ -331,34 +332,6 @@ export function SearchPage() {
         </div>
       )}
     </div>
-  );
-}
-
-interface SortHeaderProps {
-  label: string;
-  field: PerformanceSortField;
-  sort: PerformanceSortField;
-  sortDir: PerformanceSortDir;
-  onSort: (field: PerformanceSortField) => void;
-}
-
-function SortHeader({ label, field, sort, sortDir, onSort }: SortHeaderProps) {
-  const isActive = sort === field;
-  return (
-    <button
-      className={
-        isActive ? "perf-header-sort-btn perf-header-sort-btn--active" : "perf-header-sort-btn"
-      }
-      onClick={() => onSort(field)}
-      aria-label={
-        isActive
-          ? `${label}, sorted ${sortDir === "asc" ? "ascending" : "descending"}, click to reverse`
-          : `Sort by ${label}`
-      }
-    >
-      {label}
-      {isActive && <span aria-hidden="true">{sortDir === "asc" ? "↑" : "↓"}</span>}
-    </button>
   );
 }
 

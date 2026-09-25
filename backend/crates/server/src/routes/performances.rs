@@ -97,6 +97,8 @@ pub(crate) struct PerformanceListParams {
     pub per_page: u32,
     /// Text search across performance title, song title, and singer names.
     pub q: Option<String>,
+    /// Filter by song ID. Returns only performances that include this song.
+    pub song_id: Option<Uuid>,
     /// Field to sort by. Defaults to `performance_date`.
     pub sort: Option<PerformanceSort>,
     /// Sort direction. Defaults to `desc`.
@@ -110,10 +112,12 @@ impl PerformanceListParams {
 
     fn order_by_clause(&self) -> String {
         let dir = self.sort_dir_str();
+        let id_tiebreak =
+            format!("performance_date {dir}, stream_number {dir}, performance_number {dir}");
         match &self.sort {
-            Some(PerformanceSort::PlayCount) => format!("play_count {dir}"),
-            Some(PerformanceSort::Duration) => format!("duration {dir}"),
-            _ => format!("performance_date {dir}, stream_number {dir}, performance_number {dir}"),
+            Some(PerformanceSort::PlayCount) => format!("play_count {dir}, {id_tiebreak}"),
+            Some(PerformanceSort::Duration) => format!("duration {dir}, {id_tiebreak}"),
+            _ => id_tiebreak,
         }
     }
 }
@@ -401,8 +405,8 @@ pub(crate) async fn list_performances(
 
     let order_by = params.order_by_clause();
     let (total, perfs) = tokio::try_join!(
-        queries::performances::search_count(&state.pool, q),
-        queries::performances::search(&state.pool, q, &order_by, limit, offset),
+        queries::performances::search_count(&state.pool, q, params.song_id),
+        queries::performances::search(&state.pool, q, params.song_id, &order_by, limit, offset),
     )?;
 
     let items = build_performance_summaries(&state.pool, perfs).await?;

@@ -1,6 +1,6 @@
 //! Playlist model.
 
-use chrono::NaiveDateTime;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -25,7 +25,7 @@ pub struct Playlist {
 pub struct PlaylistPerformanceRow {
     #[sqlx(flatten)]
     pub performance: Performance,
-    pub added_at: NaiveDateTime,
+    pub added_at: DateTime<Utc>,
 }
 
 /// Input for creating a new playlist.

@@ -15,7 +15,7 @@ import { ConfirmDialog } from "@/components/confirm-dialog";
 import { artistKeys, useArtist } from "@/hooks/api/artists";
 import { applyAll } from "@/lib/staging";
 
-import { ImageEditSection } from "../shared/image-edit-section";
+import { ImageEditSection } from "../components/image-edit-section";
 
 type LinkDraft = { url: string; kind: ArtistLinkKind; label: string };
 
@@ -320,13 +320,14 @@ export function ArtistDetailPanel({
       </div>
       <ConfirmDialog
         open={deleteOpen}
-        onClose={() => {
-          setDeleteOpen(false);
-          deleteMutation.reset();
+        onOpenChange={(nextOpen) => {
+          setDeleteOpen(nextOpen);
+          if (!nextOpen) deleteMutation.reset();
         }}
         onConfirm={() => {
           deleteMutation.mutate();
         }}
+        variant="danger"
         isPending={deleteMutation.isPending}
         error={deleteMutation.isError ? "Failed to delete artist." : null}
       />

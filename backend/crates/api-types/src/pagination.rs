@@ -6,6 +6,7 @@ use utoipa::{IntoParams, ToSchema};
 /// Generic envelope returned by all paginated list endpoints.
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct PagedResponse<T: ToSchema> {
+    /// Items on the current page.
     pub items: Vec<T>,
     /// Total number of matching items across all pages.
     pub total: u64,
@@ -41,11 +42,14 @@ pub struct SearchPaginationParams {
     pub q: Option<String>,
 }
 
+/// Default values for serde field attributes on pagination params.
 pub mod defaults {
+    /// Returns the default page number (`1`).
     pub fn page() -> u32 {
         1
     }
 
+    /// Returns the default items per page (`20`).
     pub fn per_page() -> u32 {
         20
     }

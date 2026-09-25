@@ -7,13 +7,21 @@ use std::env;
 /// All fields are populated from environment variables by [`Config::from_env`].
 #[derive(Clone, Debug)]
 pub struct Config {
+    /// MySQL connection string.
     pub database_url: String,
+    /// TCP port the HTTP server listens on. Defaults to 3000.
     pub port: u16,
+    /// Absolute filesystem path where uploaded files are stored.
     pub storage_path: String,
+    /// Public base URL prepended to stored file paths when building `public_url` values.
     pub storage_base_url: String,
+    /// Twitch OAuth application client ID.
     pub twitch_client_id: String,
+    /// Twitch OAuth application client secret.
     pub twitch_client_secret: String,
+    /// Discord OAuth application client ID.
     pub discord_client_id: String,
+    /// Discord OAuth application client secret.
     pub discord_client_secret: String,
     /// Public base URL of this server (e.g. `http://localhost:3000`).
     /// Used to build OAuth callback URIs.
@@ -29,7 +37,9 @@ pub struct Config {
 /// Errors that can occur when loading [`Config`].
 #[derive(Debug)]
 pub enum ConfigError {
+    /// A required environment variable was absent.
     Missing(&'static str),
+    /// An environment variable was present but its value could not be parsed.
     Invalid(&'static str),
 }
 

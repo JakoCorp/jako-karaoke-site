@@ -32,3 +32,16 @@ export function useSong(id: string, enabled = true) {
     enabled,
   });
 }
+
+export function useSongLyrics(id: string, enabled = true) {
+  return useQuery({
+    queryKey: ["songs", "lyrics", id],
+    queryFn: async () => {
+      const { data, error, response } = await songsApi.getLyrics(id);
+      if (response.status === 404) return null;
+      if (error) throw error;
+      return data ?? null;
+    },
+    enabled,
+  });
+}

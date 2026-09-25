@@ -1,6 +1,6 @@
 import type { PlaylistEntry } from "@/api/playlists";
 
-import { PlaylistPerfRow } from "./playlist-perf-row";
+import { PlaylistPerfRow } from "./perf-row";
 
 interface Props {
   entries: PlaylistEntry[];

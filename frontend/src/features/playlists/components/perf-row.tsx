@@ -39,15 +39,17 @@ export function PlaylistPerfRow({ entry, entries, index, playlistId, playlistNam
     playQueue(entries, index, { type: "playlist", id: playlistId, name: playlistName });
   }
 
+  const indicatorClass = isCurrent
+    ? isActive
+      ? "perf-row-indicator perf-row-indicator--playing"
+      : "perf-row-indicator perf-row-indicator--active"
+    : "perf-row-indicator";
+
   return (
-    <div className="playlist-perf-row">
-      <button
-        className={isCurrent ? "perf-row-play perf-row-play--active" : "perf-row-play"}
-        onClick={handlePlay}
-        aria-label={isActive ? "Pause" : "Play"}
-      >
+    <button className="playlist-perf-row" onClick={handlePlay}>
+      <div className={indicatorClass} aria-hidden="true">
         {isActive ? <PauseIcon size={14} weight="fill" /> : <PlayIcon size={14} weight="fill" />}
-      </button>
+      </div>
       <div className="perf-row-info">
         <span className="perf-row-title">{primaryTitle}</span>
         <span className="perf-row-sub">
@@ -63,6 +65,6 @@ export function PlaylistPerfRow({ entry, entries, index, playlistId, playlistNam
       </div>
       <div className="perf-row-date">{formatRelativeDate(entry.performance_date)}</div>
       <div className="playlist-perf-added">{formatRelativeDate(entry.added_at)}</div>
-    </div>
+    </button>
   );
 }

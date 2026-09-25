@@ -1,6 +1,7 @@
 import type { PlaylistEntry } from "@/api/playlists";
 
-import { PlaylistPerfTable } from "./playlist-perf-table";
+import { PlaylistDetailMenu } from "./menu";
+import { PlaylistPerfTable } from "./perf-table";
 
 interface Props {
   playlistId: string;
@@ -8,6 +9,7 @@ interface Props {
   description?: string | null;
   entries: PlaylistEntry[];
   isLoading?: boolean;
+  onDelete?: () => void;
 }
 
 export function PlaylistDetailView({
@@ -16,11 +18,15 @@ export function PlaylistDetailView({
   description,
   entries,
   isLoading = false,
+  onDelete,
 }: Props) {
   return (
     <div>
       <div className="playlist-detail-header">
-        <div className="playlist-detail-title">{title}</div>
+        <div className="playlist-detail-title-row">
+          <div className="playlist-detail-title">{title}</div>
+          {onDelete && <PlaylistDetailMenu playlistTitle={title} onDelete={onDelete} />}
+        </div>
         {description && <div className="playlist-detail-sub">{description}</div>}
       </div>
       {isLoading ? (

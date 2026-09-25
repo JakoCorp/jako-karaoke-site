@@ -14,6 +14,7 @@ import {
 } from "@phosphor-icons/react";
 import { useState } from "react";
 
+import { PlaylistPickerPopover } from "@/features/playlists";
 import { formatDuration } from "@/lib/format";
 import { selectCurrent, selectHasNext, selectHasPrev, usePlayerStore } from "@/store/player";
 
@@ -47,6 +48,7 @@ export function MusicPlayer() {
 
   const title = current.title?.trim() || current.songs.map((s) => s.title).join(", ") || "No title";
   const artists = current.singers.map((s) => s.name).join(", ") || "Unknown artist";
+  const initial = title[0]?.toUpperCase() ?? "?";
 
   return (
     <div id="music-player" className="player-bar">
@@ -54,15 +56,19 @@ export function MusicPlayer() {
         {currentThumbnailUrl ? (
           <img src={currentThumbnailUrl} alt="" className="player-thumbnail" />
         ) : (
-          <div className="player-thumbnail" />
+          <div className="player-thumbnail-ph player-thumbnail" aria-hidden="true">
+            {initial}
+          </div>
         )}
         <div className="min-w-0">
           <p className="player-title">{title}</p>
           <p className="player-artist">{artists}</p>
         </div>
-        <button type="button" className="player-btn-sm" aria-label="Add to favorite">
-          <MusicNotesPlusIcon size={20} />
-        </button>
+        <PlaylistPickerPopover performanceId={current.id}>
+          <button type="button" className="player-btn-sm" aria-label="Add to playlist">
+            <MusicNotesPlusIcon size={20} />
+          </button>
+        </PlaylistPickerPopover>
       </div>
 
       <div className="player-col">

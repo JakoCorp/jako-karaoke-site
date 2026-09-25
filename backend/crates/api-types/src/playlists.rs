@@ -33,28 +33,41 @@ impl PlaylistKind {
 /// Request body for `POST /api/playlists`.
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct CreatePlaylistRequest {
+    /// Display title.
     pub title: String,
+    /// Optional freeform description.
     pub description: Option<String>,
+    /// Determines visibility rules and creation permissions.
     pub kind: PlaylistKind,
+    /// When false, only the creator and users with `playlists:view_private` can access this playlist.
     pub is_public: bool,
 }
 
 /// Request body for `PUT /api/playlists/{id}`.
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct UpdatePlaylistRequest {
+    /// Display title.
     pub title: String,
+    /// Optional freeform description.
     pub description: Option<String>,
+    /// Determines visibility rules and creation permissions.
     pub kind: PlaylistKind,
+    /// When false, only the creator and users with `playlists:view_private` can access this playlist.
     pub is_public: bool,
 }
 
 /// Full playlist metadata returned by detail and list endpoints.
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct PlaylistResponse {
+    /// Unique identifier.
     pub id: Uuid,
+    /// Display title.
     pub title: String,
+    /// Optional freeform description.
     pub description: Option<String>,
+    /// Playlist type affecting visibility and permission rules.
     pub kind: PlaylistKind,
+    /// When false, only the creator and users with `playlists:view_private` can access this playlist.
     pub is_public: bool,
     /// User who created this playlist. `None` for system generated playlists.
     pub created_by: Option<Uuid>,
@@ -65,19 +78,23 @@ pub struct PlaylistResponse {
 /// A performance within a playlist, including when it was added.
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct PlaylistEntry {
+    /// The performance in this slot.
     #[serde(flatten)]
     pub performance: PerformanceSummary,
+    /// Timestamp when this performance was added to the playlist.
     pub added_at: DateTime<Utc>,
 }
 
 /// Request body for `POST /api/playlists/{id}/performances`.
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct AddPerformancesRequest {
+    /// IDs of performances to append. Duplicates are silently skipped. Returns 400 if the new total would exceed 1000.
     pub performance_ids: Vec<Uuid>,
 }
 
 /// Request body for `DELETE /api/playlists/{id}/performances`.
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct RemovePerformancesRequest {
+    /// IDs of performances to remove. IDs not in the playlist are silently ignored.
     pub performance_ids: Vec<Uuid>,
 }
