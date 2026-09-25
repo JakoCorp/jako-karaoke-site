@@ -40,15 +40,17 @@ export function PerformanceRow({ performance, performances, index }: Props) {
     playQueue(performances, index, { type: "search" });
   }
 
+  const indicatorClass = isCurrent
+    ? isActive
+      ? "perf-row-indicator perf-row-indicator--playing"
+      : "perf-row-indicator perf-row-indicator--active"
+    : "perf-row-indicator";
+
   return (
-    <PerformanceRowMenu performanceId={performance.id}>
-      <button
-        className={isCurrent ? "perf-row-play perf-row-play--active" : "perf-row-play"}
-        onClick={handlePlay}
-        aria-label={isActive ? "Pause" : "Play"}
-      >
+    <PerformanceRowMenu performanceId={performance.id} onPlay={handlePlay}>
+      <div className={indicatorClass} aria-hidden="true">
         {isActive ? <PauseIcon size={14} weight="fill" /> : <PlayIcon size={14} weight="fill" />}
-      </button>
+      </div>
       <div className="perf-row-info">
         <span className="perf-row-title">{primaryTitle}</span>
         <span className="perf-row-sub">
