@@ -30,13 +30,28 @@
 @utility artists-search-input {
   width: 100%;
   padding-left: 2.25rem;
+  background-color: var(--color-canvas);
+  color: var(--color-input);
+  border-color: var(--color-border);
+
+  &::placeholder {
+    color: var(--color-fg-muted);
+  }
+
+  &:focus {
+    border-color: var(--color-pink);
+    outline: none;
+    box-shadow:
+      0 0 5px var(--color-pink),
+      0 0 12px color-mix(in srgb, var(--color-pink) 50%, transparent);
+  }
 }
 
 @utility artists-sort-select {
   padding: 0.375rem 0.625rem;
   border: 1px solid var(--color-border);
   border-radius: 0.375rem;
-  background-color: var(--color-input);
+  background-color: var(--color-canvas);
   color: var(--color-fg);
   font-size: 0.8125rem;
   cursor: pointer;
@@ -67,7 +82,7 @@
   align-items: center;
   gap: 0.75rem;
   padding: 1.25rem 1rem;
-  background-color: var(--color-surface);
+  background-color: var(--color-accent);
   border: 1px solid var(--color-border);
   border-radius: 0.75rem;
   text-align: center;
@@ -77,6 +92,7 @@
   cursor: default;
 
   &:hover {
+    border: 1px solid var(--color-item-hover);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     transform: translateY(-1px);
   }

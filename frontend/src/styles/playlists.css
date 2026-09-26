@@ -37,6 +37,7 @@
     transform 0.15s;
 
   &:hover {
+    border: 1px solid var(--color-item-hover);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     transform: translateY(-1px);
   }
@@ -246,7 +247,7 @@
   transition: background-color 0.1s;
 
   &:hover {
-    background-color: rgba(0, 0, 0, 0.03);
+    background-color: rgba(255, 255, 255, 0.05);
   }
 }
 
@@ -286,11 +287,6 @@
   pointer-events: none;
 }
 
-@utility playlist-search-input {
-  width: 100%;
-  padding-left: 2.25rem;
-}
-
 @utility playlist-picker-popup {
   width: 15rem;
   background-color: var(--color-surface);
@@ -309,6 +305,8 @@
 @utility playlist-picker-filter-input {
   width: 100%;
   font-size: 0.8125rem;
+  background: transparent;
+  border-color: transparent;
 }
 
 @utility playlist-picker-list {
@@ -331,7 +329,7 @@
   transition: background-color 0.1s;
 
   &:hover {
-    background-color: rgba(0, 0, 0, 0.04);
+    background-color: rgba(255, 255, 255, 0.08);
   }
 }
 
