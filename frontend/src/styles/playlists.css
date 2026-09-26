@@ -235,7 +235,14 @@
   gap: 0.75rem;
   align-items: center;
   padding: 0.75rem 1.5rem 0.75rem 0.75rem;
+  width: 100%;
+  border: none;
   border-bottom: 1px solid var(--color-border);
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  user-select: none;
   transition: background-color 0.1s;
 
   &:hover {

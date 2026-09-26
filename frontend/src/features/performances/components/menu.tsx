@@ -12,6 +12,7 @@ import { PlaylistPickerContent } from "@/features/playlists";
 interface RowMenuProps {
   performanceId: string;
   children: React.ReactNode;
+  onPlay?: () => void;
 }
 
 interface DetailMenuProps {
@@ -70,7 +71,7 @@ function ContextMenuItems({ performanceId, onViewDetails }: MenuItemsProps) {
   );
 }
 
-export function PerformanceRowMenu({ performanceId, children }: RowMenuProps) {
+export function PerformanceRowMenu({ performanceId, children, onPlay }: RowMenuProps) {
   const navigate = useNavigate();
 
   function handleViewDetails() {
@@ -79,10 +80,14 @@ export function PerformanceRowMenu({ performanceId, children }: RowMenuProps) {
 
   return (
     <ContextMenu.Root>
-      <ContextMenu.Trigger className="perf-row">
+      <ContextMenu.Trigger className="perf-row" onClick={onPlay}>
         {children}
         <Menu.Root>
-          <Menu.Trigger className="perf-row-menu-btn" aria-label="Performance options">
+          <Menu.Trigger
+            className="perf-row-menu-btn"
+            aria-label="Performance options"
+            onClick={(e) => e.stopPropagation()}
+          >
             <DotsThreeVerticalIcon size={16} />
           </Menu.Trigger>
           <Menu.Portal>
