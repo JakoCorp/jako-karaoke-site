@@ -14,7 +14,7 @@
 @import "./styles/songs.css";
 
 :root {
-  color-scheme: light;
+  color-scheme: dark;
 }
 
 @theme {
@@ -33,7 +33,7 @@
 
   --color-border: #3d3a44;
 
-  --color-input: #ffffff;
+  --color-input: var(--color-canvas);
 
   --color-item-active-bg: #29483d;
   --color-item-hover: #3f725f;
