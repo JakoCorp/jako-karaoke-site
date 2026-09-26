@@ -31,7 +31,7 @@
   width: 100%;
   padding-left: 2.25rem;
   background-color: var(--color-canvas);
-  color: var(--color-input);
+  color: var(--color-fg);
   border-color: var(--color-border);
 
   &::placeholder {
