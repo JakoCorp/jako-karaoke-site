@@ -42,7 +42,7 @@
   --color-accent-fg: #ffffff;
 
   --color-subtle: rgba(255, 255, 255, 0.1);
-  --color-subtle-fg: #f5f5f5;
+  --color-subtle-fg: var(--color-fg);
 
   --color-error: rgba(239, 68, 68, 0.1);
   --color-error-fg: #dc2626;
@@ -50,10 +50,10 @@
   --color-danger: #dc2626;
   --color-danger-fg: #ffffff;
 
-  --color-playing: #63c99b;
+  --color-playing: var(--color-green);
 
   --color-sidebar: #3c313d;
-  --color-sidebar-fg: #63c99b;
+  --color-sidebar-fg: var(--color-green);
   --color-sidebar-fg-muted: rgba(255, 255, 255, 0.65);
   --color-sidebar-border: #525252;
   --color-sidebar-item-hover: rgba(255, 255, 255, 0.08);
@@ -61,13 +61,13 @@
 
   --color-player: #2a242a;
   --color-player-fg: #ffffff;
-  --color-player-fg-muted: #c2bdc7;
-  --color-player-fg-dim: #c2bdc7;
-  --color-player-btn-fg: #c2bdc7;
-  --color-player-thumbnail-bg: #29483d;
-  --color-player-play-bg: #63c99b;
-  --color-player-play-bg-hover: #63c99b;
-  --color-player-accent: #63c99b;
+  --color-player-fg-muted: var(--color-fg-muted);
+  --color-player-fg-dim: var(--color-fg-muted);
+  --color-player-btn-fg: var(--color-fg-muted);
+  --color-player-thumbnail-bg: var(--color-item-active-bg);
+  --color-player-play-bg: var(--color-green);
+  --color-player-play-bg-hover: var(--color-green);
+  --color-player-accent: var(--color-green);
 
   --spacing-sidebar: 20rem;
 }
