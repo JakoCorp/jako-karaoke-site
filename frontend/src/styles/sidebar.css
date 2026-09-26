@@ -22,14 +22,9 @@
 }
 
 @utility sidebar-brand {
-  font-size: 1.125rem;
+  font-size: 1.25rem;
   font-weight: 700;
-  background: linear-gradient(
-    90deg,
-    var(--color-teal),
-    var(--color-green),
-    var(--color-light-green)
-  );
+  background: linear-gradient(90deg, #fd67ab, #a9d0f0, #83ffb0);
 
   background-clip: text;
   -webkit-background-clip: text;
