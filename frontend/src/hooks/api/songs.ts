@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 import { songsApi } from "@/api/songs";
 import type { SongListParams } from "@/api/songs";
@@ -18,6 +18,7 @@ export function useSongs(params?: SongListParams, enabled = true) {
       return data;
     },
     enabled,
+    placeholderData: keepPreviousData,
   });
 }
 
