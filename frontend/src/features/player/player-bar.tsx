@@ -8,6 +8,8 @@ import {
   SkipBackIcon,
   SkipForwardIcon,
   SpeakerHighIcon,
+  SpeakerLowIcon,
+  SpeakerSlashIcon,
   InfoIcon,
   ClockCountdownIcon,
   CornersOutIcon,
@@ -37,7 +39,9 @@ export function MusicPlayer() {
   const hasNext = usePlayerStore(selectHasNext);
   const hasPrev = usePlayerStore(selectHasPrev);
   const volume = usePlayerStore((s) => s.volume);
+  const isMuted = usePlayerStore((s) => s.isMuted);
   const setVolume = usePlayerStore((s) => s.setVolume);
+  const toggleMute = usePlayerStore((s) => s.toggleMute);
   const currentThumbnailUrl = usePlayerStore((s) => s.currentThumbnailUrl);
   const shuffleEnabled = usePlayerStore((s) => s.shuffleEnabled);
   const toggleShuffle = usePlayerStore((s) => s.toggleShuffle);
@@ -182,8 +186,19 @@ export function MusicPlayer() {
         <QueuePopup />
 
         <div id="volume-control" className="player-volume-control">
-          <button type="button" className="player-btn hidden lg:flex" aria-label="Volume">
-            <SpeakerHighIcon size={20} />
+          <button
+            type="button"
+            className="player-btn hidden lg:flex"
+            onClick={toggleMute}
+            aria-label={isMuted ? "Unmute" : "Mute"}
+          >
+            {isMuted || volume === 0 ? (
+              <SpeakerSlashIcon size={20} />
+            ) : volume < 0.5 ? (
+              <SpeakerLowIcon size={20} />
+            ) : (
+              <SpeakerHighIcon size={20} />
+            )}
           </button>
 
           <input

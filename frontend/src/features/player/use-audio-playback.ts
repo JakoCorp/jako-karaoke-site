@@ -23,6 +23,7 @@ export function useAudioPlayback(): PlaybackProgress {
   const currentAudioUrl = usePlayerStore((s) => s.currentAudioUrl);
   const isPlaying = usePlayerStore((s) => s.isPlaying);
   const volume = usePlayerStore((s) => s.volume);
+  const isMuted = usePlayerStore((s) => s.isMuted);
   const hasNext = usePlayerStore(selectHasNext);
   const next = usePlayerStore((s) => s.next);
   const pause = usePlayerStore((s) => s.pause);
@@ -106,8 +107,8 @@ export function useAudioPlayback(): PlaybackProgress {
   useEffect(() => {
     const engine = engineRef.current;
     if (engine === null) return;
-    engine.setVolume(volume);
-  }, [volume]);
+    engine.setVolume(isMuted ? 0 : volume);
+  }, [volume, isMuted]);
 
   useEffect(() => {
     return () => {

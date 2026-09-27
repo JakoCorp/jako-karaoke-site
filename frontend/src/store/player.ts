@@ -16,6 +16,7 @@ interface PlayerState {
   readonly queueSource: QueueSource | null;
   readonly isPlaying: boolean;
   readonly volume: number;
+  readonly isMuted: boolean;
   readonly currentAudioUrl: string | null;
   readonly currentThumbnailUrl: string | null;
   readonly shuffleEnabled: boolean;
@@ -33,6 +34,7 @@ interface PlayerState {
   resume: () => void;
   stop: () => void;
   setVolume: (volume: number) => void;
+  toggleMute: () => void;
   setCurrentAudioUrl: (url: string | null) => void;
   setCurrentThumbnailUrl: (url: string | null) => void;
   toggleShuffle: () => void;
@@ -53,6 +55,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   queueSource: null,
   isPlaying: false,
   volume: 1,
+  isMuted: false,
   currentAudioUrl: null,
   currentThumbnailUrl: null,
   shuffleEnabled: false,
@@ -168,6 +171,9 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   },
   setVolume: (volume) => {
     set({ volume });
+  },
+  toggleMute: () => {
+    set((s) => ({ isMuted: !s.isMuted }));
   },
   setCurrentAudioUrl: (url) => {
     set({ currentAudioUrl: url });
