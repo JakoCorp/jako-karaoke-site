@@ -12,6 +12,7 @@
 @import "./styles/performances.css";
 @import "./styles/playlists.css";
 @import "./styles/songs.css";
+@import "./styles/tooltip.css";
 
 :root {
   color-scheme: dark;
