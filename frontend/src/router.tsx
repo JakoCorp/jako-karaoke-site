@@ -8,12 +8,14 @@ import { PerformanceDetailPage } from "@/features/performances";
 import { MyPlaylistsPage, PlaylistDetailPage, PublicPlaylistsPage } from "@/features/playlists";
 import { SearchPage } from "@/features/search";
 import { SongDetailPage } from "@/features/songs";
+import { RootErrorBoundary } from "@/layouts/root-error-boundary";
 import { RootLayout } from "@/layouts/root-layout";
 
 export const router = createBrowserRouter([
   {
     path: "/",
     element: <RootLayout />,
+    errorElement: <RootErrorBoundary />,
     children: [
       { index: true, element: <HomePage /> },
       { path: "admin", element: <AdminPage /> },

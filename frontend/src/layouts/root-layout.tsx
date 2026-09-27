@@ -1,5 +1,4 @@
-import { useEffect } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Outlet } from "react-router";
 
 import { authApi } from "@/api/auth";
@@ -9,7 +8,11 @@ import { useAuthStore } from "@/store/auth";
 import { HeaderMobile } from "./header-mobile";
 import { Sidebar } from "./sidebar/sidebar";
 
-export function RootLayout() {
+type RootLayoutProps = {
+  children?: React.ReactNode;
+};
+
+export function RootLayout({ children }: RootLayoutProps) {
   const setUser = useAuthStore((state) => state.setUser);
 
   useEffect(() => {
@@ -30,9 +33,7 @@ export function RootLayout() {
       <div className="flex min-w-0 flex-1 flex-col">
         <HeaderMobile onOpenSidebar={() => setSidebarOpen(true)} />
 
-        <main className="flex-1 overflow-y-auto bg-canvas">
-          <Outlet />
-        </main>
+        <main className="flex-1 overflow-y-auto bg-canvas">{children ?? <Outlet />}</main>
 
         <MusicPlayer />
       </div>

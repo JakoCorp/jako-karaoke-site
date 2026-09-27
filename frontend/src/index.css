@@ -13,6 +13,7 @@
 @import "./styles/playlists.css";
 @import "./styles/songs.css";
 @import "./styles/tooltip.css";
+@import "./styles/not-found.css";
 
 :root {
   color-scheme: dark;
