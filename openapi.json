@@ -396,7 +396,7 @@
         ]
       }
     },
-    "/api/artists/{id}/images/{image_id}": {
+    "/api/artists/{id}/images/{asset_id}": {
       "delete": {
         "tags": [
           "artists"
@@ -414,9 +414,9 @@
             }
           },
           {
-            "name": "image_id",
+            "name": "asset_id",
             "in": "path",
-            "description": "Image ID",
+            "description": "Asset ID",
             "required": true,
             "schema": {
               "type": "string",
@@ -482,9 +482,9 @@
             }
           },
           {
-            "name": "image_id",
+            "name": "asset_id",
             "in": "path",
-            "description": "Image ID",
+            "description": "Asset ID",
             "required": true,
             "schema": {
               "type": "string",
@@ -948,7 +948,7 @@
         },
         "responses": {
           "201": {
-            "description": "Audio uploaded",
+            "description": "Audio uploaded and linked",
             "content": {
               "application/json": {
                 "schema": {
@@ -1005,7 +1005,94 @@
         ]
       }
     },
-    "/api/performances/{id}/audio/{audio_id}": {
+    "/api/performances/{id}/audio/link": {
+      "post": {
+        "tags": [
+          "performances"
+        ],
+        "operationId": "add_audio_link",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Performance ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddAudioLinkRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Audio link created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AudioInfo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Performance not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
+    "/api/performances/{id}/audio/{asset_id}": {
       "delete": {
         "tags": [
           "performances"
@@ -1023,9 +1110,9 @@
             }
           },
           {
-            "name": "audio_id",
+            "name": "asset_id",
             "in": "path",
-            "description": "Audio record ID",
+            "description": "Audio asset ID",
             "required": true,
             "schema": {
               "type": "string",
@@ -1035,7 +1122,7 @@
         ],
         "responses": {
           "204": {
-            "description": "Deleted"
+            "description": "Unlinked"
           },
           "401": {
             "description": "Unauthorized",
@@ -1091,9 +1178,9 @@
             }
           },
           {
-            "name": "audio_id",
+            "name": "asset_id",
             "in": "path",
-            "description": "Audio record ID",
+            "description": "Audio asset ID",
             "required": true,
             "schema": {
               "type": "string",
@@ -1368,7 +1455,7 @@
         },
         "responses": {
           "201": {
-            "description": "Video uploaded",
+            "description": "Video uploaded and linked",
             "content": {
               "application/json": {
                 "schema": {
@@ -1425,7 +1512,94 @@
         ]
       }
     },
-    "/api/performances/{id}/video/{video_id}": {
+    "/api/performances/{id}/video/link": {
+      "post": {
+        "tags": [
+          "performances"
+        ],
+        "operationId": "add_video_link",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Performance ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddVideoLinkRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Video link created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoInfo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Performance not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
+    "/api/performances/{id}/video/{asset_id}": {
       "delete": {
         "tags": [
           "performances"
@@ -1443,9 +1617,9 @@
             }
           },
           {
-            "name": "video_id",
+            "name": "asset_id",
             "in": "path",
-            "description": "Video record ID",
+            "description": "Video asset ID",
             "required": true,
             "schema": {
               "type": "string",
@@ -1455,7 +1629,7 @@
         ],
         "responses": {
           "204": {
-            "description": "Deleted"
+            "description": "Unlinked"
           },
           "401": {
             "description": "Unauthorized",
@@ -1511,9 +1685,9 @@
             }
           },
           {
-            "name": "video_id",
+            "name": "asset_id",
             "in": "path",
-            "description": "Video record ID",
+            "description": "Video asset ID",
             "required": true,
             "schema": {
               "type": "string",
@@ -2428,7 +2602,7 @@
         ]
       }
     },
-    "/api/songs/{id}/images/{image_id}": {
+    "/api/songs/{id}/images/{asset_id}": {
       "delete": {
         "tags": [
           "songs"
@@ -2446,9 +2620,9 @@
             }
           },
           {
-            "name": "image_id",
+            "name": "asset_id",
             "in": "path",
-            "description": "Image ID",
+            "description": "Asset ID",
             "required": true,
             "schema": {
               "type": "string",
@@ -2514,9 +2688,9 @@
             }
           },
           {
-            "name": "image_id",
+            "name": "asset_id",
             "in": "path",
-            "description": "Image ID",
+            "description": "Asset ID",
             "required": true,
             "schema": {
               "type": "string",
@@ -3626,6 +3800,45 @@
   },
   "components": {
     "schemas": {
+      "AddAudioLinkRequest": {
+        "type": "object",
+        "description": "Request body for `POST /api/performances/{id}/audio/link`.",
+        "required": [
+          "external_url",
+          "kind"
+        ],
+        "properties": {
+          "credits": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Attribution text for the content creator."
+          },
+          "external_url": {
+            "type": "string",
+            "description": "The external audio URL to reference."
+          },
+          "kind": {
+            "type": "string",
+            "description": "Serialized [`AudioKind`] value to assign."
+          },
+          "source_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Link to the original source post or stream."
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Display label for this link."
+          }
+        }
+      },
       "AddPerformancesRequest": {
         "type": "object",
         "description": "Request body for `POST /api/playlists/{id}/performances`.",
@@ -3643,12 +3856,11 @@
           }
         }
       },
-      "ArtistImageInfo": {
+      "AddVideoLinkRequest": {
         "type": "object",
-        "description": "An image attached to an artist with its semantic role.",
+        "description": "Request body for `POST /api/performances/{id}/video/link`.",
         "required": [
-          "id",
-          "public_url",
+          "external_url",
           "kind"
         ],
         "properties": {
@@ -3657,22 +3869,51 @@
               "string",
               "null"
             ],
-            "description": "Optional attribution text for the image creator."
+            "description": "Attribution text for the content creator."
           },
-          "id": {
+          "external_url": {
             "type": "string",
-            "format": "uuid",
-            "description": "Unique identifier of the image record."
+            "description": "The external video URL to reference."
           },
           "kind": {
             "type": "string",
-            "description": "Serialized [`ArtistImageKind`] value indicating the image's semantic role."
+            "description": "Serialized [`VideoKind`] value to assign."
           },
-          "public_url": {
-            "type": "string",
-            "description": "Publicly served URL for clients."
+          "source_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Link to the original source post or stream."
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Display label for this link."
           }
         }
+      },
+      "ArtistImageInfo": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/AssetInfo"
+          },
+          {
+            "type": "object",
+            "required": [
+              "kind"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "description": "Serialized [`ArtistImageKind`] value indicating the image's semantic role."
+              }
+            }
+          }
+        ],
+        "description": "An image asset attached to an artist with its semantic role."
       },
       "ArtistImageKind": {
         "type": "string",
@@ -3880,29 +4121,74 @@
           }
         }
       },
-      "AudioInfo": {
+      "AssetInfo": {
         "type": "object",
-        "description": "An audio file attached to a performance with its semantic role.",
+        "description": "Common fields describing a media asset, whether internally hosted or externally referenced.\n\nExactly one of `storage_url` or `external_url` is non-null per asset.",
         "required": [
-          "id",
-          "public_url",
-          "kind"
+          "asset_id"
         ],
         "properties": {
-          "id": {
+          "asset_id": {
             "type": "string",
             "format": "uuid",
-            "description": "Unique identifier of the audio record."
+            "description": "Unique identifier of the asset record."
           },
-          "kind": {
-            "type": "string",
-            "description": "Serialized [`AudioKind`] value."
+          "credits": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Attribution text for the content creator."
           },
-          "public_url": {
-            "type": "string",
-            "description": "Publicly served URL for clients."
+          "external_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Referenced external URL. Present for externally linked content only."
+          },
+          "source_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Link to the original source post or stream."
+          },
+          "storage_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "CDN or file server URL. Present for internally hosted files only."
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Display name or original filename. May be absent for unnamed uploads."
           }
         }
+      },
+      "AudioInfo": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/AssetInfo"
+          },
+          {
+            "type": "object",
+            "required": [
+              "kind"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "description": "Serialized [`AudioKind`] value."
+              }
+            }
+          }
+        ],
+        "description": "An audio asset attached to a performance with its semantic role."
       },
       "AudioKind": {
         "type": "string",
@@ -3920,6 +4206,12 @@
           "kind"
         ],
         "properties": {
+          "credits": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "file": {
             "type": "string",
             "format": "binary"
@@ -3927,6 +4219,18 @@
           "kind": {
             "type": "string",
             "description": "Semantic role. See [`AudioKind`]."
+          },
+          "source_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         }
       },
@@ -4183,6 +4487,18 @@
           "kind": {
             "type": "string",
             "description": "Semantic role of the image. See [`ArtistImageKind`](api_types::artists::ArtistImageKind)."
+          },
+          "source_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         }
       },
@@ -4882,35 +5198,24 @@
         }
       },
       "SongImageInfo": {
-        "type": "object",
-        "description": "An image attached to a song with its semantic role.",
-        "required": [
-          "id",
-          "public_url",
-          "kind"
-        ],
-        "properties": {
-          "credits": {
-            "type": [
-              "string",
-              "null"
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/AssetInfo"
+          },
+          {
+            "type": "object",
+            "required": [
+              "kind"
             ],
-            "description": "Optional attribution text for the image creator."
-          },
-          "id": {
-            "type": "string",
-            "format": "uuid",
-            "description": "Unique identifier of the image record."
-          },
-          "kind": {
-            "type": "string",
-            "description": "Serialized [`SongImageKind`] value indicating the image's semantic role."
-          },
-          "public_url": {
-            "type": "string",
-            "description": "Publicly served URL for clients."
+            "properties": {
+              "kind": {
+                "type": "string",
+                "description": "Serialized [`SongImageKind`] value indicating the image's semantic role."
+              }
+            }
           }
-        }
+        ],
+        "description": "An image asset attached to a song with its semantic role."
       },
       "SongImageKind": {
         "type": "string",
@@ -5158,7 +5463,7 @@
       },
       "UpdateAudioKindRequest": {
         "type": "object",
-        "description": "Request body for `PATCH /api/performances/{id}/audio/{audio_id}`.",
+        "description": "Request body for `PATCH /api/performances/{id}/audio/{asset_id}`.",
         "required": [
           "kind"
         ],
@@ -5336,7 +5641,7 @@
       },
       "UpdateVideoKindRequest": {
         "type": "object",
-        "description": "Request body for `PATCH /api/performances/{id}/video/{video_id}`.",
+        "description": "Request body for `PATCH /api/performances/{id}/video/{asset_id}`.",
         "required": [
           "kind"
         ],
@@ -5367,28 +5672,24 @@
         }
       },
       "VideoInfo": {
-        "type": "object",
-        "description": "A video file attached to a performance with its semantic role.",
-        "required": [
-          "id",
-          "public_url",
-          "kind"
-        ],
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid",
-            "description": "Unique identifier of the video record."
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/AssetInfo"
           },
-          "kind": {
-            "type": "string",
-            "description": "Serialized [`VideoKind`] value."
-          },
-          "public_url": {
-            "type": "string",
-            "description": "Publicly served URL for clients."
+          {
+            "type": "object",
+            "required": [
+              "kind"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string",
+                "description": "Serialized [`VideoKind`] value."
+              }
+            }
           }
-        }
+        ],
+        "description": "A video asset attached to a performance with its semantic role."
       },
       "VideoKind": {
         "type": "string",
@@ -5407,6 +5708,12 @@
           "kind"
         ],
         "properties": {
+          "credits": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "file": {
             "type": "string",
             "format": "binary"
@@ -5414,6 +5721,18 @@
           "kind": {
             "type": "string",
             "description": "Semantic role. See [`VideoKind`]."
+          },
+          "source_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         }
       }

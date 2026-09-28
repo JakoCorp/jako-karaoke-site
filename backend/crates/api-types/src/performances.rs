@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
+use crate::assets::AssetInfo;
 use crate::common::{ArtistInfo, TagInfo};
 use crate::songs::{SongRef, SongSummary};
 use crate::tags::PerformanceTagKind;
@@ -56,36 +57,62 @@ impl VideoKind {
     }
 }
 
-/// An audio file attached to a performance with its semantic role.
+/// An audio asset attached to a performance with its semantic role.
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct AudioInfo {
-    /// Unique identifier of the audio record.
-    pub id: Uuid,
-    /// Publicly served URL for clients.
-    pub public_url: String,
     /// Serialized [`AudioKind`] value.
     pub kind: String,
+    #[serde(flatten)]
+    pub asset: AssetInfo,
 }
 
-/// A video file attached to a performance with its semantic role.
+/// A video asset attached to a performance with its semantic role.
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct VideoInfo {
-    /// Unique identifier of the video record.
-    pub id: Uuid,
-    /// Publicly served URL for clients.
-    pub public_url: String,
     /// Serialized [`VideoKind`] value.
     pub kind: String,
+    #[serde(flatten)]
+    pub asset: AssetInfo,
 }
 
-/// Request body for `PATCH /api/performances/{id}/audio/{audio_id}`.
+/// Request body for `POST /api/performances/{id}/audio/link`.
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct AddAudioLinkRequest {
+    /// The external audio URL to reference.
+    pub external_url: String,
+    /// Serialized [`AudioKind`] value to assign.
+    pub kind: String,
+    /// Display label for this link.
+    pub title: Option<String>,
+    /// Attribution text for the content creator.
+    pub credits: Option<String>,
+    /// Link to the original source post or stream.
+    pub source_url: Option<String>,
+}
+
+/// Request body for `POST /api/performances/{id}/video/link`.
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct AddVideoLinkRequest {
+    /// The external video URL to reference.
+    pub external_url: String,
+    /// Serialized [`VideoKind`] value to assign.
+    pub kind: String,
+    /// Display label for this link.
+    pub title: Option<String>,
+    /// Attribution text for the content creator.
+    pub credits: Option<String>,
+    /// Link to the original source post or stream.
+    pub source_url: Option<String>,
+}
+
+/// Request body for `PATCH /api/performances/{id}/audio/{asset_id}`.
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct UpdateAudioKindRequest {
     /// Serialized [`AudioKind`] value to assign.
     pub kind: String,
 }
 
-/// Request body for `PATCH /api/performances/{id}/video/{video_id}`.
+/// Request body for `PATCH /api/performances/{id}/video/{asset_id}`.
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct UpdateVideoKindRequest {
     /// Serialized [`VideoKind`] value to assign.

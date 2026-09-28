@@ -1,36 +1,24 @@
-//! Query functions for the `performance_audios` table.
+//! Query functions for the `performance_audios` join table.
 
 use sqlx::{Executor, MySql, MySqlConnection};
 use uuid::Uuid;
 
 use crate::error::DbError;
-use crate::models::performance_audio::{NewPerformanceAudio, PerformanceAudio};
+use crate::models::performance_audio::{NewPerformanceAudio, PerformanceAudioRow};
 
 type Result<T> = std::result::Result<T, DbError>;
 
-/// Fetches a performance audio record by ID.
-pub async fn get_by_id(
-    executor: impl Executor<'_, Database = MySql>,
-    id: Uuid,
-) -> Result<Option<PerformanceAudio>> {
-    sqlx::query_as::<_, PerformanceAudio>(
-        "SELECT id, performance_id, public_url, internal_path, kind \
-         FROM performance_audios WHERE id = ?",
-    )
-    .bind(id)
-    .fetch_optional(executor)
-    .await
-    .map_err(DbError::from)
-}
-
-/// Returns all audio records for a given performance.
+/// Returns all audio rows for a given performance, joined with asset fields.
 pub async fn list_for_performance(
     executor: impl Executor<'_, Database = MySql>,
     performance_id: Uuid,
-) -> Result<Vec<PerformanceAudio>> {
-    sqlx::query_as::<_, PerformanceAudio>(
-        "SELECT id, performance_id, public_url, internal_path, kind \
-         FROM performance_audios WHERE performance_id = ?",
+) -> Result<Vec<PerformanceAudioRow>> {
+    sqlx::query_as::<_, PerformanceAudioRow>(
+        "SELECT pa.performance_id, pa.asset_id, pa.kind, \
+         a.title, a.credits, a.source_url, a.storage_url, a.internal_path, a.external_url \
+         FROM performance_audios pa \
+         JOIN assets a ON a.id = pa.asset_id \
+         WHERE pa.performance_id = ?",
     )
     .bind(performance_id)
     .fetch_all(executor)
@@ -38,20 +26,29 @@ pub async fn list_for_performance(
     .map_err(DbError::from)
 }
 
-/// Inserts a new performance audio record and returns it.
-pub async fn create(
+/// Inserts a join row linking an asset to a performance as audio and returns the joined row.
+pub async fn link(
     conn: &mut MySqlConnection,
+    performance_id: Uuid,
     new: &NewPerformanceAudio,
-) -> Result<PerformanceAudio> {
-    sqlx::query_as::<_, PerformanceAudio>(
-        "INSERT INTO performance_audios (performance_id, public_url, internal_path, kind) \
-         VALUES (?, ?, ?, ?) \
-         RETURNING id, performance_id, public_url, internal_path, kind",
+) -> Result<PerformanceAudioRow> {
+    sqlx::query("INSERT INTO performance_audios (performance_id, asset_id, kind) VALUES (?, ?, ?)")
+        .bind(performance_id)
+        .bind(new.asset_id)
+        .bind(&new.kind)
+        .execute(&mut *conn)
+        .await
+        .map_err(DbError::from)?;
+
+    sqlx::query_as::<_, PerformanceAudioRow>(
+        "SELECT pa.performance_id, pa.asset_id, pa.kind, \
+         a.title, a.credits, a.source_url, a.storage_url, a.internal_path, a.external_url \
+         FROM performance_audios pa \
+         JOIN assets a ON a.id = pa.asset_id \
+         WHERE pa.performance_id = ? AND pa.asset_id = ?",
     )
-    .bind(new.performance_id)
-    .bind(&new.public_url)
-    .bind(&new.internal_path)
-    .bind(&new.kind)
+    .bind(performance_id)
+    .bind(new.asset_id)
     .fetch_one(conn)
     .await
     .map_err(DbError::from)
@@ -73,21 +70,37 @@ pub async fn unset_primary(
     .map_err(DbError::from)
 }
 
-/// Updates the kind of a performance audio record. Returns `true` if a row was updated.
-pub async fn update_kind(conn: &mut MySqlConnection, id: Uuid, kind: &str) -> Result<bool> {
-    sqlx::query("UPDATE performance_audios SET kind = ? WHERE id = ?")
-        .bind(kind)
-        .bind(id)
-        .execute(conn)
-        .await
-        .map(|r| r.rows_affected() > 0)
-        .map_err(DbError::from)
+/// Updates the kind of an audio join row. Returns `true` if a row was updated.
+pub async fn update_kind(
+    executor: impl Executor<'_, Database = MySql>,
+    performance_id: Uuid,
+    asset_id: Uuid,
+    kind: &str,
+) -> Result<bool> {
+    sqlx::query(
+        "UPDATE performance_audios SET kind = ? \
+         WHERE performance_id = ? AND asset_id = ?",
+    )
+    .bind(kind)
+    .bind(performance_id)
+    .bind(asset_id)
+    .execute(executor)
+    .await
+    .map(|r| r.rows_affected() > 0)
+    .map_err(DbError::from)
 }
 
-/// Deletes a performance audio record by ID. Returns `true` if a row was deleted.
-pub async fn delete(executor: impl Executor<'_, Database = MySql>, id: Uuid) -> Result<bool> {
-    sqlx::query("DELETE FROM performance_audios WHERE id = ?")
-        .bind(id)
+/// Removes the join row linking an asset to a performance as audio.
+///
+/// Returns `true` if a row was deleted.
+pub async fn unlink(
+    executor: impl Executor<'_, Database = MySql>,
+    performance_id: Uuid,
+    asset_id: Uuid,
+) -> Result<bool> {
+    sqlx::query("DELETE FROM performance_audios WHERE performance_id = ? AND asset_id = ?")
+        .bind(performance_id)
+        .bind(asset_id)
         .execute(executor)
         .await
         .map(|r| r.rows_affected() > 0)

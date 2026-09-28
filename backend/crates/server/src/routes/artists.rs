@@ -16,6 +16,7 @@ use api_types::{
         ArtistResponse, ArtistSummary, CreateArtistRequest, UpdateArtistImageRequest,
         UpdateArtistRequest,
     },
+    assets::AssetInfo,
     common::ErrorResponse,
     pagination::{PagedResponse, defaults as pagination_defaults},
 };
@@ -27,8 +28,8 @@ use db::{
 };
 
 use crate::{
-    auth::middleware::AuthUser, capabilities, error::ApiError, pagination, routes::common::SortDir,
-    state::AppState,
+    auth::middleware::AuthUser, capabilities, convert, error::ApiError, pagination,
+    routes::common::SortDir, state::AppState,
 };
 
 #[derive(utoipa::OpenApi)]
@@ -48,6 +49,7 @@ use crate::{
         ArtistResponse,
         ArtistImageInfo,
         ArtistImageKind,
+        AssetInfo,
         UpdateArtistImageRequest,
         ArtistLinkInfo,
         ArtistLinkInput,
@@ -111,18 +113,9 @@ pub fn router() -> Router<AppState> {
             post(images::upload_artist_image).layer(DefaultBodyLimit::max(50 * 1024 * 1024)),
         )
         .route(
-            "/{id}/images/{image_id}",
+            "/{id}/images/{asset_id}",
             patch(images::update_artist_image_kind).delete(images::delete_artist_image),
         )
-}
-
-fn image_info(image: db::models::Image, kind: String) -> ArtistImageInfo {
-    ArtistImageInfo {
-        id: image.id,
-        public_url: image.public_url,
-        credits: image.credits,
-        kind,
-    }
 }
 
 fn link_info(link: db::models::ArtistLink) -> ArtistLinkInfo {
@@ -146,7 +139,7 @@ async fn hydrate(pool: &MySqlPool, artist: db::models::Artist) -> Result<ArtistR
         description: artist.description,
         images: raw_images
             .into_iter()
-            .map(|(i, k)| image_info(i, k))
+            .map(convert::artist_image_info)
             .collect(),
         links: links.into_iter().map(link_info).collect(),
         song_count: artist.song_count as u64,
@@ -196,7 +189,7 @@ pub(crate) async fn list_artists(
                 .remove(&a.id)
                 .unwrap_or_default()
                 .into_iter()
-                .map(|(i, k)| image_info(i, k))
+                .map(convert::artist_image_info)
                 .collect();
             ArtistSummary {
                 id: a.id,

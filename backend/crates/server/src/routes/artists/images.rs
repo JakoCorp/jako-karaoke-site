@@ -13,9 +13,11 @@ use api_types::{
     artists::{ArtistImageInfo, UpdateArtistImageRequest},
     common::ErrorResponse,
 };
-use db::{error::DbError, models::NewImage, queries};
+use db::{error::DbError, models::NewInternalAsset, queries};
 
-use crate::{auth::middleware::AuthUser, capabilities, error::ApiError, media, state::AppState};
+use crate::{
+    auth::middleware::AuthUser, capabilities, convert, error::ApiError, media, state::AppState,
+};
 
 /// Placeholder schema for image multipart upload bodies.
 #[derive(utoipa::ToSchema)]
@@ -25,7 +27,9 @@ pub(crate) struct ImageUpload {
     pub file: Vec<u8>,
     /// Semantic role of the image. See [`ArtistImageKind`](api_types::artists::ArtistImageKind).
     pub kind: String,
+    pub title: Option<String>,
     pub credits: Option<String>,
+    pub source_url: Option<String>,
 }
 
 struct ImageFields {
@@ -33,7 +37,9 @@ struct ImageFields {
     content_type: String,
     filename: Option<String>,
     kind: String,
+    title: Option<String>,
     credits: Option<String>,
+    source_url: Option<String>,
 }
 
 async fn read_image_fields(multipart: &mut Multipart) -> Result<ImageFields, ApiError> {
@@ -41,7 +47,9 @@ async fn read_image_fields(multipart: &mut Multipart) -> Result<ImageFields, Api
     let mut content_type = String::new();
     let mut filename: Option<String> = None;
     let mut kind: Option<String> = None;
+    let mut title: Option<String> = None;
     let mut credits: Option<String> = None;
+    let mut source_url: Option<String> = None;
 
     while let Some(field) = multipart.next_field().await.map_err(|e| {
         error!("multipart field error: {e:?}");
@@ -67,6 +75,15 @@ async fn read_image_fields(multipart: &mut Multipart) -> Result<ImageFields, Api
                 })?;
                 kind = Some(text);
             }
+            Some("title") => {
+                let text = field.text().await.map_err(|e| {
+                    error!("multipart field error: {e:?}");
+                    ApiError::BadRequest(e.to_string())
+                })?;
+                if !text.is_empty() {
+                    title = Some(text);
+                }
+            }
             Some("credits") => {
                 let text = field.text().await.map_err(|e| {
                     error!("multipart field error: {e:?}");
@@ -74,6 +91,15 @@ async fn read_image_fields(multipart: &mut Multipart) -> Result<ImageFields, Api
                 })?;
                 if !text.is_empty() {
                     credits = Some(text);
+                }
+            }
+            Some("source_url") => {
+                let text = field.text().await.map_err(|e| {
+                    error!("multipart field error: {e:?}");
+                    ApiError::BadRequest(e.to_string())
+                })?;
+                if !text.is_empty() {
+                    source_url = Some(text);
                 }
             }
             _ => {}
@@ -85,7 +111,9 @@ async fn read_image_fields(multipart: &mut Multipart) -> Result<ImageFields, Api
         content_type,
         filename,
         kind: kind.ok_or_else(|| ApiError::BadRequest("missing 'kind' field".into()))?,
+        title,
         credits,
+        source_url,
     })
 }
 
@@ -131,45 +159,46 @@ pub(crate) async fn upload_artist_image(
         &fields.content_type,
         fields.filename.as_deref(),
     )?;
+    let title = fields.title.or_else(|| fields.filename.clone());
     let hash = hex::encode(Sha256::digest(&fields.data));
 
-    let image = if let Some(existing) = queries::images::get_by_hash(&state.pool, &hash).await? {
+    let asset = if let Some(existing) = queries::assets::get_by_hash(&state.pool, &hash).await? {
         existing
     } else {
         let saved = state.store.save("images", ext, &fields.data).await?;
         let mut conn = state.pool.acquire().await.map_err(DbError::Sqlx)?;
-        queries::images::create(
+        queries::assets::create_internal(
             &mut conn,
-            &NewImage {
-                hash,
-                public_url: saved.public_url,
-                internal_path: Some(saved.internal_path),
+            &NewInternalAsset {
+                title,
                 credits: fields.credits,
+                source_url: fields.source_url,
+                hash,
+                storage_url: saved.storage_url,
+                internal_path: Some(saved.internal_path),
             },
         )
         .await?
     };
 
     let mut conn = state.pool.acquire().await.map_err(DbError::Sqlx)?;
-    queries::artists::link_image(&mut conn, id, image.id, kind).await?;
+    queries::artists::link_image(&mut conn, id, asset.id, kind).await?;
 
-    Ok((
-        StatusCode::CREATED,
-        Json(ArtistImageInfo {
-            id: image.id,
-            public_url: image.public_url,
-            credits: image.credits,
-            kind: kind.to_string(),
-        }),
-    ))
+    let rows = queries::artists::get_images(&state.pool, id).await?;
+    let row = rows
+        .into_iter()
+        .find(|r| r.asset_id == asset.id)
+        .ok_or(ApiError::NotFound)?;
+
+    Ok((StatusCode::CREATED, Json(convert::artist_image_info(row))))
 }
 
 #[utoipa::path(
     patch,
-    path = "/api/artists/{id}/images/{image_id}",
+    path = "/api/artists/{id}/images/{asset_id}",
     params(
         ("id" = Uuid, Path, description = "Artist ID"),
-        ("image_id" = Uuid, Path, description = "Image ID"),
+        ("asset_id" = Uuid, Path, description = "Asset ID"),
     ),
     request_body = UpdateArtistImageRequest,
     responses(
@@ -185,7 +214,7 @@ pub(crate) async fn upload_artist_image(
 pub(crate) async fn update_artist_image_kind(
     State(state): State<AppState>,
     auth: AuthUser,
-    Path((id, image_id)): Path<(Uuid, Uuid)>,
+    Path((id, asset_id)): Path<(Uuid, Uuid)>,
     Json(body): Json<UpdateArtistImageRequest>,
 ) -> Result<Json<ArtistImageInfo>, ApiError> {
     if !auth.capabilities.contains(capabilities::ARTISTS_MANAGE_ANY) {
@@ -197,30 +226,26 @@ pub(crate) async fn update_artist_image_kind(
         other => return Err(ApiError::BadRequest(format!("invalid kind '{other}'"))),
     };
 
-    let mut conn = state.pool.acquire().await.map_err(DbError::Sqlx)?;
-    let updated = queries::artists::update_image_kind(&mut conn, id, image_id, kind).await?;
+    let updated = queries::artists::update_image_kind(&state.pool, id, asset_id, kind).await?;
     if !updated {
         return Err(ApiError::NotFound);
     }
 
-    let image = queries::images::get_by_id(&state.pool, image_id)
-        .await?
+    let rows = queries::artists::get_images(&state.pool, id).await?;
+    let row = rows
+        .into_iter()
+        .find(|r| r.asset_id == asset_id)
         .ok_or(ApiError::NotFound)?;
 
-    Ok(Json(ArtistImageInfo {
-        id: image.id,
-        public_url: image.public_url,
-        credits: image.credits,
-        kind: kind.to_string(),
-    }))
+    Ok(Json(convert::artist_image_info(row)))
 }
 
 #[utoipa::path(
     delete,
-    path = "/api/artists/{id}/images/{image_id}",
+    path = "/api/artists/{id}/images/{asset_id}",
     params(
         ("id" = Uuid, Path, description = "Artist ID"),
-        ("image_id" = Uuid, Path, description = "Image ID"),
+        ("asset_id" = Uuid, Path, description = "Asset ID"),
     ),
     responses(
         (status = 204, description = "Deleted"),
@@ -234,23 +259,24 @@ pub(crate) async fn update_artist_image_kind(
 pub(crate) async fn delete_artist_image(
     State(state): State<AppState>,
     auth: AuthUser,
-    Path((id, image_id)): Path<(Uuid, Uuid)>,
+    Path((id, asset_id)): Path<(Uuid, Uuid)>,
 ) -> Result<StatusCode, ApiError> {
     if !auth.capabilities.contains(capabilities::ARTISTS_MANAGE_ANY) {
         return Err(ApiError::Forbidden);
     }
 
-    let removed = queries::artists::unlink_image(&state.pool, id, image_id).await?;
+    let asset = queries::assets::get_by_id(&state.pool, asset_id)
+        .await?
+        .ok_or(ApiError::NotFound)?;
+    let removed = queries::artists::unlink_image(&state.pool, id, asset_id).await?;
     if !removed {
         return Err(ApiError::NotFound);
     }
 
-    let ref_count = queries::images::reference_count(&state.pool, image_id).await?;
-    if ref_count == 0
-        && let Some(image) = queries::images::get_by_id(&state.pool, image_id).await?
-    {
-        queries::images::delete(&state.pool, image_id).await?;
-        if let Some(path) = &image.internal_path
+    let ref_count = queries::assets::reference_count(&state.pool, asset_id).await?;
+    if ref_count == 0 {
+        queries::assets::delete(&state.pool, asset_id).await?;
+        if let Some(path) = &asset.internal_path
             && let Err(e) = state.store.delete(path).await
         {
             error!("failed to delete image file {path}: {e}");

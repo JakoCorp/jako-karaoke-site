@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
+use crate::assets::AssetInfo;
+
 /// Valid kind values for an image attached to an artist.
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "snake_case")]
@@ -48,17 +50,13 @@ impl ArtistLinkKind {
     }
 }
 
-/// An image attached to an artist with its semantic role.
+/// An image asset attached to an artist with its semantic role.
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct ArtistImageInfo {
-    /// Unique identifier of the image record.
-    pub id: Uuid,
-    /// Publicly served URL for clients.
-    pub public_url: String,
-    /// Optional attribution text for the image creator.
-    pub credits: Option<String>,
     /// Serialized [`ArtistImageKind`] value indicating the image's semantic role.
     pub kind: String,
+    #[serde(flatten)]
+    pub asset: AssetInfo,
 }
 
 /// Request body for `PATCH /api/artists/{id}/images/{image_id}`.
@@ -68,11 +66,11 @@ pub struct UpdateArtistImageRequest {
     pub kind: String,
 }
 
-/// Input for attaching an existing image to an artist.
+/// Input for attaching an existing asset as an image to an artist.
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct ArtistImageInput {
-    /// ID of an existing image record to attach.
-    pub image_id: Uuid,
+    /// ID of an existing asset record to attach.
+    pub asset_id: Uuid,
     /// Semantic role for this image.
     pub kind: ArtistImageKind,
 }

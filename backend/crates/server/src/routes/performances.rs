@@ -1,40 +1,39 @@
 //! Performance CRUD handlers, media upload/delete, and the `PerformancesApi` OpenAPI spec struct.
 
+pub(crate) mod audio;
 pub(crate) mod lyrics;
+pub(crate) mod video;
 
 use axum::{
     Json, Router,
-    extract::{DefaultBodyLimit, Multipart, Path, Query, State},
+    extract::{DefaultBodyLimit, Path, Query, State},
     http::StatusCode,
     routing::{get, patch, post},
 };
-use tracing::error;
 use uuid::Uuid;
 
 use api_types::{
+    assets::AssetInfo,
     common::{ArtistInfo, ErrorResponse, TagInfo},
     lyrics::{LyricsResponse, UpdateLyricsRequest},
     pagination::{PagedResponse, defaults as pagination_defaults},
     performances::{
-        AudioInfo, AudioKind, CreatePerformanceRequest, PerformanceResponse, PerformanceSummary,
-        PerformanceTagAssignment, UpdateAudioKindRequest, UpdatePerformanceRequest,
-        UpdateVideoKindRequest, VideoInfo, VideoKind,
+        AddAudioLinkRequest, AddVideoLinkRequest, AudioInfo, AudioKind, CreatePerformanceRequest,
+        PerformanceResponse, PerformanceSummary, PerformanceTagAssignment, UpdateAudioKindRequest,
+        UpdatePerformanceRequest, UpdateVideoKindRequest, VideoInfo, VideoKind,
     },
-    songs::{SongImageInfo, SongRef, SongSummary},
+    songs::{SongRef, SongSummary},
     tags::PerformanceTagKind,
 };
 use db::{
     MySqlPool,
     error::DbError,
-    models::{
-        NewLyrics, NewPerformance, NewPerformanceAudio, NewPerformanceVideo, UpdatePerformance,
-        performance::Performance,
-    },
+    models::{NewLyrics, NewPerformance, UpdatePerformance, performance::Performance},
     queries,
 };
 
 use crate::{
-    auth::middleware::AuthUser, capabilities, error::ApiError, media, pagination,
+    auth::middleware::AuthUser, capabilities, convert, error::ApiError, pagination,
     routes::common::SortDir, state::AppState,
 };
 
@@ -46,12 +45,14 @@ use crate::{
         create_performance,
         update_performance,
         delete_performance,
-        upload_audio,
-        update_audio_kind,
-        delete_audio,
-        upload_video,
-        update_video_kind,
-        delete_video,
+        audio::upload_audio,
+        audio::add_audio_link,
+        audio::update_audio_kind,
+        audio::delete_audio,
+        video::upload_video,
+        video::add_video_link,
+        video::update_video_kind,
+        video::delete_video,
         lyrics::get_performance_lyrics,
         lyrics::put_performance_lyrics,
         lyrics::delete_performance_lyrics,
@@ -69,12 +70,15 @@ use crate::{
         SongSummary,
         ArtistInfo,
         TagInfo,
+        AssetInfo,
         AudioInfo,
         AudioKind,
         VideoInfo,
         VideoKind,
-        AudioUpload,
-        VideoUpload,
+        audio::AudioUpload,
+        video::VideoUpload,
+        AddAudioLinkRequest,
+        AddVideoLinkRequest,
         UpdateAudioKindRequest,
         UpdateVideoKindRequest,
         LyricsResponse,
@@ -181,26 +185,6 @@ pub(crate) async fn build_performance_summaries(
     Ok(items)
 }
 
-/// Placeholder schema for audio multipart upload bodies.
-#[derive(utoipa::ToSchema)]
-#[allow(dead_code)]
-pub(crate) struct AudioUpload {
-    #[schema(value_type = String, format = Binary)]
-    pub file: Vec<u8>,
-    /// Semantic role. See [`AudioKind`].
-    pub kind: String,
-}
-
-/// Placeholder schema for video multipart upload bodies.
-#[derive(utoipa::ToSchema)]
-#[allow(dead_code)]
-pub(crate) struct VideoUpload {
-    #[schema(value_type = String, format = Binary)]
-    pub file: Vec<u8>,
-    /// Semantic role. See [`VideoKind`].
-    pub kind: String,
-}
-
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/", get(list_performances).post(create_performance))
@@ -212,19 +196,21 @@ pub fn router() -> Router<AppState> {
         )
         .route(
             "/{id}/audio",
-            post(upload_audio).layer(DefaultBodyLimit::max(500 * 1024 * 1024)),
+            post(audio::upload_audio).layer(DefaultBodyLimit::max(500 * 1024 * 1024)),
         )
+        .route("/{id}/audio/link", post(audio::add_audio_link))
         .route(
-            "/{id}/audio/{audio_id}",
-            patch(update_audio_kind).delete(delete_audio),
+            "/{id}/audio/{asset_id}",
+            patch(audio::update_audio_kind).delete(audio::delete_audio),
         )
         .route(
             "/{id}/video",
-            post(upload_video).layer(DefaultBodyLimit::max(500 * 1024 * 1024)),
+            post(video::upload_video).layer(DefaultBodyLimit::max(500 * 1024 * 1024)),
         )
+        .route("/{id}/video/link", post(video::add_video_link))
         .route(
-            "/{id}/video/{video_id}",
-            patch(update_video_kind).delete(delete_video),
+            "/{id}/video/{asset_id}",
+            patch(video::update_video_kind).delete(video::delete_video),
         )
         .route(
             "/{id}/lyrics",
@@ -234,12 +220,11 @@ pub fn router() -> Router<AppState> {
         )
 }
 
-/// Loads all related entities for a performance row into a full [`PerformanceResponse`].
 async fn hydrate(
     pool: &MySqlPool,
     perf: db::models::Performance,
 ) -> Result<PerformanceResponse, ApiError> {
-    let (songs, singers, tags, audio, video) = tokio::try_join!(
+    let (songs, singers, tags, audio_rows, video_rows) = tokio::try_join!(
         queries::performances::get_songs(pool, perf.id),
         queries::performances::get_singers(pool, perf.id),
         queries::performances::get_tags(pool, perf.id),
@@ -257,12 +242,7 @@ async fn hydrate(
                 .remove(&s.id)
                 .unwrap_or_default()
                 .into_iter()
-                .map(|(i, kind)| SongImageInfo {
-                    id: i.id,
-                    public_url: i.public_url,
-                    credits: i.credits,
-                    kind,
-                })
+                .map(convert::song_image_info)
                 .collect();
             SongSummary {
                 id: s.id,
@@ -292,23 +272,8 @@ async fn hydrate(
         })
         .collect();
 
-    let audio = audio
-        .into_iter()
-        .map(|a| AudioInfo {
-            id: a.id,
-            public_url: a.public_url,
-            kind: a.kind,
-        })
-        .collect();
-
-    let video = video
-        .into_iter()
-        .map(|v| VideoInfo {
-            id: v.id,
-            public_url: v.public_url,
-            kind: v.kind,
-        })
-        .collect();
+    let audio = audio_rows.into_iter().map(convert::audio_info).collect();
+    let video = video_rows.into_iter().map(convert::video_info).collect();
 
     Ok(PerformanceResponse {
         id: perf.id,
@@ -332,59 +297,6 @@ fn tag_pairs(assignments: &[PerformanceTagAssignment]) -> Vec<(Uuid, &str)> {
         .iter()
         .map(|a| (a.tag_id, a.kind.as_str()))
         .collect()
-}
-
-struct MediaFields {
-    data: Vec<u8>,
-    content_type: String,
-    filename: Option<String>,
-    kind: String,
-}
-
-async fn read_media_fields(multipart: &mut Multipart) -> Result<MediaFields, ApiError> {
-    let mut data: Option<Vec<u8>> = None;
-    let mut content_type = String::new();
-    let mut filename: Option<String> = None;
-    let mut kind: Option<String> = None;
-
-    while let Some(field) = multipart.next_field().await.map_err(|e| {
-        error!("multipart field error: {e:?}");
-        ApiError::BadRequest(e.to_string())
-    })? {
-        match field.name() {
-            Some("file") => {
-                content_type = field
-                    .content_type()
-                    .unwrap_or("application/octet-stream")
-                    .to_string();
-                filename = field.file_name().map(str::to_string);
-                data = Some(
-                    field
-                        .bytes()
-                        .await
-                        .map_err(|e| {
-                            error!("multipart read error: {e:?}");
-                            ApiError::BadRequest(e.to_string())
-                        })?
-                        .to_vec(),
-                );
-            }
-            Some("kind") => {
-                kind = Some(field.text().await.map_err(|e| {
-                    error!("multipart field error: {e:?}");
-                    ApiError::BadRequest(e.to_string())
-                })?);
-            }
-            _ => {}
-        }
-    }
-
-    Ok(MediaFields {
-        data: data.ok_or_else(|| ApiError::BadRequest("missing 'file' field".into()))?,
-        content_type,
-        filename,
-        kind: kind.ok_or_else(|| ApiError::BadRequest("missing 'kind' field".into()))?,
-    })
 }
 
 #[utoipa::path(
@@ -580,352 +492,4 @@ pub(crate) async fn delete_performance(
     } else {
         Err(ApiError::NotFound)
     }
-}
-
-#[utoipa::path(
-    post,
-    path = "/api/performances/{id}/audio",
-    params(("id" = Uuid, Path, description = "Performance ID")),
-    request_body(content = AudioUpload, content_type = "multipart/form-data"),
-    responses(
-        (status = 201, description = "Audio uploaded", body = AudioInfo),
-        (status = 400, description = "Bad request", body = ErrorResponse),
-        (status = 401, description = "Unauthorized", body = ErrorResponse),
-        (status = 403, description = "Forbidden", body = ErrorResponse),
-        (status = 404, description = "Performance not found", body = ErrorResponse),
-    ),
-    tag = "performances",
-    security(("session" = []))
-)]
-pub(crate) async fn upload_audio(
-    State(state): State<AppState>,
-    auth: AuthUser,
-    Path(id): Path<Uuid>,
-    mut multipart: Multipart,
-) -> Result<(StatusCode, Json<AudioInfo>), ApiError> {
-    if !auth
-        .capabilities
-        .contains(capabilities::PERFORMANCES_MANAGE_ANY)
-    {
-        return Err(ApiError::Forbidden);
-    }
-    queries::performances::get_by_id(&state.pool, id)
-        .await?
-        .ok_or(ApiError::NotFound)?;
-
-    let fields = read_media_fields(&mut multipart).await?;
-    let kind = match fields.kind.trim() {
-        "primary" => AudioKind::Primary.as_str(),
-        "misc" => AudioKind::Misc.as_str(),
-        other => {
-            return Err(ApiError::BadRequest(format!(
-                "invalid audio kind '{other}'"
-            )));
-        }
-    };
-    let ext = media::resolve_ext(
-        media::MediaKind::Audio,
-        &fields.content_type,
-        fields.filename.as_deref(),
-    )?;
-    let saved = state.store.save("audio", ext, &fields.data).await?;
-
-    let mut conn = state.pool.acquire().await.map_err(DbError::Sqlx)?;
-    if kind == AudioKind::Primary.as_str() {
-        queries::performance_audios::unset_primary(&mut *conn, id).await?;
-    }
-    let audio = queries::performance_audios::create(
-        &mut conn,
-        &NewPerformanceAudio {
-            performance_id: id,
-            public_url: saved.public_url,
-            internal_path: Some(saved.internal_path),
-            kind: kind.to_string(),
-        },
-    )
-    .await?;
-
-    Ok((
-        StatusCode::CREATED,
-        Json(AudioInfo {
-            id: audio.id,
-            public_url: audio.public_url,
-            kind: audio.kind,
-        }),
-    ))
-}
-
-#[utoipa::path(
-    patch,
-    path = "/api/performances/{id}/audio/{audio_id}",
-    params(
-        ("id" = Uuid, Path, description = "Performance ID"),
-        ("audio_id" = Uuid, Path, description = "Audio record ID"),
-    ),
-    request_body = UpdateAudioKindRequest,
-    responses(
-        (status = 200, description = "Kind updated", body = AudioInfo),
-        (status = 400, description = "Bad request", body = ErrorResponse),
-        (status = 401, description = "Unauthorized", body = ErrorResponse),
-        (status = 403, description = "Forbidden", body = ErrorResponse),
-        (status = 404, description = "Not found", body = ErrorResponse),
-    ),
-    tag = "performances",
-    security(("session" = []))
-)]
-pub(crate) async fn update_audio_kind(
-    State(state): State<AppState>,
-    auth: AuthUser,
-    Path((id, audio_id)): Path<(Uuid, Uuid)>,
-    Json(body): Json<UpdateAudioKindRequest>,
-) -> Result<Json<AudioInfo>, ApiError> {
-    if !auth
-        .capabilities
-        .contains(capabilities::PERFORMANCES_MANAGE_ANY)
-    {
-        return Err(ApiError::Forbidden);
-    }
-
-    let kind = match body.kind.trim() {
-        "primary" => AudioKind::Primary.as_str(),
-        "misc" => AudioKind::Misc.as_str(),
-        other => {
-            return Err(ApiError::BadRequest(format!(
-                "invalid audio kind '{other}'"
-            )));
-        }
-    };
-
-    let audio = queries::performance_audios::get_by_id(&state.pool, audio_id)
-        .await?
-        .ok_or(ApiError::NotFound)?;
-    if audio.performance_id != id {
-        return Err(ApiError::NotFound);
-    }
-
-    let mut conn = state.pool.acquire().await.map_err(DbError::Sqlx)?;
-    if kind == AudioKind::Primary.as_str() {
-        queries::performance_audios::unset_primary(&mut *conn, id).await?;
-    }
-    queries::performance_audios::update_kind(&mut conn, audio_id, kind).await?;
-
-    Ok(Json(AudioInfo {
-        id: audio.id,
-        public_url: audio.public_url,
-        kind: kind.to_string(),
-    }))
-}
-
-#[utoipa::path(
-    delete,
-    path = "/api/performances/{id}/audio/{audio_id}",
-    params(
-        ("id" = Uuid, Path, description = "Performance ID"),
-        ("audio_id" = Uuid, Path, description = "Audio record ID"),
-    ),
-    responses(
-        (status = 204, description = "Deleted"),
-        (status = 401, description = "Unauthorized", body = ErrorResponse),
-        (status = 403, description = "Forbidden", body = ErrorResponse),
-        (status = 404, description = "Not found", body = ErrorResponse),
-    ),
-    tag = "performances",
-    security(("session" = []))
-)]
-pub(crate) async fn delete_audio(
-    State(state): State<AppState>,
-    auth: AuthUser,
-    Path((id, audio_id)): Path<(Uuid, Uuid)>,
-) -> Result<StatusCode, ApiError> {
-    if !auth
-        .capabilities
-        .contains(capabilities::PERFORMANCES_MANAGE_ANY)
-    {
-        return Err(ApiError::Forbidden);
-    }
-    let audio = queries::performance_audios::get_by_id(&state.pool, audio_id)
-        .await?
-        .ok_or(ApiError::NotFound)?;
-    if audio.performance_id != id {
-        return Err(ApiError::NotFound);
-    }
-    queries::performance_audios::delete(&state.pool, audio_id).await?;
-    if let Some(path) = &audio.internal_path
-        && let Err(e) = state.store.delete(path).await
-    {
-        error!("failed to delete audio file {path}: {e}");
-    }
-    Ok(StatusCode::NO_CONTENT)
-}
-
-#[utoipa::path(
-    post,
-    path = "/api/performances/{id}/video",
-    params(("id" = Uuid, Path, description = "Performance ID")),
-    request_body(content = VideoUpload, content_type = "multipart/form-data"),
-    responses(
-        (status = 201, description = "Video uploaded", body = VideoInfo),
-        (status = 400, description = "Bad request", body = ErrorResponse),
-        (status = 401, description = "Unauthorized", body = ErrorResponse),
-        (status = 403, description = "Forbidden", body = ErrorResponse),
-        (status = 404, description = "Performance not found", body = ErrorResponse),
-    ),
-    tag = "performances",
-    security(("session" = []))
-)]
-pub(crate) async fn upload_video(
-    State(state): State<AppState>,
-    auth: AuthUser,
-    Path(id): Path<Uuid>,
-    mut multipart: Multipart,
-) -> Result<(StatusCode, Json<VideoInfo>), ApiError> {
-    if !auth
-        .capabilities
-        .contains(capabilities::PERFORMANCES_MANAGE_ANY)
-    {
-        return Err(ApiError::Forbidden);
-    }
-    queries::performances::get_by_id(&state.pool, id)
-        .await?
-        .ok_or(ApiError::NotFound)?;
-
-    let fields = read_media_fields(&mut multipart).await?;
-    let kind = match fields.kind.trim() {
-        "clip" => VideoKind::Clip.as_str(),
-        "vod" => VideoKind::Vod.as_str(),
-        "misc" => VideoKind::Misc.as_str(),
-        other => {
-            return Err(ApiError::BadRequest(format!(
-                "invalid video kind '{other}'"
-            )));
-        }
-    };
-    let ext = media::resolve_ext(
-        media::MediaKind::Video,
-        &fields.content_type,
-        fields.filename.as_deref(),
-    )?;
-    let saved = state.store.save("video", ext, &fields.data).await?;
-
-    let mut conn = state.pool.acquire().await.map_err(DbError::Sqlx)?;
-    let video = queries::performance_videos::create(
-        &mut conn,
-        &NewPerformanceVideo {
-            performance_id: id,
-            public_url: saved.public_url,
-            internal_path: Some(saved.internal_path),
-            kind: kind.to_string(),
-        },
-    )
-    .await?;
-
-    Ok((
-        StatusCode::CREATED,
-        Json(VideoInfo {
-            id: video.id,
-            public_url: video.public_url,
-            kind: video.kind,
-        }),
-    ))
-}
-
-#[utoipa::path(
-    patch,
-    path = "/api/performances/{id}/video/{video_id}",
-    params(
-        ("id" = Uuid, Path, description = "Performance ID"),
-        ("video_id" = Uuid, Path, description = "Video record ID"),
-    ),
-    request_body = UpdateVideoKindRequest,
-    responses(
-        (status = 200, description = "Kind updated", body = VideoInfo),
-        (status = 400, description = "Bad request", body = ErrorResponse),
-        (status = 401, description = "Unauthorized", body = ErrorResponse),
-        (status = 403, description = "Forbidden", body = ErrorResponse),
-        (status = 404, description = "Not found", body = ErrorResponse),
-    ),
-    tag = "performances",
-    security(("session" = []))
-)]
-pub(crate) async fn update_video_kind(
-    State(state): State<AppState>,
-    auth: AuthUser,
-    Path((id, video_id)): Path<(Uuid, Uuid)>,
-    Json(body): Json<UpdateVideoKindRequest>,
-) -> Result<Json<VideoInfo>, ApiError> {
-    if !auth
-        .capabilities
-        .contains(capabilities::PERFORMANCES_MANAGE_ANY)
-    {
-        return Err(ApiError::Forbidden);
-    }
-
-    let kind = match body.kind.trim() {
-        "clip" => VideoKind::Clip.as_str(),
-        "vod" => VideoKind::Vod.as_str(),
-        "misc" => VideoKind::Misc.as_str(),
-        other => {
-            return Err(ApiError::BadRequest(format!(
-                "invalid video kind '{other}'"
-            )));
-        }
-    };
-
-    let video = queries::performance_videos::get_by_id(&state.pool, video_id)
-        .await?
-        .ok_or(ApiError::NotFound)?;
-    if video.performance_id != id {
-        return Err(ApiError::NotFound);
-    }
-
-    let mut conn = state.pool.acquire().await.map_err(DbError::Sqlx)?;
-    queries::performance_videos::update_kind(&mut conn, video_id, kind).await?;
-
-    Ok(Json(VideoInfo {
-        id: video.id,
-        public_url: video.public_url,
-        kind: kind.to_string(),
-    }))
-}
-
-#[utoipa::path(
-    delete,
-    path = "/api/performances/{id}/video/{video_id}",
-    params(
-        ("id" = Uuid, Path, description = "Performance ID"),
-        ("video_id" = Uuid, Path, description = "Video record ID"),
-    ),
-    responses(
-        (status = 204, description = "Deleted"),
-        (status = 401, description = "Unauthorized", body = ErrorResponse),
-        (status = 403, description = "Forbidden", body = ErrorResponse),
-        (status = 404, description = "Not found", body = ErrorResponse),
-    ),
-    tag = "performances",
-    security(("session" = []))
-)]
-pub(crate) async fn delete_video(
-    State(state): State<AppState>,
-    auth: AuthUser,
-    Path((id, video_id)): Path<(Uuid, Uuid)>,
-) -> Result<StatusCode, ApiError> {
-    if !auth
-        .capabilities
-        .contains(capabilities::PERFORMANCES_MANAGE_ANY)
-    {
-        return Err(ApiError::Forbidden);
-    }
-    let video = queries::performance_videos::get_by_id(&state.pool, video_id)
-        .await?
-        .ok_or(ApiError::NotFound)?;
-    if video.performance_id != id {
-        return Err(ApiError::NotFound);
-    }
-    queries::performance_videos::delete(&state.pool, video_id).await?;
-    if let Some(path) = &video.internal_path
-        && let Err(e) = state.store.delete(path).await
-    {
-        error!("failed to delete video file {path}: {e}");
-    }
-    Ok(StatusCode::NO_CONTENT)
 }

@@ -12,6 +12,7 @@ use axum::{
 use uuid::Uuid;
 
 use api_types::{
+    assets::AssetInfo,
     common::{ArtistInfo, ErrorResponse, TagInfo},
     lyrics::{LyricsResponse, UpdateLyricsRequest},
     pagination::{PagedResponse, defaults as pagination_defaults},
@@ -29,8 +30,8 @@ use db::{
 };
 
 use crate::{
-    auth::middleware::AuthUser, capabilities, error::ApiError, pagination, routes::common::SortDir,
-    state::AppState,
+    auth::middleware::AuthUser, capabilities, convert, error::ApiError, pagination,
+    routes::common::SortDir, state::AppState,
 };
 
 #[derive(utoipa::OpenApi)]
@@ -57,6 +58,7 @@ use crate::{
         SongTagKind,
         SongImageKind,
         SongImageInfo,
+        AssetInfo,
         UpdateSongImageRequest,
         images::ImageUpload,
         LyricsResponse,
@@ -116,7 +118,7 @@ pub fn router() -> Router<AppState> {
             post(images::upload_song_image).layer(DefaultBodyLimit::max(50 * 1024 * 1024)),
         )
         .route(
-            "/{id}/images/{image_id}",
+            "/{id}/images/{asset_id}",
             patch(images::update_song_image_kind).delete(images::delete_song_image),
         )
         .route(
@@ -153,15 +155,7 @@ async fn hydrate(pool: &MySqlPool, song: db::models::Song) -> Result<SongRespons
         })
         .collect::<Vec<_>>();
 
-    let images = images
-        .into_iter()
-        .map(|(i, kind)| SongImageInfo {
-            id: i.id,
-            public_url: i.public_url,
-            credits: i.credits,
-            kind,
-        })
-        .collect();
+    let images = images.into_iter().map(convert::song_image_info).collect();
 
     Ok(SongResponse {
         id: song.id,
@@ -225,12 +219,7 @@ pub(crate) async fn list_songs(
                 .remove(&s.id)
                 .unwrap_or_default()
                 .into_iter()
-                .map(|(i, kind)| SongImageInfo {
-                    id: i.id,
-                    public_url: i.public_url,
-                    credits: i.credits,
-                    kind,
-                })
+                .map(convert::song_image_info)
                 .collect();
             SongSummary {
                 id: s.id,

@@ -1,6 +1,6 @@
 use db::models::artist::{NewArtist, NewArtistLink, UpdateArtist};
-use db::models::image::NewImage;
-use db::queries::{artists, images};
+use db::models::asset::NewInternalAsset;
+use db::queries::{artists, assets};
 use sqlx::MySqlPool;
 use uuid::Uuid;
 
@@ -11,15 +11,17 @@ fn new_artist(name: &str) -> NewArtist {
     }
 }
 
-async fn create_image(pool: &MySqlPool, url: &str) -> Uuid {
+async fn create_asset(pool: &MySqlPool, url: &str) -> Uuid {
     let mut conn = pool.acquire().await.unwrap();
-    images::create(
+    assets::create_internal(
         &mut conn,
-        &NewImage {
-            hash: format!("{:064x}", url.len()),
-            public_url: url.to_string(),
-            internal_path: None,
+        &NewInternalAsset {
+            title: None,
             credits: None,
+            source_url: None,
+            hash: format!("{:064x}", url.len()),
+            storage_url: url.to_string(),
+            internal_path: None,
         },
     )
     .await
@@ -129,18 +131,18 @@ async fn set_and_get_images(pool: MySqlPool) {
         .await
         .unwrap();
 
-    let image_id = create_image(&pool, "https://example.com/avatar.png").await;
+    let asset_id = create_asset(&pool, "https://example.com/avatar.png").await;
 
     let mut tx = pool.begin().await.unwrap();
-    artists::set_images(&mut tx, artist.id, &[(image_id, "avatar")])
+    artists::set_images(&mut tx, artist.id, &[(asset_id, "avatar")])
         .await
         .unwrap();
     tx.commit().await.unwrap();
 
     let images = artists::get_images(&pool, artist.id).await.unwrap();
     assert_eq!(images.len(), 1);
-    assert_eq!(images[0].0.id, image_id);
-    assert_eq!(images[0].1, "avatar");
+    assert_eq!(images[0].asset_id, asset_id);
+    assert_eq!(images[0].kind, "avatar");
 }
 
 #[sqlx::test(migrator = "db::MIGRATOR")]
@@ -150,24 +152,24 @@ async fn set_images_replaces_existing(pool: MySqlPool) {
         .await
         .unwrap();
 
-    let image_a = create_image(&pool, "https://example.com/a.png").await;
-    let image_b = create_image(&pool, "https://example.com/b.png").await;
+    let asset_a = create_asset(&pool, "https://example.com/a.png").await;
+    let asset_b = create_asset(&pool, "https://example.com/b.png").await;
 
     let mut tx = pool.begin().await.unwrap();
-    artists::set_images(&mut tx, artist.id, &[(image_a, "avatar")])
+    artists::set_images(&mut tx, artist.id, &[(asset_a, "avatar")])
         .await
         .unwrap();
     tx.commit().await.unwrap();
 
     let mut tx = pool.begin().await.unwrap();
-    artists::set_images(&mut tx, artist.id, &[(image_b, "avatar")])
+    artists::set_images(&mut tx, artist.id, &[(asset_b, "avatar")])
         .await
         .unwrap();
     tx.commit().await.unwrap();
 
     let images = artists::get_images(&pool, artist.id).await.unwrap();
     assert_eq!(images.len(), 1);
-    assert_eq!(images[0].0.id, image_b);
+    assert_eq!(images[0].asset_id, asset_b);
 }
 
 #[sqlx::test(migrator = "db::MIGRATOR")]
@@ -191,14 +193,14 @@ async fn get_images_batch_groups_by_artist(pool: MySqlPool) {
         .await
         .unwrap();
 
-    let image_a = create_image(&pool, "https://example.com/a.png").await;
-    let image_b = create_image(&pool, "https://example.com/b.png").await;
+    let asset_a = create_asset(&pool, "https://example.com/a.png").await;
+    let asset_b = create_asset(&pool, "https://example.com/b.png").await;
 
     let mut tx = pool.begin().await.unwrap();
-    artists::set_images(&mut tx, artist_a.id, &[(image_a, "avatar")])
+    artists::set_images(&mut tx, artist_a.id, &[(asset_a, "avatar")])
         .await
         .unwrap();
-    artists::set_images(&mut tx, artist_b.id, &[(image_b, "avatar")])
+    artists::set_images(&mut tx, artist_b.id, &[(asset_b, "avatar")])
         .await
         .unwrap();
     tx.commit().await.unwrap();
@@ -208,9 +210,9 @@ async fn get_images_batch_groups_by_artist(pool: MySqlPool) {
         .unwrap();
 
     assert_eq!(batch[&artist_a.id].len(), 1);
-    assert_eq!(batch[&artist_a.id][0].0.id, image_a);
+    assert_eq!(batch[&artist_a.id][0].asset_id, asset_a);
     assert_eq!(batch[&artist_b.id].len(), 1);
-    assert_eq!(batch[&artist_b.id][0].0.id, image_b);
+    assert_eq!(batch[&artist_b.id][0].asset_id, asset_b);
 }
 
 #[sqlx::test(migrator = "db::MIGRATOR")]

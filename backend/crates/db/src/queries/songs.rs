@@ -10,9 +10,21 @@ use uuid::Uuid;
 
 use crate::error::DbError;
 use crate::models::artist::Artist;
-use crate::models::image::Image;
 use crate::models::song::{NewSong, Song, UpdateSong};
 use crate::models::tag::TagWithKind;
+
+/// Flat query result joining a song image join row with its asset fields.
+#[derive(Debug, Clone, sqlx::FromRow)]
+pub struct SongImageRow {
+    pub asset_id: Uuid,
+    pub kind: String,
+    pub title: Option<String>,
+    pub credits: Option<String>,
+    pub source_url: Option<String>,
+    pub storage_url: Option<String>,
+    pub internal_path: Option<String>,
+    pub external_url: Option<String>,
+}
 
 type Result<T> = std::result::Result<T, DbError>;
 
@@ -305,47 +317,22 @@ pub async fn set_tags(
     Ok(())
 }
 
-/// Returns the images for a song with their kind from the `song_images` join table.
+/// Returns the images for a song joined with asset fields.
 pub async fn get_images(
     executor: impl Executor<'_, Database = MySql>,
     song_id: Uuid,
-) -> Result<Vec<(Image, String)>> {
-    #[derive(sqlx::FromRow)]
-    struct Row {
-        id: Uuid,
-        hash: String,
-        public_url: String,
-        internal_path: Option<String>,
-        credits: Option<String>,
-        kind: String,
-    }
-
-    sqlx::query_as::<_, Row>(
-        "SELECT i.id, i.hash, i.public_url, i.internal_path, i.credits, si.kind \
-         FROM images i \
-         JOIN song_images si ON si.image_id = i.id \
+) -> Result<Vec<SongImageRow>> {
+    sqlx::query_as::<_, SongImageRow>(
+        "SELECT si.asset_id, si.kind, \
+         a.title, a.credits, a.source_url, a.storage_url, a.internal_path, a.external_url \
+         FROM assets a \
+         JOIN song_images si ON si.asset_id = a.id \
          WHERE si.song_id = ?",
     )
     .bind(song_id)
     .fetch_all(executor)
     .await
     .map_err(DbError::from)
-    .map(|rows| {
-        rows.into_iter()
-            .map(|r| {
-                (
-                    Image {
-                        id: r.id,
-                        hash: r.hash,
-                        public_url: r.public_url,
-                        internal_path: r.internal_path,
-                        credits: r.credits,
-                    },
-                    r.kind,
-                )
-            })
-            .collect()
-    })
 }
 
 /// Returns images for multiple songs, keyed by song ID.
@@ -354,26 +341,29 @@ pub async fn get_images(
 pub async fn get_images_batch(
     executor: impl Executor<'_, Database = MySql>,
     song_ids: &[Uuid],
-) -> Result<HashMap<Uuid, Vec<(Image, String)>>> {
+) -> Result<HashMap<Uuid, Vec<SongImageRow>>> {
     if song_ids.is_empty() {
         return Ok(HashMap::new());
     }
 
     #[derive(sqlx::FromRow)]
-    struct Row {
+    struct BatchRow {
         song_id: Uuid,
-        id: Uuid,
-        hash: String,
-        public_url: String,
-        internal_path: Option<String>,
-        credits: Option<String>,
+        asset_id: Uuid,
         kind: String,
+        title: Option<String>,
+        credits: Option<String>,
+        source_url: Option<String>,
+        storage_url: Option<String>,
+        internal_path: Option<String>,
+        external_url: Option<String>,
     }
 
     let mut builder = sqlx::QueryBuilder::new(
-        "SELECT si.song_id, i.id, i.hash, i.public_url, i.internal_path, i.credits, si.kind \
-         FROM images i \
-         JOIN song_images si ON si.image_id = i.id \
+        "SELECT si.song_id, si.asset_id, si.kind, \
+         a.title, a.credits, a.source_url, a.storage_url, a.internal_path, a.external_url \
+         FROM assets a \
+         JOIN song_images si ON si.asset_id = a.id \
          WHERE si.song_id IN (",
     );
     let mut separated = builder.separated(", ");
@@ -382,24 +372,24 @@ pub async fn get_images_batch(
     }
     builder.push(")");
 
-    let rows: Vec<Row> = builder
+    let rows: Vec<BatchRow> = builder
         .build_query_as()
         .fetch_all(executor)
         .await
         .map_err(DbError::from)?;
 
-    let mut by_song: HashMap<Uuid, Vec<(Image, String)>> = HashMap::new();
+    let mut by_song: HashMap<Uuid, Vec<SongImageRow>> = HashMap::new();
     for row in rows {
-        by_song.entry(row.song_id).or_default().push((
-            Image {
-                id: row.id,
-                hash: row.hash,
-                public_url: row.public_url,
-                internal_path: row.internal_path,
-                credits: row.credits,
-            },
-            row.kind,
-        ));
+        by_song.entry(row.song_id).or_default().push(SongImageRow {
+            asset_id: row.asset_id,
+            kind: row.kind,
+            title: row.title,
+            credits: row.credits,
+            source_url: row.source_url,
+            storage_url: row.storage_url,
+            internal_path: row.internal_path,
+            external_url: row.external_url,
+        });
     }
     Ok(by_song)
 }
@@ -408,12 +398,12 @@ pub async fn get_images_batch(
 pub async fn link_image(
     conn: &mut MySqlConnection,
     song_id: Uuid,
-    image_id: Uuid,
+    asset_id: Uuid,
     kind: &str,
 ) -> Result<()> {
-    sqlx::query("INSERT IGNORE INTO song_images (song_id, image_id, kind) VALUES (?, ?, ?)")
+    sqlx::query("INSERT IGNORE INTO song_images (song_id, asset_id, kind) VALUES (?, ?, ?)")
         .bind(song_id)
-        .bind(image_id)
+        .bind(asset_id)
         .bind(kind)
         .execute(conn)
         .await
@@ -425,11 +415,11 @@ pub async fn link_image(
 pub async fn unlink_image(
     executor: impl Executor<'_, Database = MySql>,
     song_id: Uuid,
-    image_id: Uuid,
+    asset_id: Uuid,
 ) -> Result<bool> {
-    sqlx::query("DELETE FROM song_images WHERE song_id = ? AND image_id = ?")
+    sqlx::query("DELETE FROM song_images WHERE song_id = ? AND asset_id = ?")
         .bind(song_id)
-        .bind(image_id)
+        .bind(asset_id)
         .execute(executor)
         .await
         .map(|r| r.rows_affected() > 0)
@@ -438,16 +428,16 @@ pub async fn unlink_image(
 
 /// Updates the kind of a `song_images` join row. Returns `true` if a row was updated.
 pub async fn update_image_kind(
-    conn: &mut MySqlConnection,
+    executor: impl Executor<'_, Database = MySql>,
     song_id: Uuid,
-    image_id: Uuid,
+    asset_id: Uuid,
     kind: &str,
 ) -> Result<bool> {
-    sqlx::query("UPDATE song_images SET kind = ? WHERE song_id = ? AND image_id = ?")
+    sqlx::query("UPDATE song_images SET kind = ? WHERE song_id = ? AND asset_id = ?")
         .bind(kind)
         .bind(song_id)
-        .bind(image_id)
-        .execute(conn)
+        .bind(asset_id)
+        .execute(executor)
         .await
         .map(|r| r.rows_affected() > 0)
         .map_err(DbError::from)
@@ -466,10 +456,10 @@ pub async fn set_images(
         .execute(&mut *conn)
         .await
         .map_err(DbError::from)?;
-    for &(image_id, kind) in images {
-        sqlx::query("INSERT INTO song_images (song_id, image_id, kind) VALUES (?, ?, ?)")
+    for &(asset_id, kind) in images {
+        sqlx::query("INSERT INTO song_images (song_id, asset_id, kind) VALUES (?, ?, ?)")
             .bind(song_id)
-            .bind(image_id)
+            .bind(asset_id)
             .bind(kind)
             .execute(&mut *conn)
             .await
