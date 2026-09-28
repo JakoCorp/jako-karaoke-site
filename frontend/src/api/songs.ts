@@ -65,15 +65,15 @@ export const songsApi = {
     }),
 
   /** Updates the kind of an image linked to a song. */
-  updateImageKind: (id: string, imageId: string, kind: SongImageKind) =>
-    api.PATCH("/api/songs/{id}/images/{image_id}", {
-      params: { path: { id, image_id: imageId } },
+  updateImageKind: (id: string, assetId: string, kind: SongImageKind) =>
+    api.PATCH("/api/songs/{id}/images/{asset_id}", {
+      params: { path: { id, asset_id: assetId } },
       body: { kind } satisfies components["schemas"]["UpdateSongImageRequest"],
     }),
 
   /** Removes an image link from a song, deleting the image file if no other resource references it. */
-  deleteImage: (id: string, imageId: string) =>
-    api.DELETE("/api/songs/{id}/images/{image_id}", {
-      params: { path: { id, image_id: imageId } },
+  deleteImage: (id: string, assetId: string) =>
+    api.DELETE("/api/songs/{id}/images/{asset_id}", {
+      params: { path: { id, asset_id: assetId } },
     }),
 };

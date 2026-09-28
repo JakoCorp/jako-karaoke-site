@@ -11,7 +11,7 @@ export function ArtistCard({ artist }: ArtistCardProps) {
   return (
     <div className="artist-card">
       {avatar ? (
-        <img className="artist-avatar" src={avatar.public_url} alt={artist.name} />
+        <img className="artist-avatar" src={avatar.storage_url ?? undefined} alt={artist.name} />
       ) : (
         <div className="artist-avatar-placeholder" aria-hidden="true">
           {initial}

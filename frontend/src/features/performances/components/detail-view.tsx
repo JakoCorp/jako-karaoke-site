@@ -15,7 +15,8 @@ interface Props {
 export function PerformanceDetailView({ performance, lyricsContent }: Props) {
   const playQueue = usePlayerStore((s) => s.playQueue);
 
-  const coverImage = performance.songs[0]?.images.find((i) => i.kind === "cover_art")?.public_url;
+  const coverImage =
+    performance.songs[0]?.images.find((i) => i.kind === "cover_art")?.storage_url ?? undefined;
 
   const title =
     performance.title?.trim() || performance.songs.map((s) => s.title).join(" / ") || "Untitled";

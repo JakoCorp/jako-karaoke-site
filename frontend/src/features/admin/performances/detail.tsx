@@ -438,9 +438,10 @@ export function PerformanceDetailPanel({
                 if (file) {
                   const hasPrimary =
                     existingAudio
-                      .filter((a) => !pendingRemoveAudioIds.has(a.id))
-                      .some((a) => (pendingAudioKindChanges.get(a.id) ?? a.kind) === "primary") ||
-                    stagingAddAudio.some((a) => a.kind === "primary");
+                      .filter((a) => !pendingRemoveAudioIds.has(a.asset_id))
+                      .some(
+                        (a) => (pendingAudioKindChanges.get(a.asset_id) ?? a.kind) === "primary",
+                      ) || stagingAddAudio.some((a) => a.kind === "primary");
                   setStagingAddAudio((prev) => [
                     ...prev,
                     { file, kind: hasPrimary ? "misc" : "primary" },
@@ -450,12 +451,12 @@ export function PerformanceDetailPanel({
               }}
             />
             {existingAudio
-              .filter((a) => !pendingRemoveAudioIds.has(a.id))
+              .filter((a) => !pendingRemoveAudioIds.has(a.asset_id))
               .map((audio: AudioInfo) => (
-                <div key={audio.id} className="admin-audio-item">
+                <div key={audio.asset_id} className="admin-audio-item">
                   <select
                     className="admin-kind-select"
-                    value={pendingAudioKindChanges.get(audio.id) ?? audio.kind}
+                    value={pendingAudioKindChanges.get(audio.asset_id) ?? audio.kind}
                     onChange={(event) => {
                       const newKind = AUDIO_KINDS.find((k) => k === event.target.value);
                       if (!newKind) return;
@@ -463,7 +464,7 @@ export function PerformanceDetailPanel({
                         const next = new Map(prev);
                         if (newKind === "primary") {
                           for (const a of existingAudio) {
-                            if (a.id !== audio.id) next.set(a.id, "misc");
+                            if (a.asset_id !== audio.asset_id) next.set(a.asset_id, "misc");
                           }
                           setStagingAddAudio((prevStaging) =>
                             prevStaging.map((item) =>
@@ -471,7 +472,7 @@ export function PerformanceDetailPanel({
                             ),
                           );
                         }
-                        next.set(audio.id, newKind);
+                        next.set(audio.asset_id, newKind);
                         return next;
                       });
                     }}
@@ -483,13 +484,13 @@ export function PerformanceDetailPanel({
                     ))}
                   </select>
                   <span className="admin-link-url text-sm text-fg-muted">
-                    {audio.public_url.split("/").pop()}
+                    {(audio.storage_url ?? audio.external_url ?? "").split("/").pop()}
                   </span>
                   <button
                     type="button"
                     className="btn btn-secondary"
                     onClick={() => {
-                      setPendingRemoveAudioIds((prev) => new Set([...prev, audio.id]));
+                      setPendingRemoveAudioIds((prev) => new Set([...prev, audio.asset_id]));
                     }}
                   >
                     <TrashIcon weight="bold" />
@@ -560,16 +561,18 @@ export function PerformanceDetailPanel({
               }}
             />
             {existingVideo
-              .filter((v) => !pendingRemoveVideoIds.has(v.id))
+              .filter((v) => !pendingRemoveVideoIds.has(v.asset_id))
               .map((video: VideoInfo) => (
-                <div key={video.id} className="admin-audio-item">
+                <div key={video.asset_id} className="admin-audio-item">
                   <select
                     className="admin-kind-select"
-                    value={pendingVideoKindChanges.get(video.id) ?? video.kind}
+                    value={pendingVideoKindChanges.get(video.asset_id) ?? video.kind}
                     onChange={(event) => {
                       const newKind = VIDEO_KINDS.find((k) => k === event.target.value);
                       if (!newKind) return;
-                      setPendingVideoKindChanges((prev) => new Map(prev).set(video.id, newKind));
+                      setPendingVideoKindChanges((prev) =>
+                        new Map(prev).set(video.asset_id, newKind),
+                      );
                     }}
                   >
                     {VIDEO_KINDS.map((k) => (
@@ -579,13 +582,13 @@ export function PerformanceDetailPanel({
                     ))}
                   </select>
                   <span className="admin-link-url text-sm text-fg-muted">
-                    {video.public_url.split("/").pop()}
+                    {(video.storage_url ?? video.external_url ?? "").split("/").pop()}
                   </span>
                   <button
                     type="button"
                     className="btn btn-secondary"
                     onClick={() => {
-                      setPendingRemoveVideoIds((prev) => new Set([...prev, video.id]));
+                      setPendingRemoveVideoIds((prev) => new Set([...prev, video.asset_id]));
                     }}
                   >
                     <TrashIcon weight="bold" />
@@ -723,15 +726,15 @@ export function PerformanceDetailPanel({
             <div className="admin-detail-section">
               <span className="admin-detail-label">Audio</span>
               {performanceDetail.audio.map((audio: AudioInfo) => (
-                <div key={audio.id} className="admin-audio-item">
+                <div key={audio.asset_id} className="admin-audio-item">
                   <span className="admin-pill-kind">{audio.kind}</span>
                   <a
-                    href={audio.public_url}
+                    href={audio.storage_url ?? audio.external_url ?? undefined}
                     target="_blank"
                     rel="noreferrer"
                     className="admin-link-url"
                   >
-                    {audio.public_url.split("/").pop()}
+                    {(audio.storage_url ?? audio.external_url ?? "").split("/").pop()}
                   </a>
                 </div>
               ))}
@@ -741,15 +744,15 @@ export function PerformanceDetailPanel({
             <div className="admin-detail-section">
               <span className="admin-detail-label">Video</span>
               {performanceDetail.video.map((video: VideoInfo) => (
-                <div key={video.id} className="admin-audio-item">
+                <div key={video.asset_id} className="admin-audio-item">
                   <span className="admin-pill-kind">{video.kind}</span>
                   <a
-                    href={video.public_url}
+                    href={video.storage_url ?? video.external_url ?? undefined}
                     target="_blank"
                     rel="noreferrer"
                     className="admin-link-url"
                   >
-                    {video.public_url.split("/").pop()}
+                    {(video.storage_url ?? video.external_url ?? "").split("/").pop()}
                   </a>
                 </div>
               ))}

@@ -2,8 +2,8 @@ import { TrashIcon } from "@phosphor-icons/react";
 import { useRef } from "react";
 
 interface ExistingImage {
-  id: string;
-  public_url: string;
+  asset_id: string;
+  storage_url?: string | null;
   kind: string;
 }
 
@@ -32,7 +32,7 @@ export function ImageEditSection<K extends string>({
 }: ImageEditSectionProps<K>) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const visible = existingImages.filter((img) => !pendingRemoveIds.has(img.id));
+  const visible = existingImages.filter((img) => !pendingRemoveIds.has(img.asset_id));
 
   return (
     <div className="form-field">
@@ -62,15 +62,15 @@ export function ImageEditSection<K extends string>({
       {visible.length > 0 && (
         <div className="admin-image-list">
           {visible.map((img) => (
-            <div key={img.id} className="admin-image-item">
-              <img src={img.public_url} alt={img.kind} />
+            <div key={img.asset_id} className="admin-image-item">
+              <img src={img.storage_url ?? undefined} alt={img.kind} />
               <select
                 className="admin-kind-select"
-                value={pendingKindChanges.get(img.id) ?? img.kind}
+                value={pendingKindChanges.get(img.asset_id) ?? img.kind}
                 onChange={(event) => {
                   const newKind = kinds.find((k) => k === event.target.value);
                   if (!newKind) return;
-                  onChangeExistingKind(img.id, newKind);
+                  onChangeExistingKind(img.asset_id, newKind);
                 }}
               >
                 {kinds.map((k) => (
@@ -83,7 +83,7 @@ export function ImageEditSection<K extends string>({
                 type="button"
                 className="admin-image-delete"
                 onClick={() => {
-                  onRemoveExisting(img.id);
+                  onRemoveExisting(img.asset_id);
                 }}
               >
                 <TrashIcon weight="bold" />

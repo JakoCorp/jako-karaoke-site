@@ -332,8 +332,8 @@ export function SongDetailPanel({
               <span className="admin-detail-label">Images</span>
               <div className="admin-image-list">
                 {songDetail.images.map((image: SongImageInfo) => (
-                  <div key={image.id} className="admin-image-item">
-                    <img src={image.public_url} alt={image.kind} />
+                  <div key={image.asset_id} className="admin-image-item">
+                    <img src={image.storage_url ?? undefined} alt={image.kind} />
                   </div>
                 ))}
               </div>

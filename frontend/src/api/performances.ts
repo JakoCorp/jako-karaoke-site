@@ -70,16 +70,16 @@ export const performancesApi = {
     }),
 
   /** Updates the kind of an audio record attached to a performance. */
-  updateAudioKind: (id: string, audioId: string, kind: AudioKind) =>
-    api.PATCH("/api/performances/{id}/audio/{audio_id}", {
-      params: { path: { id, audio_id: audioId } },
+  updateAudioKind: (id: string, assetId: string, kind: AudioKind) =>
+    api.PATCH("/api/performances/{id}/audio/{asset_id}", {
+      params: { path: { id, asset_id: assetId } },
       body: { kind } satisfies components["schemas"]["UpdateAudioKindRequest"],
     }),
 
   /** Removes an audio file from a performance. */
-  deleteAudio: (id: string, audioId: string) =>
-    api.DELETE("/api/performances/{id}/audio/{audio_id}", {
-      params: { path: { id, audio_id: audioId } },
+  deleteAudio: (id: string, assetId: string) =>
+    api.DELETE("/api/performances/{id}/audio/{asset_id}", {
+      params: { path: { id, asset_id: assetId } },
     }),
 
   /** Uploads a video file for a performance with the given kind. */
@@ -96,15 +96,15 @@ export const performancesApi = {
     }),
 
   /** Updates the kind of a video record attached to a performance. */
-  updateVideoKind: (id: string, videoId: string, kind: VideoKind) =>
-    api.PATCH("/api/performances/{id}/video/{video_id}", {
-      params: { path: { id, video_id: videoId } },
+  updateVideoKind: (id: string, assetId: string, kind: VideoKind) =>
+    api.PATCH("/api/performances/{id}/video/{asset_id}", {
+      params: { path: { id, asset_id: assetId } },
       body: { kind } satisfies components["schemas"]["UpdateVideoKindRequest"],
     }),
 
   /** Removes a video file from a performance. */
-  deleteVideo: (id: string, videoId: string) =>
-    api.DELETE("/api/performances/{id}/video/{video_id}", {
-      params: { path: { id, video_id: videoId } },
+  deleteVideo: (id: string, assetId: string) =>
+    api.DELETE("/api/performances/{id}/video/{asset_id}", {
+      params: { path: { id, asset_id: assetId } },
     }),
 };
