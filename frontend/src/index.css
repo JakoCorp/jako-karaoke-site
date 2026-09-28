@@ -12,9 +12,40 @@
 @import "./styles/performances.css";
 @import "./styles/playlists.css";
 @import "./styles/songs.css";
+@import "./styles/tooltip.css";
+@import "./styles/not-found.css";
+
+*:focus-visible {
+  outline: none;
+}
 
 :root {
   color-scheme: dark;
+
+  --scrollbar-thumb: rgba(255, 255, 255, 0.2);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.35);
+  --scrollbar-track: transparent;
+
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 3px;
+
+  &:hover {
+    background: var(--scrollbar-thumb-hover);
+  }
 }
 
 @theme {

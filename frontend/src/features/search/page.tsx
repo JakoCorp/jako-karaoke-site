@@ -1,5 +1,5 @@
 import { MagnifyingGlassIcon } from "@phosphor-icons/react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 
 import type { PerformanceSortDir, PerformanceSortField } from "@/api/performances";
@@ -77,6 +77,7 @@ export function SearchPage() {
   const [inputValue, setInputValue] = useState(q);
   const [prevQ, setPrevQ] = useState(q);
   const debouncedInput = useDebounced(inputValue);
+  const lastSyncedQ = useRef(q.trim());
 
   if (q !== prevQ) {
     setPrevQ(q);
@@ -84,12 +85,15 @@ export function SearchPage() {
   }
 
   useEffect(() => {
+    const trimmed = debouncedInput.trim();
+    if (trimmed === lastSyncedQ.current) return;
+    lastSyncedQ.current = trimmed;
     setSearchParams(
       (prev) => {
         const current = searchStateCodec.decode(prev.get("query") ?? "");
         const next = searchStateCodec.toParam({
           ...current,
-          q: debouncedInput.trim() || undefined,
+          q: trimmed || undefined,
           page: undefined,
         });
         const params = new URLSearchParams(prev);

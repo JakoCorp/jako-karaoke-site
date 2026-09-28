@@ -1,4 +1,15 @@
-import { XIcon } from "@phosphor-icons/react";
+import {
+  GlobeIcon,
+  HardDriveIcon,
+  HeartIcon,
+  HouseIcon,
+  InfoIcon,
+  MagnifyingGlassIcon,
+  MicrophoneIcon,
+  QueueIcon,
+  ShuffleIcon,
+  XIcon,
+} from "@phosphor-icons/react";
 
 import logoUrl from "@/assets/Baji.factions.Industry.svg";
 import { AuthDialog } from "@/features/auth";
@@ -16,9 +27,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
   const user = useAuthStore((state) => state.user);
 
   return (
-    <aside
-      className={`fixed inset-0 z-50 sidebar flex h-full w-full flex-col transition-transform duration-300 ease-in-out md:static md:z-auto md:flex md:w-60 md:translate-y-0 ${open ? "translate-y-0" : "-translate-y-full"}`}
-    >
+    <aside className="sidebar" data-open={open}>
       <div className="sidebar-header">
         <img src={logoUrl} alt="" aria-hidden className="sidebar-logo" />
         <span className="sidebar-brand">Karaoke Player</span>
@@ -33,19 +42,24 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         </button>
       </div>
       <nav className="sidebar-nav">
-        <NavItem to="/" label="Home" onClick={onClose} />
-        <NavItem to="/search" label="Search" onClick={onClose} />
-        <NavItem to="/random-song" label="Random Songs" onClick={onClose} />
-        <NavItem to="/public-playlists" label="Public Playlists" onClick={onClose} />
-        <NavItem to="/artists" label="Artists" onClick={onClose} />
-        <NavItem to="/about" label="About" onClick={onClose} />
+        <NavItem to="/" label="Home" icon={HouseIcon} onClick={onClose} />
+        <NavItem to="/search" label="Search" icon={MagnifyingGlassIcon} onClick={onClose} />
+        <NavItem to="/random-song" label="Random Songs" icon={ShuffleIcon} onClick={onClose} />
+        <NavItem
+          to="/public-playlists"
+          label="Public Playlists"
+          icon={GlobeIcon}
+          onClick={onClose}
+        />
+        <NavItem to="/artists" label="Artists" icon={MicrophoneIcon} onClick={onClose} />
+        <NavItem to="/about" label="About" icon={InfoIcon} onClick={onClose} />
         <div className="nav-divider" />
 
         <p className="sidebar-section-label">Your Library</p>
 
-        <NavItem to="/favorites" label="Favorites" onClick={onClose} />
-        <NavItem to="/my-playlists" label="My Playlists" onClick={onClose} />
-        <NavItem to="/local" label="Local" onClick={onClose} />
+        <NavItem to="/favorites" label="Favorites" icon={HeartIcon} onClick={onClose} />
+        <NavItem to="/my-playlists" label="My Playlists" icon={QueueIcon} onClick={onClose} />
+        <NavItem to="/local" label="Local" icon={HardDriveIcon} onClick={onClose} />
 
         <div className="nav-divider" />
       </nav>

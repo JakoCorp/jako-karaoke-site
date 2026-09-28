@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useInfiniteQuery, useQuery } from "@tanstack/react-query";
 
 import { performancesApi } from "@/api/performances";
 import type { PerformanceListParams } from "@/api/performances";
@@ -18,6 +18,7 @@ export function usePerformances(params?: PerformanceListParams, enabled = true) 
       return data;
     },
     enabled,
+    placeholderData: keepPreviousData,
   });
 }
 
