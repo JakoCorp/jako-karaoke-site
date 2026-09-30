@@ -26,6 +26,24 @@ import { applyAll } from "@/lib/staging";
 import { ItemPicker, TagPicker, type TagAssignment } from "../components/pickers";
 import { resolveTagAssignments } from "../components/tag-utils";
 
+type StagingAudioItem =
+  | { type: "file"; file: File; kind: AudioKind }
+  | { type: "link"; externalUrl: string; kind: AudioKind; title?: string };
+
+type StagingVideoItem =
+  | { type: "file"; file: File; kind: VideoKind }
+  | { type: "link"; externalUrl: string; kind: VideoKind; title?: string };
+
+function assetLabel(asset: {
+  title?: string | null;
+  storage_url?: string | null;
+  external_url?: string | null;
+}): string {
+  if (asset.title) return asset.title;
+  if (asset.storage_url) return asset.storage_url.split("/").pop() ?? "";
+  return asset.external_url ?? "";
+}
+
 export function PerformanceDetailPanel({
   performance,
   onClose,
@@ -45,16 +63,20 @@ export function PerformanceDetailPanel({
   const [editSingerIds, setEditSingerIds] = useState<string[]>([]);
   const [editTags, setEditTags] = useState<TagAssignment<PerformanceTagKind>[]>([]);
   const [editLyrics, setEditLyrics] = useState("");
-  const [stagingAddAudio, setStagingAddAudio] = useState<{ file: File; kind: AudioKind }[]>([]);
+  const [stagingAddAudio, setStagingAddAudio] = useState<StagingAudioItem[]>([]);
   const [pendingRemoveAudioIds, setPendingRemoveAudioIds] = useState<Set<string>>(new Set());
   const [pendingAudioKindChanges, setPendingAudioKindChanges] = useState<Map<string, AudioKind>>(
     new Map(),
   );
-  const [stagingAddVideo, setStagingAddVideo] = useState<{ file: File; kind: VideoKind }[]>([]);
+  const [stagingAddVideo, setStagingAddVideo] = useState<StagingVideoItem[]>([]);
   const [pendingRemoveVideoIds, setPendingRemoveVideoIds] = useState<Set<string>>(new Set());
   const [pendingVideoKindChanges, setPendingVideoKindChanges] = useState<Map<string, VideoKind>>(
     new Map(),
   );
+  const [audioLinkUrl, setAudioLinkUrl] = useState("");
+  const [audioLinkTitle, setAudioLinkTitle] = useState("");
+  const [videoLinkUrl, setVideoLinkUrl] = useState("");
+  const [videoLinkTitle, setVideoLinkTitle] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
 
   const audioInputRef = useRef<HTMLInputElement>(null);
@@ -89,11 +111,23 @@ export function PerformanceDetailPanel({
       });
       if (apiError) throw apiError;
       if (!data) throw new Error("Performance creation returned no data.");
-      await applyAll(stagingAddAudio, ({ file, kind }) =>
-        performancesApi.uploadAudio(data.id, file, kind),
+      await applyAll(stagingAddAudio, (item) =>
+        item.type === "file"
+          ? performancesApi.uploadAudio(data.id, item.file, item.kind)
+          : performancesApi.addAudioLink(data.id, {
+              external_url: item.externalUrl,
+              kind: item.kind,
+              title: item.title ?? null,
+            }),
       );
-      await applyAll(stagingAddVideo, ({ file, kind }) =>
-        performancesApi.uploadVideo(data.id, file, kind),
+      await applyAll(stagingAddVideo, (item) =>
+        item.type === "file"
+          ? performancesApi.uploadVideo(data.id, item.file, item.kind)
+          : performancesApi.addVideoLink(data.id, {
+              external_url: item.externalUrl,
+              kind: item.kind,
+              title: item.title ?? null,
+            }),
       );
     },
     onSuccess: () => {
@@ -132,11 +166,23 @@ export function PerformanceDetailPanel({
       await applyAll(pendingVideoKindChanges, ([videoId, kind]) =>
         performancesApi.updateVideoKind(performance.id, videoId, kind),
       );
-      await applyAll(stagingAddAudio, ({ file, kind }) =>
-        performancesApi.uploadAudio(performance.id, file, kind),
+      await applyAll(stagingAddAudio, (item) =>
+        item.type === "file"
+          ? performancesApi.uploadAudio(performance.id, item.file, item.kind)
+          : performancesApi.addAudioLink(performance.id, {
+              external_url: item.externalUrl,
+              kind: item.kind,
+              title: item.title ?? null,
+            }),
       );
-      await applyAll(stagingAddVideo, ({ file, kind }) =>
-        performancesApi.uploadVideo(performance.id, file, kind),
+      await applyAll(stagingAddVideo, (item) =>
+        item.type === "file"
+          ? performancesApi.uploadVideo(performance.id, item.file, item.kind)
+          : performancesApi.addVideoLink(performance.id, {
+              external_url: item.externalUrl,
+              kind: item.kind,
+              title: item.title ?? null,
+            }),
       );
       await applyAll(pendingRemoveAudioIds, (id) =>
         performancesApi.deleteAudio(performance.id, id),
@@ -154,6 +200,10 @@ export function PerformanceDetailPanel({
       setPendingRemoveVideoIds(new Set());
       setPendingAudioKindChanges(new Map());
       setPendingVideoKindChanges(new Map());
+      setAudioLinkUrl("");
+      setAudioLinkTitle("");
+      setVideoLinkUrl("");
+      setVideoLinkTitle("");
       setIsEditing(false);
       setFormError(null);
     },
@@ -209,6 +259,10 @@ export function PerformanceDetailPanel({
     setPendingRemoveVideoIds(new Set());
     setPendingAudioKindChanges(new Map());
     setPendingVideoKindChanges(new Map());
+    setAudioLinkUrl("");
+    setAudioLinkTitle("");
+    setVideoLinkUrl("");
+    setVideoLinkTitle("");
     setIsEditing(false);
     setFormError(null);
   }
@@ -418,14 +472,64 @@ export function PerformanceDetailPanel({
           <div className="form-field">
             <div className="admin-link-card-header">
               <span className="form-label">Audio</span>
+              <div className="admin-link-card-actions">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    audioInputRef.current?.click();
+                  }}
+                >
+                  Upload file
+                </button>
+              </div>
+            </div>
+            <div className="admin-link-input-row">
+              <input
+                type="url"
+                className="form-input"
+                placeholder="External audio URL"
+                value={audioLinkUrl}
+                onChange={(event) => {
+                  setAudioLinkUrl(event.target.value);
+                }}
+              />
+              <input
+                type="text"
+                className="form-input"
+                placeholder="Title (optional)"
+                value={audioLinkTitle}
+                onChange={(event) => {
+                  setAudioLinkTitle(event.target.value);
+                }}
+              />
               <button
                 type="button"
                 className="btn btn-secondary"
+                disabled={audioLinkUrl.trim() === ""}
                 onClick={() => {
-                  audioInputRef.current?.click();
+                  const url = audioLinkUrl.trim();
+                  if (!url) return;
+                  const hasPrimary =
+                    existingAudio
+                      .filter((a) => !pendingRemoveAudioIds.has(a.asset_id))
+                      .some(
+                        (a) => (pendingAudioKindChanges.get(a.asset_id) ?? a.kind) === "primary",
+                      ) || stagingAddAudio.some((a) => a.kind === "primary");
+                  setStagingAddAudio((prev) => [
+                    ...prev,
+                    {
+                      type: "link",
+                      externalUrl: url,
+                      kind: hasPrimary ? "misc" : "primary",
+                      title: audioLinkTitle.trim() || undefined,
+                    },
+                  ]);
+                  setAudioLinkUrl("");
+                  setAudioLinkTitle("");
                 }}
               >
-                Add audio
+                Add link
               </button>
             </div>
             <input
@@ -444,7 +548,7 @@ export function PerformanceDetailPanel({
                       ) || stagingAddAudio.some((a) => a.kind === "primary");
                   setStagingAddAudio((prev) => [
                     ...prev,
-                    { file, kind: hasPrimary ? "misc" : "primary" },
+                    { type: "file", file, kind: hasPrimary ? "misc" : "primary" },
                   ]);
                 }
                 event.target.value = "";
@@ -483,9 +587,7 @@ export function PerformanceDetailPanel({
                       </option>
                     ))}
                   </select>
-                  <span className="admin-link-url text-sm text-fg-muted">
-                    {(audio.storage_url ?? audio.external_url ?? "").split("/").pop()}
-                  </span>
+                  <span className="admin-link-url text-sm text-fg-muted">{assetLabel(audio)}</span>
                   <button
                     type="button"
                     className="btn btn-secondary"
@@ -497,20 +599,20 @@ export function PerformanceDetailPanel({
                   </button>
                 </div>
               ))}
-            {stagingAddAudio.map(({ file, kind }, index) => (
+            {stagingAddAudio.map((item, index) => (
               <div key={index} className="admin-audio-item">
                 <select
                   className="admin-kind-select"
-                  value={kind}
+                  value={item.kind}
                   onChange={(event) => {
                     const newKind = AUDIO_KINDS.find((k) => k === event.target.value);
                     if (!newKind) return;
                     setStagingAddAudio((prev) =>
-                      prev.map((item, i) => {
-                        if (i === index) return { ...item, kind: newKind };
-                        if (newKind === "primary" && item.kind === "primary")
-                          return { ...item, kind: "misc" };
-                        return item;
+                      prev.map((s, i) => {
+                        if (i === index) return { ...s, kind: newKind };
+                        if (newKind === "primary" && s.kind === "primary")
+                          return { ...s, kind: "misc" };
+                        return s;
                       }),
                     );
                   }}
@@ -521,7 +623,9 @@ export function PerformanceDetailPanel({
                     </option>
                   ))}
                 </select>
-                <span className="text-sm text-fg-muted">{file.name}</span>
+                <span className="admin-link-url text-sm text-fg-muted">
+                  {item.type === "file" ? item.file.name : (item.title ?? item.externalUrl)}
+                </span>
                 <button
                   type="button"
                   className="btn btn-secondary"
@@ -537,14 +641,58 @@ export function PerformanceDetailPanel({
           <div className="form-field">
             <div className="admin-link-card-header">
               <span className="form-label">Video</span>
+              <div className="admin-link-card-actions">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    videoInputRef.current?.click();
+                  }}
+                >
+                  Upload file
+                </button>
+              </div>
+            </div>
+            <div className="admin-link-input-row">
+              <input
+                type="url"
+                className="form-input"
+                placeholder="External video URL"
+                value={videoLinkUrl}
+                onChange={(event) => {
+                  setVideoLinkUrl(event.target.value);
+                }}
+              />
+              <input
+                type="text"
+                className="form-input"
+                placeholder="Title (optional)"
+                value={videoLinkTitle}
+                onChange={(event) => {
+                  setVideoLinkTitle(event.target.value);
+                }}
+              />
               <button
                 type="button"
                 className="btn btn-secondary"
+                disabled={videoLinkUrl.trim() === ""}
                 onClick={() => {
-                  videoInputRef.current?.click();
+                  const url = videoLinkUrl.trim();
+                  if (!url) return;
+                  setStagingAddVideo((prev) => [
+                    ...prev,
+                    {
+                      type: "link",
+                      externalUrl: url,
+                      kind: "misc",
+                      title: videoLinkTitle.trim() || undefined,
+                    },
+                  ]);
+                  setVideoLinkUrl("");
+                  setVideoLinkTitle("");
                 }}
               >
-                Add video
+                Add link
               </button>
             </div>
             <input
@@ -555,7 +703,7 @@ export function PerformanceDetailPanel({
               onChange={(event) => {
                 const file = event.target.files?.[0];
                 if (file) {
-                  setStagingAddVideo((prev) => [...prev, { file, kind: "misc" }]);
+                  setStagingAddVideo((prev) => [...prev, { type: "file", file, kind: "misc" }]);
                 }
                 event.target.value = "";
               }}
@@ -581,9 +729,7 @@ export function PerformanceDetailPanel({
                       </option>
                     ))}
                   </select>
-                  <span className="admin-link-url text-sm text-fg-muted">
-                    {(video.storage_url ?? video.external_url ?? "").split("/").pop()}
-                  </span>
+                  <span className="admin-link-url text-sm text-fg-muted">{assetLabel(video)}</span>
                   <button
                     type="button"
                     className="btn btn-secondary"
@@ -595,16 +741,16 @@ export function PerformanceDetailPanel({
                   </button>
                 </div>
               ))}
-            {stagingAddVideo.map(({ file, kind }, index) => (
+            {stagingAddVideo.map((item, index) => (
               <div key={index} className="admin-audio-item">
                 <select
                   className="admin-kind-select"
-                  value={kind}
+                  value={item.kind}
                   onChange={(event) => {
                     const newKind = VIDEO_KINDS.find((k) => k === event.target.value);
                     if (!newKind) return;
                     setStagingAddVideo((prev) =>
-                      prev.map((item, i) => (i === index ? { ...item, kind: newKind } : item)),
+                      prev.map((s, i) => (i === index ? { ...s, kind: newKind } : s)),
                     );
                   }}
                 >
@@ -614,7 +760,9 @@ export function PerformanceDetailPanel({
                     </option>
                   ))}
                 </select>
-                <span className="text-sm text-fg-muted">{file.name}</span>
+                <span className="admin-link-url text-sm text-fg-muted">
+                  {item.type === "file" ? item.file.name : (item.title ?? item.externalUrl)}
+                </span>
                 <button
                   type="button"
                   className="btn btn-secondary"
@@ -734,7 +882,7 @@ export function PerformanceDetailPanel({
                     rel="noreferrer"
                     className="admin-link-url"
                   >
-                    {(audio.storage_url ?? audio.external_url ?? "").split("/").pop()}
+                    {assetLabel(audio)}
                   </a>
                 </div>
               ))}
@@ -752,7 +900,7 @@ export function PerformanceDetailPanel({
                     rel="noreferrer"
                     className="admin-link-url"
                   >
-                    {(video.storage_url ?? video.external_url ?? "").split("/").pop()}
+                    {assetLabel(video)}
                   </a>
                 </div>
               ))}

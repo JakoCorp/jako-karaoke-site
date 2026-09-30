@@ -107,4 +107,12 @@ export const performancesApi = {
     api.DELETE("/api/performances/{id}/video/{asset_id}", {
       params: { path: { id, asset_id: assetId } },
     }),
+
+  /** Links an external audio URL to a performance. */
+  addAudioLink: (id: string, body: components["schemas"]["AddAudioLinkRequest"]) =>
+    api.POST("/api/performances/{id}/audio/link", { params: { path: { id } }, body }),
+
+  /** Links an external video URL to a performance. */
+  addVideoLink: (id: string, body: components["schemas"]["AddVideoLinkRequest"]) =>
+    api.POST("/api/performances/{id}/video/link", { params: { path: { id } }, body }),
 };
