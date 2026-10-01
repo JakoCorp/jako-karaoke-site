@@ -50,6 +50,27 @@ export const artistsApi = {
   /** Deletes an artist by ID. */
   delete: (id: string) => api.DELETE("/api/artists/{id}", { params: { path: { id } } }),
 
+  /** Creates an external link for an artist. */
+  createLink: (id: string, body: components["schemas"]["ArtistLinkInput"]) =>
+    api.POST("/api/artists/{id}/links", { params: { path: { id } }, body }),
+
+  /** Updates an existing link on an artist. */
+  updateLink: (
+    id: string,
+    linkId: string,
+    body: components["schemas"]["UpdateArtistLinkRequest"],
+  ) =>
+    api.PATCH("/api/artists/{id}/links/{link_id}", {
+      params: { path: { id, link_id: linkId } },
+      body,
+    }),
+
+  /** Removes an external link from an artist. */
+  deleteLink: (id: string, linkId: string) =>
+    api.DELETE("/api/artists/{id}/links/{link_id}", {
+      params: { path: { id, link_id: linkId } },
+    }),
+
   /** Uploads and links an image to an artist. */
   uploadImage: (id: string, file: File, kind: string, credits?: string | null) =>
     api.POST("/api/artists/{id}/images", {
@@ -80,4 +101,8 @@ export const artistsApi = {
     api.DELETE("/api/artists/{id}/images/{asset_id}", {
       params: { path: { id, asset_id: assetId } },
     }),
+
+  /** Links an external image URL to an artist. */
+  addImageLink: (id: string, body: components["schemas"]["AddArtistImageLinkRequest"]) =>
+    api.POST("/api/artists/{id}/images/link", { params: { path: { id } }, body }),
 };

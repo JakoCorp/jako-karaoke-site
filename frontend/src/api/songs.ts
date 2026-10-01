@@ -76,4 +76,8 @@ export const songsApi = {
     api.DELETE("/api/songs/{id}/images/{asset_id}", {
       params: { path: { id, asset_id: assetId } },
     }),
+
+  /** Links an external image URL to a song. */
+  addImageLink: (id: string, body: components["schemas"]["AddSongImageLinkRequest"]) =>
+    api.POST("/api/songs/{id}/images/link", { params: { path: { id } }, body }),
 };

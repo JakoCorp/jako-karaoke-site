@@ -1,6 +1,6 @@
 import { XIcon } from "@phosphor-icons/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import {
   ARTIST_IMAGE_KINDS,
@@ -15,16 +15,22 @@ import { ConfirmDialog } from "@/components/confirm-dialog";
 import { artistKeys, useArtist } from "@/hooks/api/artists";
 import { applyAll } from "@/lib/staging";
 
-import { ImageEditSection } from "../components/image-edit-section";
+import { ImageEditSection, type StagingImageItem } from "../components/image-edit-section";
 
-type LinkDraft = { url: string; kind: ArtistLinkKind; label: string };
+type LinkDraft = { id?: string; url: string; kind: ArtistLinkKind; label: string };
 
 function isArtistLinkKind(value: string): value is ArtistLinkKind {
   return (ARTIST_LINK_KINDS as readonly string[]).includes(value);
 }
 
-function linkDraftFromInfo(link: { url: string; kind: string; label?: string | null }): LinkDraft {
+function linkDraftFromInfo(link: {
+  id: string;
+  url: string;
+  kind: string;
+  label?: string | null;
+}): LinkDraft {
   return {
+    id: link.id,
     url: link.url,
     kind: isArtistLinkKind(link.kind) ? link.kind : "other",
     label: link.label ?? "",
@@ -44,7 +50,7 @@ export function ArtistDetailPanel({
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [editLinks, setEditLinks] = useState<LinkDraft[]>([]);
-  const [stagingAddImages, setStagingAddImages] = useState<File[]>([]);
+  const [stagingAddImages, setStagingAddImages] = useState<StagingImageItem[]>([]);
   const [pendingRemoveIds, setPendingRemoveIds] = useState<Set<string>>(new Set());
   const [pendingImageKindChanges, setPendingImageKindChanges] = useState<
     Map<string, ArtistImageKind>
@@ -53,23 +59,36 @@ export function ArtistDetailPanel({
 
   const queryClient = useQueryClient();
 
+  const originalLinksRef = useRef<Map<string, LinkDraft>>(new Map());
+
   const { data: artistDetail } = useArtist(artist?.id ?? "", !isCreating);
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      const validLinks = editLinks.filter((link) => link.url.trim() !== "");
       const { data, error: apiError } = await artistsApi.create({
         name: editName.trim(),
         description: editDescription.trim() !== "" ? editDescription.trim() : null,
-        links: validLinks.map((link) => ({
-          url: link.url.trim(),
-          kind: link.kind,
-          label: link.label.trim() !== "" ? link.label.trim() : null,
-        })),
       });
       if (apiError) throw apiError;
       if (!data) throw new Error("Artist creation returned no data.");
-      await applyAll(stagingAddImages, (file) => artistsApi.uploadImage(data.id, file, "avatar"));
+      await applyAll(
+        editLinks.filter((link) => link.url.trim() !== ""),
+        (link) =>
+          artistsApi.createLink(data.id, {
+            url: link.url.trim(),
+            kind: link.kind,
+            label: link.label.trim() !== "" ? link.label.trim() : null,
+          }),
+      );
+      await applyAll(stagingAddImages, (item) =>
+        item.type === "file"
+          ? artistsApi.uploadImage(data.id, item.file, "avatar")
+          : artistsApi.addImageLink(data.id, {
+              external_url: item.externalUrl,
+              kind: "avatar",
+              title: item.title ?? null,
+            }),
+      );
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: artistKeys.all() });
@@ -83,18 +102,49 @@ export function ArtistDetailPanel({
   const updateMutation = useMutation({
     mutationFn: async () => {
       if (!artist) return;
-      const validLinks = editLinks.filter((link) => link.url.trim() !== "");
       const { error: apiError } = await artistsApi.update(artist.id, {
         name: editName.trim(),
         description: editDescription.trim() !== "" ? editDescription.trim() : null,
-        links: validLinks.map((link) => ({
-          url: link.url.trim(),
-          kind: link.kind,
-          label: link.label.trim() !== "" ? link.label.trim() : null,
-        })),
       });
       if (apiError) throw apiError;
-      await applyAll(stagingAddImages, (file) => artistsApi.uploadImage(artist.id, file, "avatar"));
+      const editedIds = new Set(editLinks.filter((l) => l.id).map((l) => l.id!));
+      for (const [id] of originalLinksRef.current) {
+        if (!editedIds.has(id)) {
+          await artistsApi.deleteLink(artist.id, id);
+        }
+      }
+      for (const link of editLinks) {
+        const url = link.url.trim();
+        if (!url) continue;
+        if (!link.id) {
+          await artistsApi.createLink(artist.id, {
+            url,
+            kind: link.kind,
+            label: link.label.trim() !== "" ? link.label.trim() : null,
+          });
+        } else {
+          const original = originalLinksRef.current.get(link.id);
+          if (
+            original &&
+            (original.url !== url || original.kind !== link.kind || original.label !== link.label)
+          ) {
+            await artistsApi.updateLink(artist.id, link.id, {
+              url,
+              kind: link.kind,
+              label: link.label.trim() !== "" ? link.label.trim() : null,
+            });
+          }
+        }
+      }
+      await applyAll(stagingAddImages, (item) =>
+        item.type === "file"
+          ? artistsApi.uploadImage(artist.id, item.file, "avatar")
+          : artistsApi.addImageLink(artist.id, {
+              external_url: item.externalUrl,
+              kind: "avatar",
+              title: item.title ?? null,
+            }),
+      );
       await applyAll(pendingImageKindChanges, ([imageId, kind]) =>
         artistsApi.updateImageKind(artist.id, imageId, kind),
       );
@@ -129,7 +179,9 @@ export function ArtistDetailPanel({
     if (!artistDetail) return;
     setEditName(artistDetail.name);
     setEditDescription(artistDetail.description ?? "");
-    setEditLinks(artistDetail.links.map(linkDraftFromInfo));
+    const drafts = artistDetail.links.map(linkDraftFromInfo);
+    setEditLinks(drafts);
+    originalLinksRef.current = new Map(drafts.map((d) => [d.id!, d]));
     setStagingAddImages([]);
     setPendingRemoveIds(new Set());
     setPendingImageKindChanges(new Map());
@@ -279,10 +331,13 @@ export function ArtistDetailPanel({
             existingImages={existingImages}
             pendingRemoveIds={pendingRemoveIds}
             pendingKindChanges={pendingImageKindChanges}
-            stagingFiles={stagingAddImages}
+            stagingItems={stagingAddImages}
             kinds={ARTIST_IMAGE_KINDS}
-            onFileSelect={(file) => {
-              setStagingAddImages((prev) => [...prev, file]);
+            onAddFile={(file) => {
+              setStagingAddImages((prev) => [...prev, { type: "file", file }]);
+            }}
+            onAddLink={(item) => {
+              setStagingAddImages((prev) => [...prev, { type: "link", ...item }]);
             }}
             onRemoveExisting={(id) => {
               setPendingRemoveIds((prev) => new Set([...prev, id]));
@@ -362,7 +417,10 @@ export function ArtistDetailPanel({
               <div className="admin-image-list">
                 {artistDetail.images.map((image: ArtistImageInfo) => (
                   <div key={image.asset_id} className="admin-image-item">
-                    <img src={image.storage_url ?? undefined} alt={image.kind} />
+                    <img
+                      src={image.storage_url ?? image.external_url ?? undefined}
+                      alt={image.kind}
+                    />
                   </div>
                 ))}
               </div>
