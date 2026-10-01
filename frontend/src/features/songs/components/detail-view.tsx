@@ -7,7 +7,8 @@ interface Props {
 }
 
 export function SongDetailView({ song, lyricsContent }: Props) {
-  const coverImage = song.images.find((i) => i.kind === "cover_art")?.storage_url ?? undefined;
+  const coverImg = song.images.find((i) => i.kind === "cover_art");
+  const coverImage = coverImg?.storage_url ?? coverImg?.external_url ?? undefined;
   const initial = song.title.trimStart()[0]?.toUpperCase() ?? "?";
   const artistNames = song.artists.map((a) => a.name).join(", ");
 
