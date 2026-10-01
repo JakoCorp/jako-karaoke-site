@@ -11,9 +11,13 @@ use uuid::Uuid;
 
 use api_types::{
     common::ErrorResponse,
-    songs::{SongImageInfo, UpdateSongImageRequest},
+    songs::{AddSongImageLinkRequest, SongImageInfo, UpdateSongImageRequest},
 };
-use db::{error::DbError, models::NewInternalAsset, queries};
+use db::{
+    error::DbError,
+    models::{NewExternalAsset, NewInternalAsset},
+    queries,
+};
 
 use crate::{
     auth::middleware::AuthUser, capabilities, convert, error::ApiError, media, state::AppState,
@@ -182,6 +186,62 @@ pub(crate) async fn upload_song_image(
     };
 
     let mut conn = state.pool.acquire().await.map_err(DbError::Sqlx)?;
+    queries::songs::link_image(&mut conn, id, asset.id, kind).await?;
+
+    let rows = queries::songs::get_images(&state.pool, id).await?;
+    let row = rows
+        .into_iter()
+        .find(|r| r.asset_id == asset.id)
+        .ok_or(ApiError::NotFound)?;
+
+    Ok((StatusCode::CREATED, Json(convert::song_image_info(row))))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/songs/{id}/images/link",
+    params(("id" = Uuid, Path, description = "Song ID")),
+    request_body = AddSongImageLinkRequest,
+    responses(
+        (status = 201, description = "Image link created", body = SongImageInfo),
+        (status = 400, description = "Bad request", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden", body = ErrorResponse),
+        (status = 404, description = "Song not found", body = ErrorResponse),
+    ),
+    tag = "songs",
+    security(("session" = []))
+)]
+pub(crate) async fn link_song_image(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Path(id): Path<Uuid>,
+    Json(body): Json<AddSongImageLinkRequest>,
+) -> Result<(StatusCode, Json<SongImageInfo>), ApiError> {
+    if !auth.capabilities.contains(capabilities::SONGS_MANAGE_ANY) {
+        return Err(ApiError::Forbidden);
+    }
+    queries::songs::get_by_id(&state.pool, id)
+        .await?
+        .ok_or(ApiError::NotFound)?;
+
+    let kind = match body.kind.trim() {
+        "cover_art" => "cover_art",
+        other => return Err(ApiError::BadRequest(format!("invalid kind '{other}'"))),
+    };
+
+    let mut conn = state.pool.acquire().await.map_err(DbError::Sqlx)?;
+    let asset = queries::assets::create_external(
+        &mut conn,
+        &NewExternalAsset {
+            title: body.title,
+            credits: body.credits,
+            source_url: body.source_url,
+            external_url: body.external_url,
+        },
+    )
+    .await?;
+
     queries::songs::link_image(&mut conn, id, asset.id, kind).await?;
 
     let rows = queries::songs::get_images(&state.pool, id).await?;

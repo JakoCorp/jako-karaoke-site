@@ -10,10 +10,14 @@ use tracing::error;
 use uuid::Uuid;
 
 use api_types::{
-    artists::{ArtistImageInfo, UpdateArtistImageRequest},
+    artists::{AddArtistImageLinkRequest, ArtistImageInfo, UpdateArtistImageRequest},
     common::ErrorResponse,
 };
-use db::{error::DbError, models::NewInternalAsset, queries};
+use db::{
+    error::DbError,
+    models::{NewExternalAsset, NewInternalAsset},
+    queries,
+};
 
 use crate::{
     auth::middleware::AuthUser, capabilities, convert, error::ApiError, media, state::AppState,
@@ -182,6 +186,62 @@ pub(crate) async fn upload_artist_image(
     };
 
     let mut conn = state.pool.acquire().await.map_err(DbError::Sqlx)?;
+    queries::artists::link_image(&mut conn, id, asset.id, kind).await?;
+
+    let rows = queries::artists::get_images(&state.pool, id).await?;
+    let row = rows
+        .into_iter()
+        .find(|r| r.asset_id == asset.id)
+        .ok_or(ApiError::NotFound)?;
+
+    Ok((StatusCode::CREATED, Json(convert::artist_image_info(row))))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/artists/{id}/images/link",
+    params(("id" = Uuid, Path, description = "Artist ID")),
+    request_body = AddArtistImageLinkRequest,
+    responses(
+        (status = 201, description = "Image link created", body = ArtistImageInfo),
+        (status = 400, description = "Bad request", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden", body = ErrorResponse),
+        (status = 404, description = "Artist not found", body = ErrorResponse),
+    ),
+    tag = "artists",
+    security(("session" = []))
+)]
+pub(crate) async fn link_artist_image(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Path(id): Path<Uuid>,
+    Json(body): Json<AddArtistImageLinkRequest>,
+) -> Result<(StatusCode, Json<ArtistImageInfo>), ApiError> {
+    if !auth.capabilities.contains(capabilities::ARTISTS_MANAGE_ANY) {
+        return Err(ApiError::Forbidden);
+    }
+    queries::artists::get_by_id(&state.pool, id)
+        .await?
+        .ok_or(ApiError::NotFound)?;
+
+    let kind = match body.kind.trim() {
+        "avatar" => "avatar",
+        other => return Err(ApiError::BadRequest(format!("invalid kind '{other}'"))),
+    };
+
+    let mut conn = state.pool.acquire().await.map_err(DbError::Sqlx)?;
+    let asset = queries::assets::create_external(
+        &mut conn,
+        &NewExternalAsset {
+            title: body.title,
+            credits: body.credits,
+            source_url: body.source_url,
+            external_url: body.external_url,
+        },
+    )
+    .await?;
+
     queries::artists::link_image(&mut conn, id, asset.id, kind).await?;
 
     let rows = queries::artists::get_images(&state.pool, id).await?;

@@ -12,9 +12,9 @@ use uuid::Uuid;
 
 use api_types::{
     artists::{
-        ArtistImageInfo, ArtistImageKind, ArtistLinkInfo, ArtistLinkInput, ArtistLinkKind,
-        ArtistResponse, ArtistSummary, CreateArtistRequest, UpdateArtistImageRequest,
-        UpdateArtistRequest,
+        AddArtistImageLinkRequest, ArtistImageInfo, ArtistImageKind, ArtistLinkInfo,
+        ArtistLinkInput, ArtistLinkKind, ArtistResponse, ArtistSummary, CreateArtistRequest,
+        UpdateArtistImageRequest, UpdateArtistLinkRequest, UpdateArtistRequest,
     },
     assets::AssetInfo,
     common::ErrorResponse,
@@ -41,8 +41,12 @@ use crate::{
         update_artist,
         delete_artist,
         images::upload_artist_image,
+        images::link_artist_image,
         images::update_artist_image_kind,
         images::delete_artist_image,
+        create_artist_link,
+        update_artist_link,
+        delete_artist_link,
     ),
     components(schemas(
         ArtistSummary,
@@ -51,9 +55,11 @@ use crate::{
         ArtistImageKind,
         AssetInfo,
         UpdateArtistImageRequest,
+        AddArtistImageLinkRequest,
         ArtistLinkInfo,
         ArtistLinkInput,
         ArtistLinkKind,
+        UpdateArtistLinkRequest,
         CreateArtistRequest,
         UpdateArtistRequest,
         ArtistSort,
@@ -112,13 +118,19 @@ pub fn router() -> Router<AppState> {
             "/{id}/images",
             post(images::upload_artist_image).layer(DefaultBodyLimit::max(50 * 1024 * 1024)),
         )
+        .route("/{id}/images/link", post(images::link_artist_image))
         .route(
             "/{id}/images/{asset_id}",
             patch(images::update_artist_image_kind).delete(images::delete_artist_image),
         )
+        .route("/{id}/links", post(create_artist_link))
+        .route(
+            "/{id}/links/{link_id}",
+            patch(update_artist_link).delete(delete_artist_link),
+        )
 }
 
-fn link_info(link: db::models::ArtistLink) -> ArtistLinkInfo {
+pub(crate) fn link_info(link: db::models::ArtistLink) -> ArtistLinkInfo {
     ArtistLinkInfo {
         id: link.id,
         url: link.url,
@@ -145,17 +157,6 @@ async fn hydrate(pool: &MySqlPool, artist: db::models::Artist) -> Result<ArtistR
         song_count: artist.song_count as u64,
         performance_count,
     })
-}
-
-fn new_links(inputs: Vec<ArtistLinkInput>) -> Vec<NewArtistLink> {
-    inputs
-        .into_iter()
-        .map(|l| NewArtistLink {
-            url: l.url,
-            kind: l.kind.as_str().to_string(),
-            label: l.label,
-        })
-        .collect()
 }
 
 #[utoipa::path(
@@ -249,19 +250,15 @@ pub(crate) async fn create_artist(
     if !auth.capabilities.contains(capabilities::ARTISTS_MANAGE_ANY) {
         return Err(ApiError::Forbidden);
     }
-    let new_links = new_links(req.links);
-
-    let mut tx = state.pool.begin().await.map_err(DbError::Sqlx)?;
+    let mut conn = state.pool.acquire().await.map_err(DbError::Sqlx)?;
     let artist = queries::artists::create(
-        &mut tx,
+        &mut conn,
         &NewArtist {
             name: req.name,
             description: req.description,
         },
     )
     .await?;
-    queries::artists::set_links(&mut tx, artist.id, &new_links).await?;
-    tx.commit().await.map_err(DbError::Sqlx)?;
 
     Ok((
         StatusCode::CREATED,
@@ -292,11 +289,9 @@ pub(crate) async fn update_artist(
     if !auth.capabilities.contains(capabilities::ARTISTS_MANAGE_ANY) {
         return Err(ApiError::Forbidden);
     }
-    let new_links = new_links(req.links);
-
-    let mut tx = state.pool.begin().await.map_err(DbError::Sqlx)?;
+    let mut conn = state.pool.acquire().await.map_err(DbError::Sqlx)?;
     let artist = queries::artists::update(
-        &mut tx,
+        &mut conn,
         id,
         &UpdateArtist {
             name: req.name,
@@ -305,8 +300,6 @@ pub(crate) async fn update_artist(
     )
     .await?
     .ok_or(ApiError::NotFound)?;
-    queries::artists::set_links(&mut tx, id, &new_links).await?;
-    tx.commit().await.map_err(DbError::Sqlx)?;
 
     Ok(Json(hydrate(&state.pool, artist).await?))
 }
@@ -333,6 +326,127 @@ pub(crate) async fn delete_artist(
         return Err(ApiError::Forbidden);
     }
     let found = queries::artists::delete(&state.pool, id).await?;
+    if found {
+        Ok(StatusCode::NO_CONTENT)
+    } else {
+        Err(ApiError::NotFound)
+    }
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/artists/{id}/links",
+    params(("id" = Uuid, Path, description = "Artist ID")),
+    request_body = ArtistLinkInput,
+    responses(
+        (status = 201, description = "Link created", body = ArtistLinkInfo),
+        (status = 400, description = "Bad request", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden", body = ErrorResponse),
+        (status = 404, description = "Artist not found", body = ErrorResponse),
+    ),
+    tag = "artists",
+    security(("session" = []))
+)]
+pub(crate) async fn create_artist_link(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Path(id): Path<Uuid>,
+    Json(body): Json<ArtistLinkInput>,
+) -> Result<(StatusCode, Json<ArtistLinkInfo>), ApiError> {
+    if !auth.capabilities.contains(capabilities::ARTISTS_MANAGE_ANY) {
+        return Err(ApiError::Forbidden);
+    }
+    queries::artists::get_by_id(&state.pool, id)
+        .await?
+        .ok_or(ApiError::NotFound)?;
+
+    let mut conn = state.pool.acquire().await.map_err(DbError::Sqlx)?;
+    let link = queries::artists::create_link(
+        &mut conn,
+        id,
+        &NewArtistLink {
+            url: body.url,
+            kind: body.kind.as_str().to_string(),
+            label: body.label,
+        },
+    )
+    .await?;
+
+    Ok((StatusCode::CREATED, Json(link_info(link))))
+}
+
+#[utoipa::path(
+    patch,
+    path = "/api/artists/{id}/links/{link_id}",
+    params(
+        ("id" = Uuid, Path, description = "Artist ID"),
+        ("link_id" = Uuid, Path, description = "Link ID"),
+    ),
+    request_body = UpdateArtistLinkRequest,
+    responses(
+        (status = 200, description = "Link updated", body = ArtistLinkInfo),
+        (status = 400, description = "Bad request", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden", body = ErrorResponse),
+        (status = 404, description = "Not found", body = ErrorResponse),
+    ),
+    tag = "artists",
+    security(("session" = []))
+)]
+pub(crate) async fn update_artist_link(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Path((id, link_id)): Path<(Uuid, Uuid)>,
+    Json(body): Json<UpdateArtistLinkRequest>,
+) -> Result<Json<ArtistLinkInfo>, ApiError> {
+    if !auth.capabilities.contains(capabilities::ARTISTS_MANAGE_ANY) {
+        return Err(ApiError::Forbidden);
+    }
+    queries::artists::get_by_id(&state.pool, id)
+        .await?
+        .ok_or(ApiError::NotFound)?;
+
+    let link = queries::artists::update_link(
+        &state.pool,
+        link_id,
+        &NewArtistLink {
+            url: body.url,
+            kind: body.kind.as_str().to_string(),
+            label: body.label,
+        },
+    )
+    .await?
+    .ok_or(ApiError::NotFound)?;
+
+    Ok(Json(link_info(link)))
+}
+
+#[utoipa::path(
+    delete,
+    path = "/api/artists/{id}/links/{link_id}",
+    params(
+        ("id" = Uuid, Path, description = "Artist ID"),
+        ("link_id" = Uuid, Path, description = "Link ID"),
+    ),
+    responses(
+        (status = 204, description = "Deleted"),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden", body = ErrorResponse),
+        (status = 404, description = "Not found", body = ErrorResponse),
+    ),
+    tag = "artists",
+    security(("session" = []))
+)]
+pub(crate) async fn delete_artist_link(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Path((_id, link_id)): Path<(Uuid, Uuid)>,
+) -> Result<StatusCode, ApiError> {
+    if !auth.capabilities.contains(capabilities::ARTISTS_MANAGE_ANY) {
+        return Err(ApiError::Forbidden);
+    }
+    let found = queries::artists::delete_link(&state.pool, link_id).await?;
     if found {
         Ok(StatusCode::NO_CONTENT)
     } else {

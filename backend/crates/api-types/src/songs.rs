@@ -44,6 +44,21 @@ pub struct UpdateSongImageRequest {
     pub kind: String,
 }
 
+/// Request body for `POST /api/songs/{id}/images/link`.
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct AddSongImageLinkRequest {
+    /// External URL pointing to the image.
+    pub external_url: String,
+    /// Serialized [`SongImageKind`] value to assign.
+    pub kind: String,
+    /// Display label for this image.
+    pub title: Option<String>,
+    /// Attribution text for the content creator.
+    pub credits: Option<String>,
+    /// Link to the original source post.
+    pub source_url: Option<String>,
+}
+
 /// A tag paired with its kind for application to a song.
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct SongTagAssignment {

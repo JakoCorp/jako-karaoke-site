@@ -326,33 +326,53 @@ pub async fn get_links(
     .map_err(DbError::from)
 }
 
-/// Replaces the full set of external links for an artist.
-///
-/// Must be called within a caller provided transaction for atomicity.
-pub async fn set_links(
+/// Creates a single external link for an artist.
+pub async fn create_link(
     conn: &mut MySqlConnection,
     artist_id: Uuid,
-    links: &[NewArtistLink],
-) -> Result<Vec<ArtistLink>> {
-    sqlx::query("DELETE FROM artist_links WHERE artist_id = ?")
-        .bind(artist_id)
-        .execute(&mut *conn)
+    link: &NewArtistLink,
+) -> Result<ArtistLink> {
+    sqlx::query_as::<_, ArtistLink>(
+        "INSERT INTO artist_links (artist_id, url, kind, label) VALUES (?, ?, ?, ?) \
+         RETURNING id, artist_id, url, kind, label",
+    )
+    .bind(artist_id)
+    .bind(&link.url)
+    .bind(&link.kind)
+    .bind(&link.label)
+    .fetch_one(conn)
+    .await
+    .map_err(DbError::from)
+}
+
+/// Replaces the url, kind, and label of an artist link by its ID.
+pub async fn update_link(
+    executor: impl Executor<'_, Database = MySql>,
+    link_id: Uuid,
+    link: &NewArtistLink,
+) -> Result<Option<ArtistLink>> {
+    sqlx::query_as::<_, ArtistLink>(
+        "UPDATE artist_links SET url = ?, kind = ?, label = ? WHERE id = ? \
+         RETURNING id, artist_id, url, kind, label",
+    )
+    .bind(&link.url)
+    .bind(&link.kind)
+    .bind(&link.label)
+    .bind(link_id)
+    .fetch_optional(executor)
+    .await
+    .map_err(DbError::from)
+}
+
+/// Deletes a single artist link by its ID. Returns `true` if the row existed.
+pub async fn delete_link(
+    executor: impl Executor<'_, Database = MySql>,
+    link_id: Uuid,
+) -> Result<bool> {
+    let result = sqlx::query("DELETE FROM artist_links WHERE id = ?")
+        .bind(link_id)
+        .execute(executor)
         .await
         .map_err(DbError::from)?;
-    let mut result = Vec::with_capacity(links.len());
-    for link in links {
-        let inserted = sqlx::query_as::<_, ArtistLink>(
-            "INSERT INTO artist_links (artist_id, url, kind, label) VALUES (?, ?, ?, ?) \
-             RETURNING id, artist_id, url, kind, label",
-        )
-        .bind(artist_id)
-        .bind(&link.url)
-        .bind(&link.kind)
-        .bind(&link.label)
-        .fetch_one(&mut *conn)
-        .await
-        .map_err(DbError::from)?;
-        result.push(inserted);
-    }
-    Ok(result)
+    Ok(result.rows_affected() > 0)
 }

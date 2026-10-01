@@ -17,8 +17,8 @@ use api_types::{
     lyrics::{LyricsResponse, UpdateLyricsRequest},
     pagination::{PagedResponse, defaults as pagination_defaults},
     songs::{
-        CreateSongRequest, SongImageInfo, SongImageKind, SongResponse, SongSummary,
-        SongTagAssignment, UpdateSongImageRequest, UpdateSongRequest,
+        AddSongImageLinkRequest, CreateSongRequest, SongImageInfo, SongImageKind, SongResponse,
+        SongSummary, SongTagAssignment, UpdateSongImageRequest, UpdateSongRequest,
     },
     tags::SongTagKind,
 };
@@ -43,6 +43,7 @@ use crate::{
         update_song,
         delete_song,
         images::upload_song_image,
+        images::link_song_image,
         images::update_song_image_kind,
         images::delete_song_image,
         lyrics::get_song_lyrics,
@@ -60,6 +61,7 @@ use crate::{
         SongImageInfo,
         AssetInfo,
         UpdateSongImageRequest,
+        AddSongImageLinkRequest,
         images::ImageUpload,
         LyricsResponse,
         UpdateLyricsRequest,
@@ -117,6 +119,7 @@ pub fn router() -> Router<AppState> {
             "/{id}/images",
             post(images::upload_song_image).layer(DefaultBodyLimit::max(50 * 1024 * 1024)),
         )
+        .route("/{id}/images/link", post(images::link_song_image))
         .route(
             "/{id}/images/{asset_id}",
             patch(images::update_song_image_kind).delete(images::delete_song_image),
