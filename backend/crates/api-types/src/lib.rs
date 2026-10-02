@@ -4,6 +4,7 @@
 //! OpenAPI path annotations without redeclaration.
 
 pub mod artists;
+pub mod assets;
 pub mod auth;
 pub mod common;
 pub mod lyrics;

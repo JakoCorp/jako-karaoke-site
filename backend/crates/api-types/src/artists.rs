@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
+use crate::assets::AssetInfo;
+
 /// Valid kind values for an image attached to an artist.
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "snake_case")]
@@ -48,17 +50,13 @@ impl ArtistLinkKind {
     }
 }
 
-/// An image attached to an artist with its semantic role.
+/// An image asset attached to an artist with its semantic role.
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct ArtistImageInfo {
-    /// Unique identifier of the image record.
-    pub id: Uuid,
-    /// Publicly served URL for clients.
-    pub public_url: String,
-    /// Optional attribution text for the image creator.
-    pub credits: Option<String>,
     /// Serialized [`ArtistImageKind`] value indicating the image's semantic role.
     pub kind: String,
+    #[serde(flatten)]
+    pub asset: AssetInfo,
 }
 
 /// Request body for `PATCH /api/artists/{id}/images/{image_id}`.
@@ -68,11 +66,26 @@ pub struct UpdateArtistImageRequest {
     pub kind: String,
 }
 
-/// Input for attaching an existing image to an artist.
+/// Request body for `POST /api/artists/{id}/images/link`.
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct AddArtistImageLinkRequest {
+    /// External URL pointing to the image.
+    pub external_url: String,
+    /// Serialized [`ArtistImageKind`] value to assign.
+    pub kind: String,
+    /// Display label for this image.
+    pub title: Option<String>,
+    /// Attribution text for the content creator.
+    pub credits: Option<String>,
+    /// Link to the original source post.
+    pub source_url: Option<String>,
+}
+
+/// Input for attaching an existing asset as an image to an artist.
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct ArtistImageInput {
-    /// ID of an existing image record to attach.
-    pub image_id: Uuid,
+    /// ID of an existing asset record to attach.
+    pub asset_id: Uuid,
     /// Semantic role for this image.
     pub kind: ArtistImageKind,
 }
@@ -142,19 +155,26 @@ pub struct CreateArtistRequest {
     pub name: String,
     /// Optional freeform bio or description.
     pub description: Option<String>,
-    /// External links to create alongside the artist.
-    pub links: Vec<ArtistLinkInput>,
 }
 
 /// Request body for `PUT /api/artists/{id}`.
 ///
-/// Images are managed via the `/images` subresource.
+/// Images and links are managed via their own sub-resources.
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct UpdateArtistRequest {
     /// Display name.
     pub name: String,
     /// Optional freeform bio or description.
     pub description: Option<String>,
-    /// Replaces all existing external links.
-    pub links: Vec<ArtistLinkInput>,
+}
+
+/// Request body for `PATCH /api/artists/{id}/links/{link_id}`.
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct UpdateArtistLinkRequest {
+    /// Fully qualified URL.
+    pub url: String,
+    /// Platform this link points to.
+    pub kind: ArtistLinkKind,
+    /// Optional display override label.
+    pub label: Option<String>,
 }

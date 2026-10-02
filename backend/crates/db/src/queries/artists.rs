@@ -7,9 +7,21 @@ use uuid::Uuid;
 
 use crate::error::DbError;
 use crate::models::artist::{Artist, ArtistLink, NewArtist, NewArtistLink, UpdateArtist};
-use crate::models::image::Image;
 
 type Result<T> = std::result::Result<T, DbError>;
+
+/// Flat query result joining an artist image join row with its asset fields.
+#[derive(Debug, Clone, sqlx::FromRow)]
+pub struct ArtistImageRow {
+    pub asset_id: Uuid,
+    pub kind: String,
+    pub title: Option<String>,
+    pub credits: Option<String>,
+    pub source_url: Option<String>,
+    pub storage_url: Option<String>,
+    pub internal_path: Option<String>,
+    pub external_url: Option<String>,
+}
 
 /// Fetches an artist by ID.
 pub async fn get_by_id(
@@ -145,47 +157,22 @@ pub async fn delete(executor: impl Executor<'_, Database = MySql>, id: Uuid) -> 
         .map_err(DbError::from)
 }
 
-/// Returns the images for an artist with their kind from the `artist_images` join table.
+/// Returns the images for an artist joined with asset fields.
 pub async fn get_images(
     executor: impl Executor<'_, Database = MySql>,
     artist_id: Uuid,
-) -> Result<Vec<(Image, String)>> {
-    #[derive(sqlx::FromRow)]
-    struct Row {
-        id: Uuid,
-        hash: String,
-        public_url: String,
-        internal_path: Option<String>,
-        credits: Option<String>,
-        kind: String,
-    }
-
-    sqlx::query_as::<_, Row>(
-        "SELECT i.id, i.hash, i.public_url, i.internal_path, i.credits, aimg.kind \
-         FROM images i \
-         JOIN artist_images aimg ON aimg.image_id = i.id \
+) -> Result<Vec<ArtistImageRow>> {
+    sqlx::query_as::<_, ArtistImageRow>(
+        "SELECT aimg.asset_id, aimg.kind, \
+         a.title, a.credits, a.source_url, a.storage_url, a.internal_path, a.external_url \
+         FROM assets a \
+         JOIN artist_images aimg ON aimg.asset_id = a.id \
          WHERE aimg.artist_id = ?",
     )
     .bind(artist_id)
     .fetch_all(executor)
     .await
     .map_err(DbError::from)
-    .map(|rows| {
-        rows.into_iter()
-            .map(|r| {
-                (
-                    Image {
-                        id: r.id,
-                        hash: r.hash,
-                        public_url: r.public_url,
-                        internal_path: r.internal_path,
-                        credits: r.credits,
-                    },
-                    r.kind,
-                )
-            })
-            .collect()
-    })
 }
 
 /// Returns images for multiple artists, keyed by artist ID.
@@ -194,26 +181,29 @@ pub async fn get_images(
 pub async fn get_images_batch(
     executor: impl Executor<'_, Database = MySql>,
     artist_ids: &[Uuid],
-) -> Result<HashMap<Uuid, Vec<(Image, String)>>> {
+) -> Result<HashMap<Uuid, Vec<ArtistImageRow>>> {
     if artist_ids.is_empty() {
         return Ok(HashMap::new());
     }
 
     #[derive(sqlx::FromRow)]
-    struct Row {
+    struct BatchRow {
         artist_id: Uuid,
-        id: Uuid,
-        hash: String,
-        public_url: String,
-        internal_path: Option<String>,
-        credits: Option<String>,
+        asset_id: Uuid,
         kind: String,
+        title: Option<String>,
+        credits: Option<String>,
+        source_url: Option<String>,
+        storage_url: Option<String>,
+        internal_path: Option<String>,
+        external_url: Option<String>,
     }
 
     let mut builder = sqlx::QueryBuilder::new(
-        "SELECT aimg.artist_id, i.id, i.hash, i.public_url, i.internal_path, i.credits, aimg.kind \
-         FROM images i \
-         JOIN artist_images aimg ON aimg.image_id = i.id \
+        "SELECT aimg.artist_id, aimg.asset_id, aimg.kind, \
+         a.title, a.credits, a.source_url, a.storage_url, a.internal_path, a.external_url \
+         FROM assets a \
+         JOIN artist_images aimg ON aimg.asset_id = a.id \
          WHERE aimg.artist_id IN (",
     );
     let mut separated = builder.separated(", ");
@@ -222,24 +212,27 @@ pub async fn get_images_batch(
     }
     builder.push(")");
 
-    let rows: Vec<Row> = builder
+    let rows: Vec<BatchRow> = builder
         .build_query_as()
         .fetch_all(executor)
         .await
         .map_err(DbError::from)?;
 
-    let mut by_artist: HashMap<Uuid, Vec<(Image, String)>> = HashMap::new();
+    let mut by_artist: HashMap<Uuid, Vec<ArtistImageRow>> = HashMap::new();
     for row in rows {
-        by_artist.entry(row.artist_id).or_default().push((
-            Image {
-                id: row.id,
-                hash: row.hash,
-                public_url: row.public_url,
-                internal_path: row.internal_path,
+        by_artist
+            .entry(row.artist_id)
+            .or_default()
+            .push(ArtistImageRow {
+                asset_id: row.asset_id,
+                kind: row.kind,
+                title: row.title,
                 credits: row.credits,
-            },
-            row.kind,
-        ));
+                source_url: row.source_url,
+                storage_url: row.storage_url,
+                internal_path: row.internal_path,
+                external_url: row.external_url,
+            });
     }
     Ok(by_artist)
 }
@@ -248,12 +241,12 @@ pub async fn get_images_batch(
 pub async fn link_image(
     conn: &mut MySqlConnection,
     artist_id: Uuid,
-    image_id: Uuid,
+    asset_id: Uuid,
     kind: &str,
 ) -> Result<()> {
-    sqlx::query("INSERT IGNORE INTO artist_images (artist_id, image_id, kind) VALUES (?, ?, ?)")
+    sqlx::query("INSERT IGNORE INTO artist_images (artist_id, asset_id, kind) VALUES (?, ?, ?)")
         .bind(artist_id)
-        .bind(image_id)
+        .bind(asset_id)
         .bind(kind)
         .execute(conn)
         .await
@@ -263,16 +256,16 @@ pub async fn link_image(
 
 /// Updates the kind of an `artist_images` join row. Returns `true` if a row was updated.
 pub async fn update_image_kind(
-    conn: &mut MySqlConnection,
+    executor: impl Executor<'_, Database = MySql>,
     artist_id: Uuid,
-    image_id: Uuid,
+    asset_id: Uuid,
     kind: &str,
 ) -> Result<bool> {
-    sqlx::query("UPDATE artist_images SET kind = ? WHERE artist_id = ? AND image_id = ?")
+    sqlx::query("UPDATE artist_images SET kind = ? WHERE artist_id = ? AND asset_id = ?")
         .bind(kind)
         .bind(artist_id)
-        .bind(image_id)
-        .execute(conn)
+        .bind(asset_id)
+        .execute(executor)
         .await
         .map(|r| r.rows_affected() > 0)
         .map_err(DbError::from)
@@ -282,11 +275,11 @@ pub async fn update_image_kind(
 pub async fn unlink_image(
     executor: impl Executor<'_, Database = MySql>,
     artist_id: Uuid,
-    image_id: Uuid,
+    asset_id: Uuid,
 ) -> Result<bool> {
-    sqlx::query("DELETE FROM artist_images WHERE artist_id = ? AND image_id = ?")
+    sqlx::query("DELETE FROM artist_images WHERE artist_id = ? AND asset_id = ?")
         .bind(artist_id)
-        .bind(image_id)
+        .bind(asset_id)
         .execute(executor)
         .await
         .map(|r| r.rows_affected() > 0)
@@ -306,10 +299,10 @@ pub async fn set_images(
         .execute(&mut *conn)
         .await
         .map_err(DbError::from)?;
-    for &(image_id, kind) in images {
-        sqlx::query("INSERT INTO artist_images (artist_id, image_id, kind) VALUES (?, ?, ?)")
+    for &(asset_id, kind) in images {
+        sqlx::query("INSERT INTO artist_images (artist_id, asset_id, kind) VALUES (?, ?, ?)")
             .bind(artist_id)
-            .bind(image_id)
+            .bind(asset_id)
             .bind(kind)
             .execute(&mut *conn)
             .await
@@ -333,33 +326,53 @@ pub async fn get_links(
     .map_err(DbError::from)
 }
 
-/// Replaces the full set of external links for an artist.
-///
-/// Must be called within a caller provided transaction for atomicity.
-pub async fn set_links(
+/// Creates a single external link for an artist.
+pub async fn create_link(
     conn: &mut MySqlConnection,
     artist_id: Uuid,
-    links: &[NewArtistLink],
-) -> Result<Vec<ArtistLink>> {
-    sqlx::query("DELETE FROM artist_links WHERE artist_id = ?")
-        .bind(artist_id)
-        .execute(&mut *conn)
+    link: &NewArtistLink,
+) -> Result<ArtistLink> {
+    sqlx::query_as::<_, ArtistLink>(
+        "INSERT INTO artist_links (artist_id, url, kind, label) VALUES (?, ?, ?, ?) \
+         RETURNING id, artist_id, url, kind, label",
+    )
+    .bind(artist_id)
+    .bind(&link.url)
+    .bind(&link.kind)
+    .bind(&link.label)
+    .fetch_one(conn)
+    .await
+    .map_err(DbError::from)
+}
+
+/// Replaces the url, kind, and label of an artist link by its ID.
+pub async fn update_link(
+    executor: impl Executor<'_, Database = MySql>,
+    link_id: Uuid,
+    link: &NewArtistLink,
+) -> Result<Option<ArtistLink>> {
+    sqlx::query_as::<_, ArtistLink>(
+        "UPDATE artist_links SET url = ?, kind = ?, label = ? WHERE id = ? \
+         RETURNING id, artist_id, url, kind, label",
+    )
+    .bind(&link.url)
+    .bind(&link.kind)
+    .bind(&link.label)
+    .bind(link_id)
+    .fetch_optional(executor)
+    .await
+    .map_err(DbError::from)
+}
+
+/// Deletes a single artist link by its ID. Returns `true` if the row existed.
+pub async fn delete_link(
+    executor: impl Executor<'_, Database = MySql>,
+    link_id: Uuid,
+) -> Result<bool> {
+    let result = sqlx::query("DELETE FROM artist_links WHERE id = ?")
+        .bind(link_id)
+        .execute(executor)
         .await
         .map_err(DbError::from)?;
-    let mut result = Vec::with_capacity(links.len());
-    for link in links {
-        let inserted = sqlx::query_as::<_, ArtistLink>(
-            "INSERT INTO artist_links (artist_id, url, kind, label) VALUES (?, ?, ?, ?) \
-             RETURNING id, artist_id, url, kind, label",
-        )
-        .bind(artist_id)
-        .bind(&link.url)
-        .bind(&link.kind)
-        .bind(&link.label)
-        .fetch_one(&mut *conn)
-        .await
-        .map_err(DbError::from)?;
-        result.push(inserted);
-    }
-    Ok(result)
+    Ok(result.rows_affected() > 0)
 }

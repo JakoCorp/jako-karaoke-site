@@ -1,4 +1,4 @@
-//! Image upload and delete sub-resource for artists.
+//! Video subresource handlers for performances.
 
 use axum::{
     Json,
@@ -10,12 +10,12 @@ use tracing::error;
 use uuid::Uuid;
 
 use api_types::{
-    artists::{AddArtistImageLinkRequest, ArtistImageInfo, UpdateArtistImageRequest},
     common::ErrorResponse,
+    performances::{AddVideoLinkRequest, UpdateVideoKindRequest, VideoInfo, VideoKind},
 };
 use db::{
     error::DbError,
-    models::{NewExternalAsset, NewInternalAsset},
+    models::{NewExternalAsset, NewInternalAsset, NewPerformanceVideo},
     queries,
 };
 
@@ -23,20 +23,20 @@ use crate::{
     auth::middleware::AuthUser, capabilities, convert, error::ApiError, media, state::AppState,
 };
 
-/// Placeholder schema for image multipart upload bodies.
+/// Placeholder schema for video multipart upload bodies.
 #[derive(utoipa::ToSchema)]
 #[allow(dead_code)]
-pub(crate) struct ImageUpload {
+pub(crate) struct VideoUpload {
     #[schema(value_type = String, format = Binary)]
     pub file: Vec<u8>,
-    /// Semantic role of the image. See [`ArtistImageKind`](api_types::artists::ArtistImageKind).
+    /// Semantic role. See [`VideoKind`].
     pub kind: String,
     pub title: Option<String>,
     pub credits: Option<String>,
     pub source_url: Option<String>,
 }
 
-struct ImageFields {
+struct VideoFields {
     data: Vec<u8>,
     content_type: String,
     filename: Option<String>,
@@ -46,7 +46,7 @@ struct ImageFields {
     source_url: Option<String>,
 }
 
-async fn read_image_fields(multipart: &mut Multipart) -> Result<ImageFields, ApiError> {
+async fn read_video_fields(multipart: &mut Multipart) -> Result<VideoFields, ApiError> {
     let mut data: Option<Vec<u8>> = None;
     let mut content_type = String::new();
     let mut filename: Option<String> = None;
@@ -73,11 +73,10 @@ async fn read_image_fields(multipart: &mut Multipart) -> Result<ImageFields, Api
                 data = Some(bytes.to_vec());
             }
             Some("kind") => {
-                let text = field.text().await.map_err(|e| {
+                kind = Some(field.text().await.map_err(|e| {
                     error!("multipart field error: {e:?}");
                     ApiError::BadRequest(e.to_string())
-                })?;
-                kind = Some(text);
+                })?);
             }
             Some("title") => {
                 let text = field.text().await.map_err(|e| {
@@ -110,7 +109,7 @@ async fn read_image_fields(multipart: &mut Multipart) -> Result<ImageFields, Api
         }
     }
 
-    Ok(ImageFields {
+    Ok(VideoFields {
         data: data.ok_or_else(|| ApiError::BadRequest("missing 'file' field".into()))?,
         content_type,
         filename,
@@ -121,56 +120,63 @@ async fn read_image_fields(multipart: &mut Multipart) -> Result<ImageFields, Api
     })
 }
 
+fn validate_video_kind(kind: &str) -> Result<&'static str, ApiError> {
+    match kind.trim() {
+        "clip" => Ok(VideoKind::Clip.as_str()),
+        "vod" => Ok(VideoKind::Vod.as_str()),
+        "misc" => Ok(VideoKind::Misc.as_str()),
+        other => Err(ApiError::BadRequest(format!(
+            "invalid video kind '{other}'"
+        ))),
+    }
+}
+
 #[utoipa::path(
     post,
-    path = "/api/artists/{id}/images",
-    params(("id" = Uuid, Path, description = "Artist ID")),
-    request_body(content = ImageUpload, content_type = "multipart/form-data"),
+    path = "/api/performances/{id}/video",
+    params(("id" = Uuid, Path, description = "Performance ID")),
+    request_body(content = VideoUpload, content_type = "multipart/form-data"),
     responses(
-        (status = 201, description = "Image uploaded and linked", body = ArtistImageInfo),
+        (status = 201, description = "Video uploaded and linked", body = VideoInfo),
         (status = 400, description = "Bad request", body = ErrorResponse),
         (status = 401, description = "Unauthorized", body = ErrorResponse),
         (status = 403, description = "Forbidden", body = ErrorResponse),
-        (status = 404, description = "Artist not found", body = ErrorResponse),
+        (status = 404, description = "Performance not found", body = ErrorResponse),
     ),
-    tag = "artists",
+    tag = "performances",
     security(("session" = []))
 )]
-pub(crate) async fn upload_artist_image(
+pub(crate) async fn upload_video(
     State(state): State<AppState>,
     auth: AuthUser,
     Path(id): Path<Uuid>,
     mut multipart: Multipart,
-) -> Result<(StatusCode, Json<ArtistImageInfo>), ApiError> {
-    if !auth.capabilities.contains(capabilities::ARTISTS_MANAGE_ANY) {
+) -> Result<(StatusCode, Json<VideoInfo>), ApiError> {
+    if !auth
+        .capabilities
+        .contains(capabilities::PERFORMANCES_MANAGE_ANY)
+    {
         return Err(ApiError::Forbidden);
     }
-    queries::artists::get_by_id(&state.pool, id)
+    queries::performances::get_by_id(&state.pool, id)
         .await?
         .ok_or(ApiError::NotFound)?;
 
-    let fields = read_image_fields(&mut multipart).await?;
-
-    let kind = match fields.kind.trim() {
-        "avatar" => "avatar",
-        other => {
-            return Err(ApiError::BadRequest(format!("invalid kind '{other}'")));
-        }
-    };
-
+    let fields = read_video_fields(&mut multipart).await?;
+    let kind = validate_video_kind(&fields.kind)?;
+    let title = fields.title.or_else(|| fields.filename.clone());
     let ext = media::resolve_ext(
-        media::MediaKind::Image,
+        media::MediaKind::Video,
         &fields.content_type,
         fields.filename.as_deref(),
     )?;
-    let title = fields.title.or_else(|| fields.filename.clone());
     let hash = hex::encode(Sha256::digest(&fields.data));
 
+    let mut conn = state.pool.acquire().await.map_err(DbError::Sqlx)?;
     let asset = if let Some(existing) = queries::assets::get_by_hash(&state.pool, &hash).await? {
         existing
     } else {
-        let saved = state.store.save("images", ext, &fields.data).await?;
-        let mut conn = state.pool.acquire().await.map_err(DbError::Sqlx)?;
+        let saved = state.store.save("video", ext, &fields.data).await?;
         queries::assets::create_internal(
             &mut conn,
             &NewInternalAsset {
@@ -185,51 +191,51 @@ pub(crate) async fn upload_artist_image(
         .await?
     };
 
-    let mut conn = state.pool.acquire().await.map_err(DbError::Sqlx)?;
-    queries::artists::link_image(&mut conn, id, asset.id, kind).await?;
+    let row = queries::performance_videos::link(
+        &mut conn,
+        id,
+        &NewPerformanceVideo {
+            asset_id: asset.id,
+            kind: kind.to_string(),
+        },
+    )
+    .await?;
 
-    let rows = queries::artists::get_images(&state.pool, id).await?;
-    let row = rows
-        .into_iter()
-        .find(|r| r.asset_id == asset.id)
-        .ok_or(ApiError::NotFound)?;
-
-    Ok((StatusCode::CREATED, Json(convert::artist_image_info(row))))
+    Ok((StatusCode::CREATED, Json(convert::video_info(row))))
 }
 
 #[utoipa::path(
     post,
-    path = "/api/artists/{id}/images/link",
-    params(("id" = Uuid, Path, description = "Artist ID")),
-    request_body = AddArtistImageLinkRequest,
+    path = "/api/performances/{id}/video/link",
+    params(("id" = Uuid, Path, description = "Performance ID")),
+    request_body = AddVideoLinkRequest,
     responses(
-        (status = 201, description = "Image link created", body = ArtistImageInfo),
+        (status = 201, description = "Video link created", body = VideoInfo),
         (status = 400, description = "Bad request", body = ErrorResponse),
         (status = 401, description = "Unauthorized", body = ErrorResponse),
         (status = 403, description = "Forbidden", body = ErrorResponse),
-        (status = 404, description = "Artist not found", body = ErrorResponse),
+        (status = 404, description = "Performance not found", body = ErrorResponse),
     ),
-    tag = "artists",
+    tag = "performances",
     security(("session" = []))
 )]
-pub(crate) async fn link_artist_image(
+pub(crate) async fn add_video_link(
     State(state): State<AppState>,
     auth: AuthUser,
     Path(id): Path<Uuid>,
-    Json(body): Json<AddArtistImageLinkRequest>,
-) -> Result<(StatusCode, Json<ArtistImageInfo>), ApiError> {
-    if !auth.capabilities.contains(capabilities::ARTISTS_MANAGE_ANY) {
+    Json(body): Json<AddVideoLinkRequest>,
+) -> Result<(StatusCode, Json<VideoInfo>), ApiError> {
+    if !auth
+        .capabilities
+        .contains(capabilities::PERFORMANCES_MANAGE_ANY)
+    {
         return Err(ApiError::Forbidden);
     }
-    queries::artists::get_by_id(&state.pool, id)
+    queries::performances::get_by_id(&state.pool, id)
         .await?
         .ok_or(ApiError::NotFound)?;
 
-    let kind = match body.kind.trim() {
-        "avatar" => "avatar",
-        other => return Err(ApiError::BadRequest(format!("invalid kind '{other}'"))),
-    };
-
+    let kind = validate_video_kind(&body.kind)?;
     let mut conn = state.pool.acquire().await.map_err(DbError::Sqlx)?;
     let asset = queries::assets::create_external(
         &mut conn,
@@ -242,93 +248,98 @@ pub(crate) async fn link_artist_image(
     )
     .await?;
 
-    queries::artists::link_image(&mut conn, id, asset.id, kind).await?;
+    let row = queries::performance_videos::link(
+        &mut conn,
+        id,
+        &NewPerformanceVideo {
+            asset_id: asset.id,
+            kind: kind.to_string(),
+        },
+    )
+    .await?;
 
-    let rows = queries::artists::get_images(&state.pool, id).await?;
-    let row = rows
-        .into_iter()
-        .find(|r| r.asset_id == asset.id)
-        .ok_or(ApiError::NotFound)?;
-
-    Ok((StatusCode::CREATED, Json(convert::artist_image_info(row))))
+    Ok((StatusCode::CREATED, Json(convert::video_info(row))))
 }
 
 #[utoipa::path(
     patch,
-    path = "/api/artists/{id}/images/{asset_id}",
+    path = "/api/performances/{id}/video/{asset_id}",
     params(
-        ("id" = Uuid, Path, description = "Artist ID"),
-        ("asset_id" = Uuid, Path, description = "Asset ID"),
+        ("id" = Uuid, Path, description = "Performance ID"),
+        ("asset_id" = Uuid, Path, description = "Video asset ID"),
     ),
-    request_body = UpdateArtistImageRequest,
+    request_body = UpdateVideoKindRequest,
     responses(
-        (status = 200, description = "Kind updated", body = ArtistImageInfo),
+        (status = 200, description = "Kind updated", body = VideoInfo),
         (status = 400, description = "Bad request", body = ErrorResponse),
         (status = 401, description = "Unauthorized", body = ErrorResponse),
         (status = 403, description = "Forbidden", body = ErrorResponse),
         (status = 404, description = "Not found", body = ErrorResponse),
     ),
-    tag = "artists",
+    tag = "performances",
     security(("session" = []))
 )]
-pub(crate) async fn update_artist_image_kind(
+pub(crate) async fn update_video_kind(
     State(state): State<AppState>,
     auth: AuthUser,
     Path((id, asset_id)): Path<(Uuid, Uuid)>,
-    Json(body): Json<UpdateArtistImageRequest>,
-) -> Result<Json<ArtistImageInfo>, ApiError> {
-    if !auth.capabilities.contains(capabilities::ARTISTS_MANAGE_ANY) {
+    Json(body): Json<UpdateVideoKindRequest>,
+) -> Result<Json<VideoInfo>, ApiError> {
+    if !auth
+        .capabilities
+        .contains(capabilities::PERFORMANCES_MANAGE_ANY)
+    {
         return Err(ApiError::Forbidden);
     }
 
-    let kind = match body.kind.trim() {
-        "avatar" => "avatar",
-        other => return Err(ApiError::BadRequest(format!("invalid kind '{other}'"))),
-    };
-
-    let updated = queries::artists::update_image_kind(&state.pool, id, asset_id, kind).await?;
+    let kind = validate_video_kind(&body.kind)?;
+    let mut conn = state.pool.acquire().await.map_err(DbError::Sqlx)?;
+    let updated = queries::performance_videos::update_kind(&mut *conn, id, asset_id, kind).await?;
     if !updated {
         return Err(ApiError::NotFound);
     }
 
-    let rows = queries::artists::get_images(&state.pool, id).await?;
+    let rows = queries::performance_videos::list_for_performance(&state.pool, id).await?;
     let row = rows
         .into_iter()
         .find(|r| r.asset_id == asset_id)
         .ok_or(ApiError::NotFound)?;
 
-    Ok(Json(convert::artist_image_info(row)))
+    Ok(Json(convert::video_info(row)))
 }
 
 #[utoipa::path(
     delete,
-    path = "/api/artists/{id}/images/{asset_id}",
+    path = "/api/performances/{id}/video/{asset_id}",
     params(
-        ("id" = Uuid, Path, description = "Artist ID"),
-        ("asset_id" = Uuid, Path, description = "Asset ID"),
+        ("id" = Uuid, Path, description = "Performance ID"),
+        ("asset_id" = Uuid, Path, description = "Video asset ID"),
     ),
     responses(
-        (status = 204, description = "Deleted"),
+        (status = 204, description = "Unlinked"),
         (status = 401, description = "Unauthorized", body = ErrorResponse),
         (status = 403, description = "Forbidden", body = ErrorResponse),
         (status = 404, description = "Not found", body = ErrorResponse),
     ),
-    tag = "artists",
+    tag = "performances",
     security(("session" = []))
 )]
-pub(crate) async fn delete_artist_image(
+pub(crate) async fn delete_video(
     State(state): State<AppState>,
     auth: AuthUser,
     Path((id, asset_id)): Path<(Uuid, Uuid)>,
 ) -> Result<StatusCode, ApiError> {
-    if !auth.capabilities.contains(capabilities::ARTISTS_MANAGE_ANY) {
+    if !auth
+        .capabilities
+        .contains(capabilities::PERFORMANCES_MANAGE_ANY)
+    {
         return Err(ApiError::Forbidden);
     }
 
     let asset = queries::assets::get_by_id(&state.pool, asset_id)
         .await?
         .ok_or(ApiError::NotFound)?;
-    let removed = queries::artists::unlink_image(&state.pool, id, asset_id).await?;
+    let removed = queries::performance_videos::unlink(&state.pool, id, asset_id).await?;
     if !removed {
         return Err(ApiError::NotFound);
     }
@@ -339,7 +350,7 @@ pub(crate) async fn delete_artist_image(
         if let Some(path) = &asset.internal_path
             && let Err(e) = state.store.delete(path).await
         {
-            error!("failed to delete image file {path}: {e}");
+            error!("failed to delete video file {path}: {e}");
         }
     }
 

@@ -57,16 +57,23 @@ CREATE TABLE IF NOT EXISTS lyrics (
     PRIMARY KEY (id)
 ) ENGINE = InnoDB;
 
--- Images
--- Can be cover art, thumbnail, etc.
-CREATE TABLE IF NOT EXISTS images (
+-- Assets
+-- Each row is either an internal file (hash + storage_url set) or an external URL (external_url set).
+CREATE TABLE IF NOT EXISTS assets (
     id BINARY(16) NOT NULL DEFAULT (UNHEX(REPLACE(UUID_V7(), '-', ''))),
-    hash CHAR(64) NOT NULL,
-    public_url VARCHAR(512) NOT NULL,
-    internal_path VARCHAR(512) NULL,
+    title VARCHAR(255) NULL,
     credits TEXT NULL,
+    source_url VARCHAR(1024) NULL,
+    hash CHAR(64) NULL,
+    storage_url VARCHAR(512) NULL,
+    internal_path VARCHAR(512) NULL,
+    external_url VARCHAR(1024) NULL,
     PRIMARY KEY (id),
-    UNIQUE INDEX (hash)
+    UNIQUE INDEX (hash),
+    CONSTRAINT chk_asset_source CHECK (
+        (hash IS NOT NULL AND external_url IS NULL) OR
+        (hash IS NULL AND external_url IS NOT NULL)
+    )
 ) ENGINE = InnoDB;
 
 -- Playlists
@@ -105,13 +112,13 @@ CREATE TABLE IF NOT EXISTS artist_links (
     INDEX (artist_id)
 ) ENGINE = InnoDB;
 
--- Artist <-> Image (M2M)
+-- Artist <-> Asset/Image (M2M)
 -- kind denotes the semantic role of the image (e.g. "avatar").
 CREATE TABLE IF NOT EXISTS artist_images (
     artist_id BINARY(16) NOT NULL REFERENCES artists (id) ON DELETE CASCADE,
-    image_id BINARY(16) NOT NULL REFERENCES images (id) ON DELETE CASCADE,
+    asset_id BINARY(16) NOT NULL REFERENCES assets (id),
     kind VARCHAR(32) NOT NULL,
-    PRIMARY KEY (artist_id, image_id),
+    PRIMARY KEY (artist_id, asset_id),
     INDEX (artist_id)
 ) ENGINE = InnoDB;
 
@@ -126,13 +133,13 @@ CREATE TABLE IF NOT EXISTS songs (
     UNIQUE INDEX (title)
 ) ENGINE = InnoDB;
 
--- Song <-> Image (M2M)
+-- Song <-> Asset/Image (M2M)
 -- kind denotes the semantic role of the image (e.g. "cover_art").
 CREATE TABLE IF NOT EXISTS song_images (
     song_id BINARY(16) NOT NULL REFERENCES songs (id) ON DELETE CASCADE,
-    image_id BINARY(16) NOT NULL REFERENCES images (id) ON DELETE CASCADE,
+    asset_id BINARY(16) NOT NULL REFERENCES assets (id),
     kind VARCHAR(32) NOT NULL,
-    PRIMARY KEY (song_id, image_id)
+    PRIMARY KEY (song_id, asset_id)
 ) ENGINE = InnoDB;
 
 -- Song <-> Original Artist (M2M)
@@ -198,25 +205,21 @@ CREATE TABLE IF NOT EXISTS performance_singers (
     INDEX (artist_id)
 ) ENGINE = InnoDB;
 
--- Performance audios
+-- Performance <-> Asset/Audio (M2M)
 CREATE TABLE IF NOT EXISTS performance_audios (
-    id BINARY(16) NOT NULL DEFAULT (UNHEX(REPLACE(UUID_V7(), '-', ''))),
     performance_id BINARY(16) NOT NULL REFERENCES performances (id) ON DELETE CASCADE,
-    public_url VARCHAR(512) NOT NULL,
-    internal_path VARCHAR(512) NULL,
+    asset_id BINARY(16) NOT NULL REFERENCES assets (id),
     kind VARCHAR(32) NOT NULL,
-    PRIMARY KEY (id),
+    PRIMARY KEY (performance_id, asset_id),
     INDEX (performance_id)
 ) ENGINE = InnoDB;
 
--- Performance videos
+-- Performance <-> Asset/Video (M2M)
 CREATE TABLE IF NOT EXISTS performance_videos (
-    id BINARY(16) NOT NULL DEFAULT (UNHEX(REPLACE(UUID_V7(), '-', ''))),
     performance_id BINARY(16) NOT NULL REFERENCES performances (id) ON DELETE CASCADE,
-    public_url VARCHAR(512) NOT NULL,
-    internal_path VARCHAR(512) NULL,
+    asset_id BINARY(16) NOT NULL REFERENCES assets (id),
     kind VARCHAR(32) NOT NULL,
-    PRIMARY KEY (id),
+    PRIMARY KEY (performance_id, asset_id),
     INDEX (performance_id)
 ) ENGINE = InnoDB;
 

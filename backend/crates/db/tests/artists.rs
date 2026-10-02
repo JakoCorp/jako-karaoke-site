@@ -1,6 +1,6 @@
 use db::models::artist::{NewArtist, NewArtistLink, UpdateArtist};
-use db::models::image::NewImage;
-use db::queries::{artists, images};
+use db::models::asset::NewInternalAsset;
+use db::queries::{artists, assets};
 use sqlx::MySqlPool;
 use uuid::Uuid;
 
@@ -11,15 +11,17 @@ fn new_artist(name: &str) -> NewArtist {
     }
 }
 
-async fn create_image(pool: &MySqlPool, url: &str) -> Uuid {
+async fn create_asset(pool: &MySqlPool, url: &str) -> Uuid {
     let mut conn = pool.acquire().await.unwrap();
-    images::create(
+    assets::create_internal(
         &mut conn,
-        &NewImage {
-            hash: format!("{:064x}", url.len()),
-            public_url: url.to_string(),
-            internal_path: None,
+        &NewInternalAsset {
+            title: None,
             credits: None,
+            source_url: None,
+            hash: format!("{:064x}", url.len()),
+            storage_url: url.to_string(),
+            internal_path: None,
         },
     )
     .await
@@ -129,18 +131,18 @@ async fn set_and_get_images(pool: MySqlPool) {
         .await
         .unwrap();
 
-    let image_id = create_image(&pool, "https://example.com/avatar.png").await;
+    let asset_id = create_asset(&pool, "https://example.com/avatar.png").await;
 
     let mut tx = pool.begin().await.unwrap();
-    artists::set_images(&mut tx, artist.id, &[(image_id, "avatar")])
+    artists::set_images(&mut tx, artist.id, &[(asset_id, "avatar")])
         .await
         .unwrap();
     tx.commit().await.unwrap();
 
     let images = artists::get_images(&pool, artist.id).await.unwrap();
     assert_eq!(images.len(), 1);
-    assert_eq!(images[0].0.id, image_id);
-    assert_eq!(images[0].1, "avatar");
+    assert_eq!(images[0].asset_id, asset_id);
+    assert_eq!(images[0].kind, "avatar");
 }
 
 #[sqlx::test(migrator = "db::MIGRATOR")]
@@ -150,24 +152,24 @@ async fn set_images_replaces_existing(pool: MySqlPool) {
         .await
         .unwrap();
 
-    let image_a = create_image(&pool, "https://example.com/a.png").await;
-    let image_b = create_image(&pool, "https://example.com/b.png").await;
+    let asset_a = create_asset(&pool, "https://example.com/a.png").await;
+    let asset_b = create_asset(&pool, "https://example.com/b.png").await;
 
     let mut tx = pool.begin().await.unwrap();
-    artists::set_images(&mut tx, artist.id, &[(image_a, "avatar")])
+    artists::set_images(&mut tx, artist.id, &[(asset_a, "avatar")])
         .await
         .unwrap();
     tx.commit().await.unwrap();
 
     let mut tx = pool.begin().await.unwrap();
-    artists::set_images(&mut tx, artist.id, &[(image_b, "avatar")])
+    artists::set_images(&mut tx, artist.id, &[(asset_b, "avatar")])
         .await
         .unwrap();
     tx.commit().await.unwrap();
 
     let images = artists::get_images(&pool, artist.id).await.unwrap();
     assert_eq!(images.len(), 1);
-    assert_eq!(images[0].0.id, image_b);
+    assert_eq!(images[0].asset_id, asset_b);
 }
 
 #[sqlx::test(migrator = "db::MIGRATOR")]
@@ -191,14 +193,14 @@ async fn get_images_batch_groups_by_artist(pool: MySqlPool) {
         .await
         .unwrap();
 
-    let image_a = create_image(&pool, "https://example.com/a.png").await;
-    let image_b = create_image(&pool, "https://example.com/b.png").await;
+    let asset_a = create_asset(&pool, "https://example.com/a.png").await;
+    let asset_b = create_asset(&pool, "https://example.com/b.png").await;
 
     let mut tx = pool.begin().await.unwrap();
-    artists::set_images(&mut tx, artist_a.id, &[(image_a, "avatar")])
+    artists::set_images(&mut tx, artist_a.id, &[(asset_a, "avatar")])
         .await
         .unwrap();
-    artists::set_images(&mut tx, artist_b.id, &[(image_b, "avatar")])
+    artists::set_images(&mut tx, artist_b.id, &[(asset_b, "avatar")])
         .await
         .unwrap();
     tx.commit().await.unwrap();
@@ -208,40 +210,40 @@ async fn get_images_batch_groups_by_artist(pool: MySqlPool) {
         .unwrap();
 
     assert_eq!(batch[&artist_a.id].len(), 1);
-    assert_eq!(batch[&artist_a.id][0].0.id, image_a);
+    assert_eq!(batch[&artist_a.id][0].asset_id, asset_a);
     assert_eq!(batch[&artist_b.id].len(), 1);
-    assert_eq!(batch[&artist_b.id][0].0.id, image_b);
+    assert_eq!(batch[&artist_b.id][0].asset_id, asset_b);
 }
 
 #[sqlx::test(migrator = "db::MIGRATOR")]
-async fn set_and_get_links(pool: MySqlPool) {
+async fn create_and_get_links(pool: MySqlPool) {
     let mut conn = pool.acquire().await.unwrap();
     let artist = artists::create(&mut conn, &new_artist("artist_a"))
         .await
         .unwrap();
 
-    let mut tx = pool.begin().await.unwrap();
-    let created = artists::set_links(
-        &mut tx,
+    artists::create_link(
+        &mut conn,
         artist.id,
-        &[
-            NewArtistLink {
-                url: "https://youtube.com/channel_a".to_string(),
-                kind: "youtube".to_string(),
-                label: Some("YouTube".to_string()),
-            },
-            NewArtistLink {
-                url: "https://example.com".to_string(),
-                kind: "website".to_string(),
-                label: None,
-            },
-        ],
+        &NewArtistLink {
+            url: "https://youtube.com/channel_a".to_string(),
+            kind: "youtube".to_string(),
+            label: Some("YouTube".to_string()),
+        },
     )
     .await
     .unwrap();
-    tx.commit().await.unwrap();
-
-    assert_eq!(created.len(), 2);
+    artists::create_link(
+        &mut conn,
+        artist.id,
+        &NewArtistLink {
+            url: "https://example.com".to_string(),
+            kind: "website".to_string(),
+            label: None,
+        },
+    )
+    .await
+    .unwrap();
 
     let fetched = artists::get_links(&pool, artist.id).await.unwrap();
     assert_eq!(fetched.len(), 2);
@@ -250,69 +252,64 @@ async fn set_and_get_links(pool: MySqlPool) {
 }
 
 #[sqlx::test(migrator = "db::MIGRATOR")]
-async fn set_links_replaces_existing(pool: MySqlPool) {
+async fn update_link_replaces_fields(pool: MySqlPool) {
     let mut conn = pool.acquire().await.unwrap();
     let artist = artists::create(&mut conn, &new_artist("artist_a"))
         .await
         .unwrap();
 
-    let mut tx = pool.begin().await.unwrap();
-    artists::set_links(
-        &mut tx,
+    let link = artists::create_link(
+        &mut conn,
         artist.id,
-        &[NewArtistLink {
+        &NewArtistLink {
             url: "https://youtube.com/old".to_string(),
             kind: "youtube".to_string(),
             label: None,
-        }],
+        },
     )
     .await
     .unwrap();
-    tx.commit().await.unwrap();
 
-    let mut tx = pool.begin().await.unwrap();
-    artists::set_links(
-        &mut tx,
-        artist.id,
-        &[NewArtistLink {
+    let updated = artists::update_link(
+        &pool,
+        link.id,
+        &NewArtistLink {
             url: "https://example.com".to_string(),
             kind: "website".to_string(),
-            label: None,
-        }],
+            label: Some("Site".to_string()),
+        },
     )
     .await
     .unwrap();
-    tx.commit().await.unwrap();
 
-    let links = artists::get_links(&pool, artist.id).await.unwrap();
-    assert_eq!(links.len(), 1);
-    assert_eq!(links[0].kind, "website");
+    assert!(updated.is_some());
+    let updated = updated.unwrap();
+    assert_eq!(updated.url, "https://example.com");
+    assert_eq!(updated.kind, "website");
+    assert_eq!(updated.label.as_deref(), Some("Site"));
 }
 
 #[sqlx::test(migrator = "db::MIGRATOR")]
-async fn set_links_clear(pool: MySqlPool) {
+async fn delete_link_removes_record(pool: MySqlPool) {
     let mut conn = pool.acquire().await.unwrap();
     let artist = artists::create(&mut conn, &new_artist("artist_a"))
         .await
         .unwrap();
 
-    let mut tx = pool.begin().await.unwrap();
-    artists::set_links(
-        &mut tx,
+    let link = artists::create_link(
+        &mut conn,
         artist.id,
-        &[NewArtistLink {
+        &NewArtistLink {
             url: "https://youtube.com/channel".to_string(),
             kind: "youtube".to_string(),
             label: None,
-        }],
+        },
     )
     .await
     .unwrap();
-    tx.commit().await.unwrap();
 
-    let mut tx = pool.begin().await.unwrap();
-    artists::set_links(&mut tx, artist.id, &[]).await.unwrap();
-    tx.commit().await.unwrap();
+    let found = artists::delete_link(&pool, link.id).await.unwrap();
+    assert!(found);
 
     let links = artists::get_links(&pool, artist.id).await.unwrap();
     assert!(links.is_empty());

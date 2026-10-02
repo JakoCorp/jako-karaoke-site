@@ -1,7 +1,7 @@
 //! Database model types: row structs and their `New`/`Update` input counterparts.
 
 pub mod artist;
-pub mod image;
+pub mod asset;
 pub mod lyrics;
 pub mod pending_oauth;
 pub mod performance;
@@ -14,12 +14,12 @@ pub mod tag;
 pub mod user;
 
 pub use artist::{Artist, ArtistLink, NewArtist, NewArtistLink, UpdateArtist};
-pub use image::{Image, NewImage, UpdateImage};
+pub use asset::{Asset, NewExternalAsset, NewInternalAsset};
 pub use lyrics::{Lyrics, NewLyrics};
 pub use pending_oauth::PendingOAuth;
 pub use performance::{NewPerformance, Performance, UpdatePerformance};
-pub use performance_audio::{NewPerformanceAudio, PerformanceAudio};
-pub use performance_video::{NewPerformanceVideo, PerformanceVideo};
+pub use performance_audio::{NewPerformanceAudio, PerformanceAudio, PerformanceAudioRow};
+pub use performance_video::{NewPerformanceVideo, PerformanceVideo, PerformanceVideoRow};
 pub use playlist::{NewPlaylist, Playlist, UpdatePlaylist};
 pub use session::Session;
 pub use song::{NewSong, Song, UpdateSong};

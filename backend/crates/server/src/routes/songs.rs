@@ -12,12 +12,13 @@ use axum::{
 use uuid::Uuid;
 
 use api_types::{
+    assets::AssetInfo,
     common::{ArtistInfo, ErrorResponse, TagInfo},
     lyrics::{LyricsResponse, UpdateLyricsRequest},
     pagination::{PagedResponse, defaults as pagination_defaults},
     songs::{
-        CreateSongRequest, SongImageInfo, SongImageKind, SongResponse, SongSummary,
-        SongTagAssignment, UpdateSongImageRequest, UpdateSongRequest,
+        AddSongImageLinkRequest, CreateSongRequest, SongImageInfo, SongImageKind, SongResponse,
+        SongSummary, SongTagAssignment, UpdateSongImageRequest, UpdateSongRequest,
     },
     tags::SongTagKind,
 };
@@ -29,8 +30,8 @@ use db::{
 };
 
 use crate::{
-    auth::middleware::AuthUser, capabilities, error::ApiError, pagination, routes::common::SortDir,
-    state::AppState,
+    auth::middleware::AuthUser, capabilities, convert, error::ApiError, pagination,
+    routes::common::SortDir, state::AppState,
 };
 
 #[derive(utoipa::OpenApi)]
@@ -42,6 +43,7 @@ use crate::{
         update_song,
         delete_song,
         images::upload_song_image,
+        images::link_song_image,
         images::update_song_image_kind,
         images::delete_song_image,
         lyrics::get_song_lyrics,
@@ -57,7 +59,9 @@ use crate::{
         SongTagKind,
         SongImageKind,
         SongImageInfo,
+        AssetInfo,
         UpdateSongImageRequest,
+        AddSongImageLinkRequest,
         images::ImageUpload,
         LyricsResponse,
         UpdateLyricsRequest,
@@ -115,8 +119,9 @@ pub fn router() -> Router<AppState> {
             "/{id}/images",
             post(images::upload_song_image).layer(DefaultBodyLimit::max(50 * 1024 * 1024)),
         )
+        .route("/{id}/images/link", post(images::link_song_image))
         .route(
-            "/{id}/images/{image_id}",
+            "/{id}/images/{asset_id}",
             patch(images::update_song_image_kind).delete(images::delete_song_image),
         )
         .route(
@@ -153,15 +158,7 @@ async fn hydrate(pool: &MySqlPool, song: db::models::Song) -> Result<SongRespons
         })
         .collect::<Vec<_>>();
 
-    let images = images
-        .into_iter()
-        .map(|(i, kind)| SongImageInfo {
-            id: i.id,
-            public_url: i.public_url,
-            credits: i.credits,
-            kind,
-        })
-        .collect();
+    let images = images.into_iter().map(convert::song_image_info).collect();
 
     Ok(SongResponse {
         id: song.id,
@@ -225,12 +222,7 @@ pub(crate) async fn list_songs(
                 .remove(&s.id)
                 .unwrap_or_default()
                 .into_iter()
-                .map(|(i, kind)| SongImageInfo {
-                    id: i.id,
-                    public_url: i.public_url,
-                    credits: i.credits,
-                    kind,
-                })
+                .map(convert::song_image_info)
                 .collect();
             SongSummary {
                 id: s.id,

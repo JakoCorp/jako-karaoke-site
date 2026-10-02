@@ -17,7 +17,7 @@ import { songKeys, useSong } from "@/hooks/api/songs";
 import { tagKeys, useTags } from "@/hooks/api/tags";
 import { applyAll } from "@/lib/staging";
 
-import { ImageEditSection } from "../components/image-edit-section";
+import { ImageEditSection, type StagingImageItem } from "../components/image-edit-section";
 import { ItemPicker, TagPicker, type TagAssignment } from "../components/pickers";
 import { resolveTagAssignments } from "../components/tag-utils";
 
@@ -34,7 +34,7 @@ export function SongDetailPanel({
   const [editTitle, setEditTitle] = useState("");
   const [editArtistIds, setEditArtistIds] = useState<string[]>([]);
   const [editTags, setEditTags] = useState<TagAssignment<SongTagKind>[]>([]);
-  const [stagingAddImages, setStagingAddImages] = useState<File[]>([]);
+  const [stagingAddImages, setStagingAddImages] = useState<StagingImageItem[]>([]);
   const [pendingRemoveIds, setPendingRemoveIds] = useState<Set<string>>(new Set());
   const [pendingImageKindChanges, setPendingImageKindChanges] = useState<
     Map<string, SongImageKind>
@@ -63,7 +63,15 @@ export function SongDetailPanel({
       });
       if (apiError) throw apiError;
       if (!data) throw new Error("Song creation returned no data.");
-      await applyAll(stagingAddImages, (file) => songsApi.uploadImage(data.id, file, "cover_art"));
+      await applyAll(stagingAddImages, (item) =>
+        item.type === "file"
+          ? songsApi.uploadImage(data.id, item.file, "cover_art")
+          : songsApi.addImageLink(data.id, {
+              external_url: item.externalUrl,
+              kind: "cover_art",
+              title: item.title ?? null,
+            }),
+      );
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: songKeys.all() });
@@ -90,7 +98,15 @@ export function SongDetailPanel({
         tags: resolvedTags,
       });
       if (apiError) throw apiError;
-      await applyAll(stagingAddImages, (file) => songsApi.uploadImage(song.id, file, "cover_art"));
+      await applyAll(stagingAddImages, (item) =>
+        item.type === "file"
+          ? songsApi.uploadImage(song.id, item.file, "cover_art")
+          : songsApi.addImageLink(song.id, {
+              external_url: item.externalUrl,
+              kind: "cover_art",
+              title: item.title ?? null,
+            }),
+      );
       await applyAll(pendingImageKindChanges, ([imageId, kind]) =>
         songsApi.updateImageKind(song.id, imageId, kind),
       );
@@ -247,10 +263,13 @@ export function SongDetailPanel({
             existingImages={existingImages}
             pendingRemoveIds={pendingRemoveIds}
             pendingKindChanges={pendingImageKindChanges}
-            stagingFiles={stagingAddImages}
+            stagingItems={stagingAddImages}
             kinds={SONG_IMAGE_KINDS}
-            onFileSelect={(file) => {
-              setStagingAddImages((prev) => [...prev, file]);
+            onAddFile={(file) => {
+              setStagingAddImages((prev) => [...prev, { type: "file", file }]);
+            }}
+            onAddLink={(item) => {
+              setStagingAddImages((prev) => [...prev, { type: "link", ...item }]);
             }}
             onRemoveExisting={(id) => {
               setPendingRemoveIds((prev) => new Set([...prev, id]));
@@ -332,8 +351,11 @@ export function SongDetailPanel({
               <span className="admin-detail-label">Images</span>
               <div className="admin-image-list">
                 {songDetail.images.map((image: SongImageInfo) => (
-                  <div key={image.id} className="admin-image-item">
-                    <img src={image.public_url} alt={image.kind} />
+                  <div key={image.asset_id} className="admin-image-item">
+                    <img
+                      src={image.storage_url ?? image.external_url ?? undefined}
+                      alt={image.kind}
+                    />
                   </div>
                 ))}
               </div>

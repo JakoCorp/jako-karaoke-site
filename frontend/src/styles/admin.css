@@ -415,6 +415,23 @@
   justify-content: space-between;
 }
 
+@utility admin-link-card-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+@utility admin-link-input-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
+
+  & .form-input {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
 @utility admin-image-list {
   display: flex;
   flex-wrap: wrap;

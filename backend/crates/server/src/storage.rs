@@ -17,8 +17,8 @@ pub enum StorageError {
 
 /// A file that was successfully saved by [`FileStore::save`].
 pub struct SavedFile {
-    /// URL at which the file is publicly reachable.
-    pub public_url: String,
+    /// CDN or file server URL at which the file is publicly reachable.
+    pub storage_url: String,
     /// Absolute filesystem path, stored in the DB so it can be passed back to [`FileStore::delete`].
     pub internal_path: String,
 }
@@ -60,7 +60,7 @@ impl FileStore {
         }
         tokio::fs::write(&full_path, data).await?;
         Ok(SavedFile {
-            public_url: format!("{}/{}", self.base_url.trim_end_matches('/'), relative),
+            storage_url: format!("{}/{}", self.base_url.trim_end_matches('/'), relative),
             internal_path: full_path.to_string_lossy().into_owned(),
         })
     }

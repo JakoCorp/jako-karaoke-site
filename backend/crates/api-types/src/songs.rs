@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
+use crate::assets::AssetInfo;
 use crate::common::{ArtistInfo, TagInfo};
 use crate::tags::SongTagKind;
 
@@ -27,17 +28,13 @@ impl SongImageKind {
     }
 }
 
-/// An image attached to a song with its semantic role.
+/// An image asset attached to a song with its semantic role.
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct SongImageInfo {
-    /// Unique identifier of the image record.
-    pub id: Uuid,
-    /// Publicly served URL for clients.
-    pub public_url: String,
-    /// Optional attribution text for the image creator.
-    pub credits: Option<String>,
     /// Serialized [`SongImageKind`] value indicating the image's semantic role.
     pub kind: String,
+    #[serde(flatten)]
+    pub asset: AssetInfo,
 }
 
 /// Request body for `PATCH /api/songs/{id}/images/{image_id}`.
@@ -45,6 +42,21 @@ pub struct SongImageInfo {
 pub struct UpdateSongImageRequest {
     /// Serialized [`SongImageKind`] value to assign.
     pub kind: String,
+}
+
+/// Request body for `POST /api/songs/{id}/images/link`.
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct AddSongImageLinkRequest {
+    /// External URL pointing to the image.
+    pub external_url: String,
+    /// Serialized [`SongImageKind`] value to assign.
+    pub kind: String,
+    /// Display label for this image.
+    pub title: Option<String>,
+    /// Attribution text for the content creator.
+    pub credits: Option<String>,
+    /// Link to the original source post.
+    pub source_url: Option<String>,
 }
 
 /// A tag paired with its kind for application to a song.
