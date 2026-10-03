@@ -32,11 +32,11 @@
   }
 
   &:focus {
-    border-color: var(--color-pink);
+    border-color: var(--color-focus);
     outline: none;
     box-shadow:
-      0 0 5px var(--color-pink),
-      0 0 12px color-mix(in srgb, var(--color-pink) 50%, transparent);
+      0 0 5px var(--color-focus),
+      0 0 12px color-mix(in srgb, var(--color-focus) 50%, transparent);
   }
 }
 

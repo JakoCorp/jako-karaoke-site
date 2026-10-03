@@ -81,6 +81,9 @@
   --color-danger: #dc2626;
   --color-danger-fg: #ffffff;
 
+  --color-focus: var(--color-pink);
+  --color-border-accent: color-mix(in srgb, var(--color-pink) 40%, transparent);
+
   --color-playing: var(--color-green);
 
   --color-sidebar: #3c313d;

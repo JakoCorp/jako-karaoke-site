@@ -37,7 +37,15 @@ export function useCurrentTrackResolver(): void {
         try {
           const detail = await queryClient.ensureQueryData(performanceDetailOptions(currentId));
           if (cancelled) return;
-          const audioUrl = detail.audio.find((a) => a.kind === "primary")?.storage_url ?? null;
+          const { preferredAudioAssetId, setPreferredAudioAssetId } = usePlayerStore.getState();
+          const preferredAudio = preferredAudioAssetId
+            ? detail.audio.find((a) => a.asset_id === preferredAudioAssetId)
+            : null;
+          const audioUrl =
+            preferredAudio?.storage_url ??
+            detail.audio.find((a) => a.kind === "primary")?.storage_url ??
+            null;
+          if (preferredAudioAssetId) setPreferredAudioAssetId(null);
           const coverImg = detail.songs[0]?.images.find((img) => img.kind === "cover_art");
           const thumbnailUrl = coverImg?.storage_url ?? coverImg?.external_url ?? null;
           setCurrentAudioUrl(audioUrl);
