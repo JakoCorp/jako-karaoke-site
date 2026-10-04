@@ -6,9 +6,10 @@ interface Props {
   entries: PlaylistEntry[];
   playlistId: string;
   playlistName: string;
+  isOwner: boolean;
 }
 
-export function PlaylistPerfTable({ entries, playlistId, playlistName }: Props) {
+export function PlaylistPerfTable({ entries, playlistId, playlistName, isOwner }: Props) {
   return (
     <div>
       <div className="playlist-perf-row-header">
@@ -18,6 +19,7 @@ export function PlaylistPerfTable({ entries, playlistId, playlistName }: Props) 
         <div className="perf-header-label--right perf-header-label">Duration</div>
         <div className="perf-header-label--right perf-header-label">Date</div>
         <div className="perf-header-label--right perf-header-label">Added</div>
+        <div />
       </div>
       {entries.map((entry, index) => (
         <PlaylistPerfRow
@@ -27,6 +29,7 @@ export function PlaylistPerfTable({ entries, playlistId, playlistName }: Props) 
           index={index}
           playlistId={playlistId}
           playlistName={playlistName}
+          isOwner={isOwner}
         />
       ))}
     </div>

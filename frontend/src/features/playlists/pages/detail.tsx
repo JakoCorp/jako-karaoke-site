@@ -26,6 +26,7 @@ export function PlaylistDetailPage() {
       description={playlist?.description}
       entries={entries ?? []}
       isLoading={playlistLoading || entriesLoading}
+      isOwner={isOwner}
       onDelete={
         isOwner
           ? () =>

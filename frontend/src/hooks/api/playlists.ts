@@ -136,6 +136,19 @@ export function useAddToPlaylist() {
   });
 }
 
+/** Removes one performance from a playlist. */
+export function useRemoveFromPlaylist() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ playlistId, performanceId }: { playlistId: string; performanceId: string }) =>
+      playlists.removePerformances(playlistId, [performanceId]),
+    onSuccess: (_, { playlistId }) => {
+      void queryClient.invalidateQueries({ queryKey: playlistKeys.performances(playlistId) });
+      void queryClient.invalidateQueries({ queryKey: ["playlists", "containing"] });
+    },
+  });
+}
+
 export function useDeletePlaylist() {
   const queryClient = useQueryClient();
   return useMutation({

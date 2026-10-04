@@ -9,6 +9,7 @@ interface Props {
   description?: string | null;
   entries: PlaylistEntry[];
   isLoading?: boolean;
+  isOwner?: boolean;
   onDelete?: () => void;
 }
 
@@ -18,6 +19,7 @@ export function PlaylistDetailView({
   description,
   entries,
   isLoading = false,
+  isOwner = false,
   onDelete,
 }: Props) {
   return (
@@ -34,7 +36,12 @@ export function PlaylistDetailView({
       ) : entries.length === 0 ? (
         <div className="playlist-empty">No performances in this playlist.</div>
       ) : (
-        <PlaylistPerfTable entries={entries} playlistId={playlistId} playlistName={title} />
+        <PlaylistPerfTable
+          entries={entries}
+          playlistId={playlistId}
+          playlistName={title}
+          isOwner={isOwner}
+        />
       )}
     </div>
   );
