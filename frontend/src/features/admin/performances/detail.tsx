@@ -587,7 +587,12 @@ export function PerformanceDetailPanel({
                       </option>
                     ))}
                   </select>
-                  <span className="admin-link-url text-sm text-fg-muted">{assetLabel(audio)}</span>
+                  <span className="admin-asset-info">
+                    <span className="admin-link-url">{assetLabel(audio)}</span>
+                    {audio.title && audio.external_url && (
+                      <span className="admin-link-label">{audio.external_url}</span>
+                    )}
+                  </span>
                   <button
                     type="button"
                     className="btn btn-secondary"
@@ -623,8 +628,15 @@ export function PerformanceDetailPanel({
                     </option>
                   ))}
                 </select>
-                <span className="admin-link-url text-sm text-fg-muted">
-                  {item.type === "file" ? item.file.name : (item.title ?? item.externalUrl)}
+                <span className="admin-asset-info">
+                  {item.type === "file" ? (
+                    <span className="admin-link-url">{item.file.name}</span>
+                  ) : (
+                    <>
+                      <span className="admin-link-url">{item.title ?? item.externalUrl}</span>
+                      {item.title && <span className="admin-link-label">{item.externalUrl}</span>}
+                    </>
+                  )}
                 </span>
                 <button
                   type="button"
@@ -729,7 +741,12 @@ export function PerformanceDetailPanel({
                       </option>
                     ))}
                   </select>
-                  <span className="admin-link-url text-sm text-fg-muted">{assetLabel(video)}</span>
+                  <span className="admin-asset-info">
+                    <span className="admin-link-url">{assetLabel(video)}</span>
+                    {video.title && video.external_url && (
+                      <span className="admin-link-label">{video.external_url}</span>
+                    )}
+                  </span>
                   <button
                     type="button"
                     className="btn btn-secondary"
@@ -760,8 +777,15 @@ export function PerformanceDetailPanel({
                     </option>
                   ))}
                 </select>
-                <span className="admin-link-url text-sm text-fg-muted">
-                  {item.type === "file" ? item.file.name : (item.title ?? item.externalUrl)}
+                <span className="admin-asset-info">
+                  {item.type === "file" ? (
+                    <span className="admin-link-url">{item.file.name}</span>
+                  ) : (
+                    <>
+                      <span className="admin-link-url">{item.title ?? item.externalUrl}</span>
+                      {item.title && <span className="admin-link-label">{item.externalUrl}</span>}
+                    </>
+                  )}
                 </span>
                 <button
                   type="button"
