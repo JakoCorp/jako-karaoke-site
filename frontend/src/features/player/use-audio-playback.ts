@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { selectHasNext, usePlayerStore } from "@/store/player";
 
-import { NativeAudioEngine } from "./audio-engine";
+import { AdaptiveAudioEngine } from "./adaptive-audio-engine";
 import type { AudioEngine } from "./audio-engine";
 
 export interface PlaybackProgress {
@@ -17,7 +17,7 @@ export function useAudioPlayback(): PlaybackProgress {
   const prevAudioUrlRef = useRef<string | null>(null);
 
   if (engineRef.current === null) {
-    engineRef.current = new NativeAudioEngine();
+    engineRef.current = new AdaptiveAudioEngine();
   }
 
   const currentAudioUrl = usePlayerStore((s) => s.currentAudioUrl);

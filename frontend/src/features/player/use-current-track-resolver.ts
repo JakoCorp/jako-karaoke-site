@@ -1,10 +1,20 @@
 import { queryOptions } from "@tanstack/react-query";
 import { useEffect } from "react";
 
+import type { AudioInfo } from "@/api/performances";
 import { performancesApi } from "@/api/performances";
 import { performanceKeys } from "@/hooks/api/performances";
 import { queryClient } from "@/lib/query-client";
+import { extractYouTubeVideoId } from "@/lib/video-embed";
 import { selectCurrent, usePlayerStore } from "@/store/player";
+
+function resolveAudioUrl(asset: AudioInfo | null | undefined): string | null {
+  if (!asset) return null;
+  return (
+    asset.storage_url ??
+    (extractYouTubeVideoId(asset.external_url ?? "") ? asset.external_url! : null)
+  );
+}
 
 function performanceDetailOptions(id: string) {
   return queryOptions({
@@ -42,8 +52,8 @@ export function useCurrentTrackResolver(): void {
             ? detail.audio.find((a) => a.asset_id === preferredAudioAssetId)
             : null;
           const audioUrl =
-            preferredAudio?.storage_url ??
-            detail.audio.find((a) => a.kind === "primary")?.storage_url ??
+            resolveAudioUrl(preferredAudio) ??
+            resolveAudioUrl(detail.audio.find((a) => a.kind === "primary")) ??
             null;
           if (preferredAudioAssetId) setPreferredAudioAssetId(null);
           const coverImg = detail.songs[0]?.images.find((img) => img.kind === "cover_art");
