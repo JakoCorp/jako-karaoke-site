@@ -1,8 +1,11 @@
 import { PauseIcon, PlayIcon } from "@phosphor-icons/react";
 
 import type { PlaylistEntry } from "@/api/playlists";
+import { useRemoveFromPlaylist } from "@/hooks/api/playlists";
 import { formatDuration, formatRelativeDate } from "@/lib/format";
 import { selectCurrent, usePlayerStore } from "@/store/player";
+
+import { PlaylistPerfRowMenu } from "./perf-row-menu";
 
 interface Props {
   entry: PlaylistEntry;
@@ -10,14 +13,23 @@ interface Props {
   index: number;
   playlistId: string;
   playlistName: string;
+  isOwner: boolean;
 }
 
-export function PlaylistPerfRow({ entry, entries, index, playlistId, playlistName }: Props) {
+export function PlaylistPerfRow({
+  entry,
+  entries,
+  index,
+  playlistId,
+  playlistName,
+  isOwner,
+}: Props) {
   const playQueue = usePlayerStore((s) => s.playQueue);
   const pause = usePlayerStore((s) => s.pause);
   const resume = usePlayerStore((s) => s.resume);
   const current = usePlayerStore(selectCurrent);
   const isPlaying = usePlayerStore((s) => s.isPlaying);
+  const removeFromPlaylist = useRemoveFromPlaylist();
 
   const isCurrent = current?.id === entry.id;
   const isActive = isCurrent && isPlaying;
@@ -46,7 +58,14 @@ export function PlaylistPerfRow({ entry, entries, index, playlistId, playlistNam
     : "perf-row-indicator";
 
   return (
-    <button className="playlist-perf-row" onClick={handlePlay}>
+    <PlaylistPerfRowMenu
+      performanceId={entry.id}
+      isOwner={isOwner}
+      onPlay={handlePlay}
+      onRemove={() => {
+        removeFromPlaylist.mutate({ playlistId, performanceId: entry.id });
+      }}
+    >
       <div className={indicatorClass} aria-hidden="true">
         {isActive ? <PauseIcon size={14} weight="fill" /> : <PlayIcon size={14} weight="fill" />}
       </div>
@@ -65,6 +84,6 @@ export function PlaylistPerfRow({ entry, entries, index, playlistId, playlistNam
       </div>
       <div className="perf-row-date">{formatRelativeDate(entry.performance_date)}</div>
       <div className="playlist-perf-added">{formatRelativeDate(entry.added_at)}</div>
-    </button>
+    </PlaylistPerfRowMenu>
   );
 }

@@ -13,5 +13,12 @@ export function FavoritesPlaylistTab({ userId }: Props) {
   if (!entries?.length)
     return <div className="playlist-empty">No performances in your favorites.</div>;
 
-  return <PlaylistPerfTable entries={entries} playlistId="favorites" playlistName="Favorites" />;
+  return (
+    <PlaylistPerfTable
+      entries={entries}
+      playlistId="favorites"
+      playlistName="Favorites"
+      isOwner={false}
+    />
+  );
 }
