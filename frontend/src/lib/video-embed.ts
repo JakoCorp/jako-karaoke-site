@@ -57,3 +57,11 @@ export function getVideoEmbedInfo(externalUrl: string): VideoEmbedInfo {
 
   return { embedUrl: null, autoplayEmbedUrl: null, thumbnailUrl: null, platform: null };
 }
+
+/**
+ * Extracts the 11-character video ID from a YouTube watch or short URL.
+ * Returns null for non-YouTube URLs.
+ */
+export function extractYouTubeVideoId(url: string): string | null {
+  return /(?:youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_-]{11})/.exec(url)?.[1] ?? null;
+}

@@ -5,7 +5,7 @@ import { Link } from "react-router";
 
 import type { PerformanceResponse } from "@/api/performances";
 import { formatDate, formatDuration, formatStreamTime } from "@/lib/format";
-import { getVideoEmbedInfo } from "@/lib/video-embed";
+import { extractYouTubeVideoId, getVideoEmbedInfo } from "@/lib/video-embed";
 import { selectCurrent, usePlayerStore } from "@/store/player";
 
 import { PerformanceDetailMenu } from "./menu";
@@ -182,11 +182,13 @@ export function PerformanceDetailView({ performance, lyricsContent }: Props) {
               <div className="perf-detail-media-list">
                 {performance.audio.map((audio) => {
                   const label = mediaLabel(audio);
-                  const isInternal = !!audio.storage_url;
+                  const isPlayable =
+                    !!audio.storage_url || !!extractYouTubeVideoId(audio.external_url ?? "");
+                  const audioUrl = audio.storage_url ?? audio.external_url ?? null;
                   const isActive =
-                    isInternal &&
+                    isPlayable &&
                     current?.id === performance.id &&
-                    currentAudioUrl === audio.storage_url &&
+                    currentAudioUrl === audioUrl &&
                     isPlaying;
 
                   return (
@@ -194,20 +196,20 @@ export function PerformanceDetailView({ performance, lyricsContent }: Props) {
                       key={audio.asset_id}
                       type="button"
                       className={
-                        isInternal
+                        isPlayable
                           ? "perf-detail-audio-row"
                           : "perf-detail-audio-row perf-detail-audio-row--external"
                       }
-                      disabled={!isInternal}
+                      disabled={!isPlayable}
                       onClick={() => {
-                        if (!isInternal) return;
+                        if (!isPlayable || audioUrl === null) return;
                         if (current?.id === performance.id) {
-                          setCurrentAudioUrl(audio.storage_url!);
+                          setCurrentAudioUrl(audioUrl);
                           resumePlayer();
                         } else {
                           setPreferredAudioAssetId(audio.asset_id);
                           playQueue([performance], 0, { type: "single" });
-                          setCurrentAudioUrl(audio.storage_url!);
+                          setCurrentAudioUrl(audioUrl);
                         }
                       }}
                     >
