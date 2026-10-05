@@ -11,33 +11,61 @@ export type QueueSource =
   | { readonly type: "single" };
 
 interface PlayerState {
+  /** Ordered list of performances in the current queue. */
   readonly queue: readonly PerformanceSummary[];
+  /** Index of the currently active track, or -1 when the queue is idle. */
   readonly queueIndex: number;
+  /** Context from which the current queue was initiated. */
   readonly queueSource: QueueSource | null;
+  /** Whether the player is actively playing. */
   readonly isPlaying: boolean;
+  /** Volume level from 0 to 1. */
   readonly volume: number;
+  /** Whether audio output is muted. */
   readonly isMuted: boolean;
+  /** Resolved audio URL for the current track, populated by the track resolver. */
   readonly currentAudioUrl: string | null;
+  /** Resolved thumbnail URL for the current track, populated by the track resolver. */
   readonly currentThumbnailUrl: string | null;
+  /** Whether shuffle mode is active. */
   readonly shuffleEnabled: boolean;
+  /** Current repeat behavior. */
   readonly repeatMode: RepeatMode;
+  /** Stack of previously played queue indices, consumed by prev(). */
   readonly playHistory: readonly number[];
+  /** Asset ID of the audio track to prefer when the resolver runs. Cleared after use. */
+  readonly preferredAudioAssetId: string | null;
+  /** Replaces the queue with the given performances and begins playback at startIndex. */
   playQueue: (
     performances: readonly PerformanceSummary[],
     startIndex: number,
     source: QueueSource,
   ) => void;
+  /** Jumps to index, recording the current position in history. */
   jumpTo: (index: number) => void;
+  /** Advances to the next track, respecting shuffle and repeat mode. */
   next: () => void;
+  /** Returns to the most recently played track via history. */
   prev: () => void;
+  /** Pauses playback. */
   pause: () => void;
+  /** Resumes playback. */
   resume: () => void;
+  /** Stops playback and clears the queue. */
   stop: () => void;
+  /** Sets the volume level. */
   setVolume: (volume: number) => void;
+  /** Toggles the muted state. */
   toggleMute: () => void;
+  /** Sets the resolved audio URL for the current track. */
   setCurrentAudioUrl: (url: string | null) => void;
+  /** Sets the resolved thumbnail URL for the current track. */
   setCurrentThumbnailUrl: (url: string | null) => void;
+  /** Sets the preferred audio asset ID for the next resolver run. */
+  setPreferredAudioAssetId: (assetId: string | null) => void;
+  /** Toggles shuffle mode. */
   toggleShuffle: () => void;
+  /** Cycles through repeat modes: none, all, one. */
   cycleRepeatMode: () => void;
 }
 
@@ -61,6 +89,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   shuffleEnabled: false,
   repeatMode: "none",
   playHistory: [],
+  preferredAudioAssetId: null,
   playQueue: (performances, startIndex, source) => {
     const { queue, queueIndex, playHistory } = get();
     if (performances === queue) {
@@ -101,6 +130,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       isPlaying: true,
       currentAudioUrl: null,
       currentThumbnailUrl: null,
+      preferredAudioAssetId: null,
       playHistory: history,
     });
   },
@@ -115,6 +145,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
         queueIndex: randomIndex,
         currentAudioUrl: null,
         currentThumbnailUrl: null,
+        preferredAudioAssetId: null,
         isPlaying: true,
         playHistory: appendHistory(playHistory, queueIndex),
       });
@@ -126,6 +157,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
         queueIndex: queueIndex + 1,
         currentAudioUrl: null,
         currentThumbnailUrl: null,
+        preferredAudioAssetId: null,
         isPlaying: true,
         playHistory: appendHistory(playHistory, queueIndex),
       });
@@ -134,6 +166,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
         queueIndex: 0,
         currentAudioUrl: null,
         currentThumbnailUrl: null,
+        preferredAudioAssetId: null,
         isPlaying: true,
         playHistory: appendHistory(playHistory, queueIndex),
       });
@@ -148,6 +181,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
         playHistory: playHistory.slice(0, -1),
         currentAudioUrl: null,
         currentThumbnailUrl: null,
+        preferredAudioAssetId: null,
         isPlaying: true,
       });
     }
@@ -166,6 +200,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       isPlaying: false,
       currentAudioUrl: null,
       currentThumbnailUrl: null,
+      preferredAudioAssetId: null,
       playHistory: [],
     });
   },
@@ -180,6 +215,9 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   },
   setCurrentThumbnailUrl: (url) => {
     set({ currentThumbnailUrl: url });
+  },
+  setPreferredAudioAssetId: (assetId) => {
+    set({ preferredAudioAssetId: assetId });
   },
   toggleShuffle: () => {
     set((s) => ({ shuffleEnabled: !s.shuffleEnabled }));
