@@ -50,7 +50,7 @@
 
     "better-tailwindcss/enforce-consistent-line-wrapping": "off", // Conflicts with oxfmt
     "better-tailwindcss/enforce-consistent-class-order": "warn",
-    "better-tailwindcss/enforce-canonical-classes": "warn",
+    "better-tailwindcss/enforce-canonical-classes": "off",
     "better-tailwindcss/no-duplicate-classes": "warn",
     "better-tailwindcss/no-deprecated-classes": "warn",
     "better-tailwindcss/no-unnecessary-whitespace": "warn",
