@@ -26,6 +26,7 @@ export function useAudioPlayback(): PlaybackProgress {
   const isMuted = usePlayerStore((s) => s.isMuted);
   const hasNext = usePlayerStore(selectHasNext);
   const next = usePlayerStore((s) => s.next);
+  const prev = usePlayerStore((s) => s.prev);
   const pause = usePlayerStore((s) => s.pause);
   const repeatMode = usePlayerStore((s) => s.repeatMode);
 
@@ -41,6 +42,13 @@ export function useAudioPlayback(): PlaybackProgress {
       setDuration(Number.isFinite(dur) ? dur : 0);
     });
   }, []);
+
+  useEffect(() => {
+    const engine = engineRef.current;
+    if (engine === null) return;
+    engine.onPrev(() => prev());
+    engine.onNext(() => next());
+  }, [prev, next]);
 
   useEffect(() => {
     const engine = engineRef.current;
