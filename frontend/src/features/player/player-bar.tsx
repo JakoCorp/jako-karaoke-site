@@ -24,6 +24,7 @@ import { QueuePopup } from "./queue-popup";
 import { SleepTimerPopover } from "./sleep-timer-popover";
 import { useAudioPlayback } from "./use-audio-playback";
 import { useCurrentTrackResolver } from "./use-current-track-resolver";
+import { useKeyboardShortcuts } from "./use-keyboard-shortcuts";
 import { useMediaSession } from "./use-media-session";
 import { useSleepTimer } from "./use-sleep-timer";
 
@@ -33,6 +34,7 @@ export function MusicPlayer() {
   const { currentTime, duration, seek } = useAudioPlayback();
   useMediaSession({ currentTime, duration, seek });
   const { remaining } = useSleepTimer();
+  useKeyboardShortcuts();
   const [isSeeking, setIsSeeking] = useState(false);
   const [seekValue, setSeekValue] = useState(0);
 
