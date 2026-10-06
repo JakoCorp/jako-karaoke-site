@@ -11,7 +11,6 @@ import {
   SpeakerLowIcon,
   SpeakerSlashIcon,
   InfoIcon,
-  ClockCountdownIcon,
   CornersOutIcon,
 } from "@phosphor-icons/react";
 import { useState } from "react";
@@ -22,15 +21,18 @@ import { formatDuration } from "@/lib/format";
 import { selectCurrent, selectHasNext, selectHasPrev, usePlayerStore } from "@/store/player";
 
 import { QueuePopup } from "./queue-popup";
+import { SleepTimerPopover } from "./sleep-timer-popover";
 import { useAudioPlayback } from "./use-audio-playback";
 import { useCurrentTrackResolver } from "./use-current-track-resolver";
 import { useMediaSession } from "./use-media-session";
+import { useSleepTimer } from "./use-sleep-timer";
 
 export function MusicPlayer() {
   useCurrentTrackResolver();
   const navigate = useNavigate();
   const { currentTime, duration, seek } = useAudioPlayback();
   useMediaSession({ currentTime, duration, seek });
+  const { remaining } = useSleepTimer();
   const [isSeeking, setIsSeeking] = useState(false);
   const [seekValue, setSeekValue] = useState(0);
 
@@ -179,9 +181,7 @@ export function MusicPlayer() {
       </div>
 
       <div id="button-controls" className="hidden items-center justify-end gap-1 lg:flex">
-        <button type="button" className="player-btn" aria-label="Sleep timer">
-          <ClockCountdownIcon size={20} />
-        </button>
+        <SleepTimerPopover remaining={remaining} />
 
         <button
           type="button"

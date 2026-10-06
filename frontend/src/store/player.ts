@@ -35,6 +35,10 @@ interface PlayerState {
   readonly playHistory: readonly number[];
   /** Asset ID of the audio track to prefer when the resolver runs. Cleared after use. */
   readonly preferredAudioAssetId: string | null;
+  /** Epoch ms at which the sleep timer expires, or null when inactive. */
+  readonly sleepTimerEndsAt: number | null;
+  /** When true, playback pauses after the current track ends naturally. */
+  readonly sleepTimerTrackEnd: boolean;
   /** Replaces the queue with the given performances and begins playback at startIndex. */
   playQueue: (
     performances: readonly PerformanceSummary[],
@@ -67,6 +71,12 @@ interface PlayerState {
   toggleShuffle: () => void;
   /** Cycles through repeat modes: none, all, one. */
   cycleRepeatMode: () => void;
+  /** Starts a countdown sleep timer that pauses playback after the given milliseconds. */
+  setSleepTimer: (ms: number) => void;
+  /** Schedules playback to pause after the current track ends naturally. */
+  setSleepTimerTrackEnd: () => void;
+  /** Cancels any active sleep timer. */
+  clearSleepTimer: () => void;
 }
 
 /** Appends `index` to `history`, deduplicating and capping at 50 entries. */
@@ -90,6 +100,8 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   repeatMode: "none",
   playHistory: [],
   preferredAudioAssetId: null,
+  sleepTimerEndsAt: null,
+  sleepTimerTrackEnd: false,
   playQueue: (performances, startIndex, source) => {
     const { queue, queueIndex, playHistory } = get();
     if (performances === queue) {
@@ -226,6 +238,15 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     set((s) => ({
       repeatMode: s.repeatMode === "none" ? "all" : s.repeatMode === "all" ? "one" : "none",
     }));
+  },
+  setSleepTimer: (ms) => {
+    set({ sleepTimerEndsAt: Date.now() + ms, sleepTimerTrackEnd: false });
+  },
+  setSleepTimerTrackEnd: () => {
+    set({ sleepTimerTrackEnd: true, sleepTimerEndsAt: null });
+  },
+  clearSleepTimer: () => {
+    set({ sleepTimerEndsAt: null, sleepTimerTrackEnd: false });
   },
 }));
 

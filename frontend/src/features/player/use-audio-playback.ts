@@ -29,6 +29,8 @@ export function useAudioPlayback(): PlaybackProgress {
   const prev = usePlayerStore((s) => s.prev);
   const pause = usePlayerStore((s) => s.pause);
   const repeatMode = usePlayerStore((s) => s.repeatMode);
+  const sleepTimerTrackEnd = usePlayerStore((s) => s.sleepTimerTrackEnd);
+  const clearSleepTimer = usePlayerStore((s) => s.clearSleepTimer);
 
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -55,7 +57,10 @@ export function useAudioPlayback(): PlaybackProgress {
     if (engine === null) return;
 
     engine.onEnded(() => {
-      if (repeatMode === "one") {
+      if (sleepTimerTrackEnd) {
+        clearSleepTimer();
+        pause();
+      } else if (repeatMode === "one") {
         engine.seek(0);
         engine.resume();
       } else if (hasNext) {
@@ -72,7 +77,7 @@ export function useAudioPlayback(): PlaybackProgress {
         next();
       }
     });
-  }, [hasNext, next, pause, repeatMode]);
+  }, [hasNext, next, pause, repeatMode, sleepTimerTrackEnd, clearSleepTimer]);
 
   useEffect(() => {
     const engine = engineRef.current;
