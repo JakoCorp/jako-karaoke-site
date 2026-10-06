@@ -9,6 +9,8 @@ export interface AudioEngine {
   onEnded(callback: () => void): void;
   onError(callback: () => void): void;
   onTimeUpdate(callback: (currentTime: number, duration: number) => void): void;
+  onPrev(callback: () => void): void;
+  onNext(callback: () => void): void;
   destroy(): void;
 }
 
@@ -73,6 +75,10 @@ export class NativeAudioEngine implements AudioEngine {
     this.timeUpdateHandler = () => callback(this.audio.currentTime, this.audio.duration);
     this.audio.addEventListener("timeupdate", this.timeUpdateHandler);
   }
+
+  onPrev(_callback: () => void): void {}
+
+  onNext(_callback: () => void): void {}
 
   destroy(): void {
     this.audio.pause();

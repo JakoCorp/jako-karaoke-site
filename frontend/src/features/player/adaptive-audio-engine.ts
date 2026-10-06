@@ -17,6 +17,8 @@ export class AdaptiveAudioEngine implements AudioEngine {
   private endedCb: (() => void) | null = null;
   private errorCb: (() => void) | null = null;
   private timeCb: ((currentTime: number, duration: number) => void) | null = null;
+  private prevCb: (() => void) | null = null;
+  private nextCb: (() => void) | null = null;
   private currentVolume = 1;
 
   private activateEngine(engine: AudioEngine): void {
@@ -25,6 +27,8 @@ export class AdaptiveAudioEngine implements AudioEngine {
     if (this.endedCb) engine.onEnded(this.endedCb);
     if (this.errorCb) engine.onError(this.errorCb);
     if (this.timeCb) engine.onTimeUpdate(this.timeCb);
+    if (this.prevCb) engine.onPrev(this.prevCb);
+    if (this.nextCb) engine.onNext(this.nextCb);
   }
 
   play(url: string): void {
@@ -82,6 +86,16 @@ export class AdaptiveAudioEngine implements AudioEngine {
   onTimeUpdate(callback: (currentTime: number, duration: number) => void): void {
     this.timeCb = callback;
     this.active.onTimeUpdate(callback);
+  }
+
+  onPrev(callback: () => void): void {
+    this.prevCb = callback;
+    this.active.onPrev(callback);
+  }
+
+  onNext(callback: () => void): void {
+    this.nextCb = callback;
+    this.active.onNext(callback);
   }
 
   destroy(): void {

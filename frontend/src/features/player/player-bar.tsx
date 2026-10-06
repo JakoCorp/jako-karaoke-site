@@ -24,11 +24,13 @@ import { selectCurrent, selectHasNext, selectHasPrev, usePlayerStore } from "@/s
 import { QueuePopup } from "./queue-popup";
 import { useAudioPlayback } from "./use-audio-playback";
 import { useCurrentTrackResolver } from "./use-current-track-resolver";
+import { useMediaSession } from "./use-media-session";
 
 export function MusicPlayer() {
   useCurrentTrackResolver();
   const navigate = useNavigate();
   const { currentTime, duration, seek } = useAudioPlayback();
+  useMediaSession({ currentTime, duration, seek });
   const [isSeeking, setIsSeeking] = useState(false);
   const [seekValue, setSeekValue] = useState(0);
 

@@ -32,6 +32,7 @@ declare global {
 
 interface YTPlayer {
   loadVideoById(videoId: string, startSeconds?: number): void;
+  loadPlaylist(playlist: string[], index: number, startSeconds: number): void;
   playVideo(): void;
   pauseVideo(): void;
   stopVideo(): void;
@@ -40,8 +41,13 @@ interface YTPlayer {
   getCurrentTime(): number;
   getDuration(): number;
   getPlayerState(): number;
+  getPlaylistIndex(): number;
   destroy(): void;
 }
+
+/** Provided by https://www.youtube.com/@AceandGaming */
+const PLAYLIST_DECOY_PREV = "dkcz8QCcbq4";
+const PLAYLIST_DECOY_NEXT = "IUfVQ6zEAIQ";
 
 function injectIframeApi(): void {
   if (document.getElementById("yt-iframe-api")) return;
@@ -51,7 +57,7 @@ function injectIframeApi(): void {
   document.head.appendChild(script);
 }
 
-/** Plays YouTube audio via the IFrame Player API. Views are credited because the real YT player runs in an iframe. */
+/** Plays YouTube audio via the IFrame Player API. */
 export class YouTubeAudioEngine implements AudioEngine {
   private iframe: HTMLIFrameElement;
   private player: YTPlayer | null = null;
@@ -61,6 +67,8 @@ export class YouTubeAudioEngine implements AudioEngine {
   private endedCb: (() => void) | null = null;
   private errorCb: (() => void) | null = null;
   private timeCb: ((currentTime: number, duration: number) => void) | null = null;
+  private prevCb: (() => void) | null = null;
+  private nextCb: (() => void) | null = null;
 
   private pollId: ReturnType<typeof setInterval> | null = null;
   private currentVolume = 1;
@@ -86,16 +94,23 @@ export class YouTubeAudioEngine implements AudioEngine {
             this.ready = true;
             if (this.pendingVideoId !== null) {
               this.player!.setVolume(this.currentVolume * 100);
-              this.player!.loadVideoById(this.pendingVideoId);
+              this.player!.loadPlaylist(
+                [PLAYLIST_DECOY_PREV, this.pendingVideoId, PLAYLIST_DECOY_NEXT],
+                1,
+                0,
+              );
               this.pendingVideoId = null;
             }
           },
           onStateChange: (event) => {
-            if (event.data === 0) {
-              this.stopPoll();
-              this.endedCb?.();
-            } else if (event.data === 1) {
+            if (event.data === 1) {
               this.startPoll();
+            } else if (event.data === 0) {
+              this.stopPoll();
+              const index = this.player?.getPlaylistIndex() ?? -1;
+              if (index !== 0 && index !== 2) {
+                this.endedCb?.();
+              }
             } else if (event.data === 2 || event.data === 5) {
               this.stopPoll();
             }
@@ -122,8 +137,23 @@ export class YouTubeAudioEngine implements AudioEngine {
   private startPoll(): void {
     if (this.pollId !== null) return;
     this.pollId = setInterval(() => {
-      if (!this.player || this.player.getPlayerState() !== 1) return;
-      this.timeCb?.(this.player.getCurrentTime(), this.player.getDuration());
+      if (!this.player) return;
+      const index = this.player.getPlaylistIndex();
+      if (index === 0) {
+        this.stopPoll();
+        this.player.stopVideo();
+        this.prevCb?.();
+        return;
+      }
+      if (index === 2) {
+        this.stopPoll();
+        this.player.stopVideo();
+        this.nextCb?.();
+        return;
+      }
+      if (this.player.getPlayerState() === 1) {
+        this.timeCb?.(this.player.getCurrentTime(), this.player.getDuration());
+      }
     }, 250);
   }
 
@@ -143,7 +173,7 @@ export class YouTubeAudioEngine implements AudioEngine {
     }
 
     this.player.setVolume(this.currentVolume * 100);
-    this.player.loadVideoById(videoId);
+    this.player.loadPlaylist([PLAYLIST_DECOY_PREV, videoId, PLAYLIST_DECOY_NEXT], 1, 0);
   }
 
   pause(): void {
@@ -184,6 +214,14 @@ export class YouTubeAudioEngine implements AudioEngine {
 
   onTimeUpdate(callback: (currentTime: number, duration: number) => void): void {
     this.timeCb = callback;
+  }
+
+  onPrev(callback: () => void): void {
+    this.prevCb = callback;
+  }
+
+  onNext(callback: () => void): void {
+    this.nextCb = callback;
   }
 
   destroy(): void {
