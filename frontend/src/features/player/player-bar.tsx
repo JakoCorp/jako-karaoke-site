@@ -77,7 +77,12 @@ export function MusicPlayer() {
           <p className="player-artist">{artists}</p>
         </div>
         <PlaylistPickerPopover performanceId={current.id}>
-          <button type="button" className="player-btn-sm" aria-label="Add to playlist">
+          <button
+            type="button"
+            className="player-btn-sm"
+            aria-label="Add to playlist"
+            data-tooltip="Add to playlist"
+          >
             <MusicNotesPlusIcon size={20} />
           </button>
         </PlaylistPickerPopover>
@@ -93,6 +98,7 @@ export function MusicPlayer() {
                 : "player-btn hidden md:flex"
             }
             aria-label="Shuffle"
+            data-tooltip="Shuffle"
             onClick={toggleShuffle}
           >
             <ShuffleIcon size={18} />
@@ -148,6 +154,9 @@ export function MusicPlayer() {
                 : "player-btn hidden md:flex"
             }
             aria-label="Repeat"
+            data-tooltip={
+              repeatMode === "all" ? "Repeat all" : repeatMode === "one" ? "Repeat one" : "Repeat"
+            }
             onClick={cycleRepeatMode}
           >
             {repeatMode === "one" ? <RepeatOnceIcon size={18} /> : <RepeatIcon size={18} />}
@@ -188,8 +197,8 @@ export function MusicPlayer() {
         <button
           type="button"
           className="player-btn"
-          data-tooltip="Performance Info"
-          aria-label="Performance Info"
+          data-tooltip="Performance info"
+          aria-label="Performance info"
           onClick={() => {
             void navigate(`/performance/${current.id}`);
           }}
@@ -205,6 +214,7 @@ export function MusicPlayer() {
             className="player-btn hidden lg:flex"
             onClick={toggleMute}
             aria-label={isMuted ? "Unmute" : "Mute"}
+            data-tooltip={isMuted ? "Unmute" : "Mute"}
           >
             {isMuted || volume === 0 ? (
               <SpeakerSlashIcon size={20} />
@@ -226,7 +236,12 @@ export function MusicPlayer() {
           />
         </div>
 
-        <button type="button" className="player-btn" aria-label="Fullscreen">
+        <button
+          type="button"
+          className="player-btn"
+          aria-label="Fullscreen"
+          data-tooltip="Fullscreen"
+        >
           <CornersOutIcon size={20} />
         </button>
       </div>

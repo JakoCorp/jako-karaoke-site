@@ -39,6 +39,13 @@ export function SleepTimerPopover({ remaining }: Props) {
       <Popover.Trigger
         className={isActive ? "player-btn-timer" : "player-btn"}
         aria-label="Sleep timer"
+        data-tooltip={
+          sleepTimerTrackEnd
+            ? "Sleep timer (EoT)"
+            : remaining !== null
+              ? `Sleep timer (${formatDuration(remaining)})`
+              : "Sleep timer"
+        }
       >
         <ClockCountdownIcon size={20} />
         {sleepTimerTrackEnd && <span className="text-xs">EoT</span>}
