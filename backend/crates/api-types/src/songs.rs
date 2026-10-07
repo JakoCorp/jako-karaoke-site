@@ -17,6 +17,8 @@ use crate::tags::SongTagKind;
 #[serde(rename_all = "snake_case")]
 pub enum SongImageKind {
     CoverArt,
+    FullArt,
+    Misc,
 }
 
 impl SongImageKind {
@@ -24,6 +26,21 @@ impl SongImageKind {
     pub fn as_str(&self) -> &'static str {
         match self {
             Self::CoverArt => "cover_art",
+            Self::FullArt => "full_art",
+            Self::Misc => "misc",
+        }
+    }
+}
+
+impl std::str::FromStr for SongImageKind {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "cover_art" => Ok(Self::CoverArt),
+            "full_art" => Ok(Self::FullArt),
+            "misc" => Ok(Self::Misc),
+            _ => Err(()),
         }
     }
 }
