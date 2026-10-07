@@ -442,41 +442,30 @@
 
 @utility admin-image-list {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+  flex-direction: column;
   margin-top: 0.5rem;
 }
 
 @utility admin-image-item {
-  position: relative;
-  width: 5rem;
-  height: 5rem;
-  border-radius: 0.375rem;
-  overflow: hidden;
-  border: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0;
+  border-bottom: 1px solid var(--color-border);
 
-  & img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+  &:last-child {
+    border-bottom: none;
   }
 }
 
-@utility admin-image-delete {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.5);
-  color: #fff;
-  opacity: 0;
-  transition: opacity 0.15s;
-  cursor: pointer;
-
-  &:hover {
-    opacity: 1;
-  }
+@utility admin-image-thumb {
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+  border-radius: 0.25rem;
+  object-fit: cover;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-subtle);
 }
 
 @utility admin-audio-item {

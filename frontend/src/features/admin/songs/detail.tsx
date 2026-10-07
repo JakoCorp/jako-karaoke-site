@@ -34,7 +34,7 @@ export function SongDetailPanel({
   const [editTitle, setEditTitle] = useState("");
   const [editArtistIds, setEditArtistIds] = useState<string[]>([]);
   const [editTags, setEditTags] = useState<TagAssignment<SongTagKind>[]>([]);
-  const [stagingAddImages, setStagingAddImages] = useState<StagingImageItem[]>([]);
+  const [stagingAddImages, setStagingAddImages] = useState<StagingImageItem<SongImageKind>[]>([]);
   const [pendingRemoveIds, setPendingRemoveIds] = useState<Set<string>>(new Set());
   const [pendingImageKindChanges, setPendingImageKindChanges] = useState<
     Map<string, SongImageKind>
@@ -65,10 +65,10 @@ export function SongDetailPanel({
       if (!data) throw new Error("Song creation returned no data.");
       await applyAll(stagingAddImages, (item) =>
         item.type === "file"
-          ? songsApi.uploadImage(data.id, item.file, "cover_art")
+          ? songsApi.uploadImage(data.id, item.file, item.kind)
           : songsApi.addImageLink(data.id, {
               external_url: item.externalUrl,
-              kind: "cover_art",
+              kind: item.kind,
               title: item.title ?? null,
             }),
       );
@@ -100,10 +100,10 @@ export function SongDetailPanel({
       if (apiError) throw apiError;
       await applyAll(stagingAddImages, (item) =>
         item.type === "file"
-          ? songsApi.uploadImage(song.id, item.file, "cover_art")
+          ? songsApi.uploadImage(song.id, item.file, item.kind)
           : songsApi.addImageLink(song.id, {
               external_url: item.externalUrl,
-              kind: "cover_art",
+              kind: item.kind,
               title: item.title ?? null,
             }),
       );
@@ -266,10 +266,13 @@ export function SongDetailPanel({
             stagingItems={stagingAddImages}
             kinds={SONG_IMAGE_KINDS}
             onAddFile={(file) => {
-              setStagingAddImages((prev) => [...prev, { type: "file", file }]);
+              setStagingAddImages((prev) => [...prev, { type: "file", file, kind: "cover_art" }]);
             }}
             onAddLink={(item) => {
-              setStagingAddImages((prev) => [...prev, { type: "link", ...item }]);
+              setStagingAddImages((prev) => [
+                ...prev,
+                { type: "link", ...item, kind: "cover_art" },
+              ]);
             }}
             onRemoveExisting={(id) => {
               setPendingRemoveIds((prev) => new Set([...prev, id]));
@@ -279,6 +282,11 @@ export function SongDetailPanel({
             }}
             onRemoveStaged={(index) => {
               setStagingAddImages((prev) => prev.filter((_, i) => i !== index));
+            }}
+            onChangeStagedKind={(index, kind) => {
+              setStagingAddImages((prev) =>
+                prev.map((item, i) => (i === index ? { ...item, kind } : item)),
+              );
             }}
           />
           {formError !== null && <p className="form-error">{formError}</p>}
@@ -353,9 +361,19 @@ export function SongDetailPanel({
                 {songDetail.images.map((image: SongImageInfo) => (
                   <div key={image.asset_id} className="admin-image-item">
                     <img
+                      className="admin-image-thumb"
                       src={image.storage_url ?? image.external_url ?? undefined}
-                      alt={image.kind}
+                      alt=""
                     />
+                    <span className="admin-asset-info">
+                      <span className="admin-link-url text-sm">
+                        {image.title ??
+                          image.storage_url?.split("/").pop() ??
+                          image.external_url ??
+                          "Untitled"}
+                      </span>
+                    </span>
+                    <span className="admin-pill-kind">{image.kind}</span>
                   </div>
                 ))}
               </div>
