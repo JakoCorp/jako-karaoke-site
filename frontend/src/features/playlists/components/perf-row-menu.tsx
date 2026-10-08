@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 
 import { RowContextMenu } from "@/components/row-context-menu";
 import type { RowMenuItemDef } from "@/components/row-context-menu";
+import { useOfflineMenuItem } from "@/features/local";
 
 import { PlaylistPickerContent } from "./picker-content";
 
@@ -16,6 +17,7 @@ interface Props {
 
 export function PlaylistPerfRowMenu({ performanceId, isOwner, children, onPlay, onRemove }: Props) {
   const navigate = useNavigate();
+  const offlineItem = useOfflineMenuItem(performanceId);
 
   const items: RowMenuItemDef[] = [
     {
@@ -25,6 +27,7 @@ export function PlaylistPerfRowMenu({ performanceId, isOwner, children, onPlay, 
         void navigate(`/performance/${performanceId}`);
       },
     },
+    offlineItem,
     {
       type: "submenu",
       icon: <MusicNotesPlusIcon size={14} />,

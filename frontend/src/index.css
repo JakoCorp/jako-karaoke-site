@@ -11,6 +11,7 @@
 @import "./styles/player.css";
 @import "./styles/performances.css";
 @import "./styles/playlists.css";
+@import "./styles/local.css";
 @import "./styles/songs.css";
 @import "./styles/tooltip.css";
 @import "./styles/not-found.css";

@@ -1,0 +1,54 @@
+@utility local-perf-row {
+  display: grid;
+  grid-template-columns: 2.5rem 1fr 5rem 6rem 8rem 2.5rem;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.75rem;
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.1s;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+
+  &:hover .perf-row-menu-btn {
+    opacity: 1;
+  }
+}
+
+@utility local-perf-row-header {
+  display: grid;
+  grid-template-columns: 2.5rem 1fr 5rem 6rem 8rem 2.5rem;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 2px solid var(--color-border);
+}
+
+@utility local-storage-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+@utility local-storage-usage {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+@utility local-storage-total {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-fg);
+}
