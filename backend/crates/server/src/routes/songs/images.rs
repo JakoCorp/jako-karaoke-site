@@ -11,7 +11,7 @@ use uuid::Uuid;
 
 use api_types::{
     common::ErrorResponse,
-    songs::{AddSongImageLinkRequest, SongImageInfo, UpdateSongImageRequest},
+    songs::{AddSongImageLinkRequest, SongImageInfo, SongImageKind, UpdateSongImageRequest},
 };
 use db::{
     error::DbError,
@@ -151,12 +151,11 @@ pub(crate) async fn upload_song_image(
 
     let fields = read_image_fields(&mut multipart).await?;
 
-    let kind = match fields.kind.trim() {
-        "cover_art" => "cover_art",
-        other => {
-            return Err(ApiError::BadRequest(format!("invalid kind '{other}'")));
-        }
-    };
+    let kind: SongImageKind = fields
+        .kind
+        .trim()
+        .parse()
+        .map_err(|_| ApiError::BadRequest(format!("invalid kind '{}'", fields.kind.trim())))?;
 
     let ext = media::resolve_ext(
         media::MediaKind::Image,
@@ -186,7 +185,7 @@ pub(crate) async fn upload_song_image(
     };
 
     let mut conn = state.pool.acquire().await.map_err(DbError::Sqlx)?;
-    queries::songs::link_image(&mut conn, id, asset.id, kind).await?;
+    queries::songs::link_image(&mut conn, id, asset.id, kind.as_str()).await?;
 
     let rows = queries::songs::get_images(&state.pool, id).await?;
     let row = rows
@@ -225,10 +224,11 @@ pub(crate) async fn link_song_image(
         .await?
         .ok_or(ApiError::NotFound)?;
 
-    let kind = match body.kind.trim() {
-        "cover_art" => "cover_art",
-        other => return Err(ApiError::BadRequest(format!("invalid kind '{other}'"))),
-    };
+    let kind: SongImageKind = body
+        .kind
+        .trim()
+        .parse()
+        .map_err(|_| ApiError::BadRequest(format!("invalid kind '{}'", body.kind.trim())))?;
 
     let mut conn = state.pool.acquire().await.map_err(DbError::Sqlx)?;
     let asset = queries::assets::create_external(
@@ -242,7 +242,7 @@ pub(crate) async fn link_song_image(
     )
     .await?;
 
-    queries::songs::link_image(&mut conn, id, asset.id, kind).await?;
+    queries::songs::link_image(&mut conn, id, asset.id, kind.as_str()).await?;
 
     let rows = queries::songs::get_images(&state.pool, id).await?;
     let row = rows
@@ -281,12 +281,14 @@ pub(crate) async fn update_song_image_kind(
         return Err(ApiError::Forbidden);
     }
 
-    let kind = match body.kind.trim() {
-        "cover_art" => "cover_art",
-        other => return Err(ApiError::BadRequest(format!("invalid kind '{other}'"))),
-    };
+    let kind: SongImageKind = body
+        .kind
+        .trim()
+        .parse()
+        .map_err(|_| ApiError::BadRequest(format!("invalid kind '{}'", body.kind.trim())))?;
 
-    let updated = queries::songs::update_image_kind(&state.pool, id, asset_id, kind).await?;
+    let updated =
+        queries::songs::update_image_kind(&state.pool, id, asset_id, kind.as_str()).await?;
     if !updated {
         return Err(ApiError::NotFound);
     }

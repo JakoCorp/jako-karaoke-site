@@ -5717,7 +5717,9 @@
         "type": "string",
         "description": "Valid kind values for an image attached to a song.",
         "enum": [
-          "cover_art"
+          "cover_art",
+          "full_art",
+          "misc"
         ]
       },
       "SongRef": {

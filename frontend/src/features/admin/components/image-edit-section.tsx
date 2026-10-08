@@ -3,26 +3,32 @@ import { useRef, useState } from "react";
 
 interface ExistingImage {
   asset_id: string;
+  title?: string | null;
   storage_url?: string | null;
   external_url?: string | null;
   kind: string;
 }
 
-export type StagingImageItem =
-  | { type: "file"; file: File }
-  | { type: "link"; externalUrl: string; title?: string };
+function imageLabel(img: ExistingImage): string {
+  return img.title ?? img.storage_url?.split("/").pop() ?? img.external_url ?? "Untitled";
+}
+
+export type StagingImageItem<K extends string> =
+  | { type: "file"; file: File; kind: K }
+  | { type: "link"; externalUrl: string; title?: string; kind: K };
 
 interface ImageEditSectionProps<K extends string> {
   existingImages: ExistingImage[];
   pendingRemoveIds: Set<string>;
   pendingKindChanges: Map<string, K>;
-  stagingItems: StagingImageItem[];
+  stagingItems: StagingImageItem<K>[];
   kinds: readonly K[];
   onAddFile: (file: File) => void;
   onAddLink: (item: { externalUrl: string; title?: string }) => void;
   onRemoveExisting: (id: string) => void;
   onChangeExistingKind: (id: string, kind: K) => void;
   onRemoveStaged: (index: number) => void;
+  onChangeStagedKind: (index: number, kind: K) => void;
 }
 
 export function ImageEditSection<K extends string>({
@@ -36,6 +42,7 @@ export function ImageEditSection<K extends string>({
   onRemoveExisting,
   onChangeExistingKind,
   onRemoveStaged,
+  onChangeStagedKind,
 }: ImageEditSectionProps<K>) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [linkUrl, setLinkUrl] = useState("");
@@ -108,7 +115,14 @@ export function ImageEditSection<K extends string>({
         <div className="admin-image-list">
           {visible.map((img) => (
             <div key={img.asset_id} className="admin-image-item">
-              <img src={img.storage_url ?? img.external_url ?? undefined} alt={img.kind} />
+              <img
+                className="admin-image-thumb"
+                src={img.storage_url ?? img.external_url ?? undefined}
+                alt=""
+              />
+              <span className="admin-asset-info">
+                <span className="admin-link-url text-sm">{imageLabel(img)}</span>
+              </span>
               <select
                 className="admin-kind-select"
                 value={pendingKindChanges.get(img.asset_id) ?? img.kind}
@@ -126,7 +140,7 @@ export function ImageEditSection<K extends string>({
               </select>
               <button
                 type="button"
-                className="admin-image-delete"
+                className="btn btn-secondary"
                 onClick={() => {
                   onRemoveExisting(img.asset_id);
                 }}
@@ -142,6 +156,21 @@ export function ImageEditSection<K extends string>({
           <span className="admin-link-url text-sm text-fg-muted">
             {item.type === "file" ? item.file.name : (item.title ?? item.externalUrl)}
           </span>
+          <select
+            className="admin-kind-select"
+            value={item.kind}
+            onChange={(event) => {
+              const newKind = kinds.find((k) => k === event.target.value);
+              if (!newKind) return;
+              onChangeStagedKind(index, newKind);
+            }}
+          >
+            {kinds.map((k) => (
+              <option key={k} value={k}>
+                {k}
+              </option>
+            ))}
+          </select>
           <button
             type="button"
             className="btn btn-secondary"

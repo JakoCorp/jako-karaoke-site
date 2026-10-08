@@ -16,7 +16,11 @@ export type SongListParams = SearchPaginationParams & {
   sort_dir?: SongSortDir;
 };
 
-export const SONG_IMAGE_KINDS = ["cover_art"] as const satisfies readonly SongImageKind[];
+export const SONG_IMAGE_KINDS = [
+  "cover_art",
+  "full_art",
+  "misc",
+] as const satisfies readonly SongImageKind[];
 
 export const SONG_TAG_KINDS = [
   "genre",

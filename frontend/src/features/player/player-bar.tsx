@@ -11,7 +11,7 @@ import {
   SpeakerLowIcon,
   SpeakerSlashIcon,
   InfoIcon,
-  ClockCountdownIcon,
+  CornersInIcon,
   CornersOutIcon,
 } from "@phosphor-icons/react";
 import { useState } from "react";
@@ -21,18 +21,25 @@ import { PlaylistPickerPopover } from "@/features/playlists";
 import { formatDuration } from "@/lib/format";
 import { selectCurrent, selectHasNext, selectHasPrev, usePlayerStore } from "@/store/player";
 
+import { FullscreenPlayer } from "./fullscreen-player";
 import { QueuePopup } from "./queue-popup";
+import { SleepTimerPopover } from "./sleep-timer-popover";
 import { useAudioPlayback } from "./use-audio-playback";
 import { useCurrentTrackResolver } from "./use-current-track-resolver";
+import { useKeyboardShortcuts } from "./use-keyboard-shortcuts";
 import { useMediaSession } from "./use-media-session";
+import { useSleepTimer } from "./use-sleep-timer";
 
 export function MusicPlayer() {
   useCurrentTrackResolver();
   const navigate = useNavigate();
   const { currentTime, duration, seek } = useAudioPlayback();
   useMediaSession({ currentTime, duration, seek });
+  const { remaining } = useSleepTimer();
+  useKeyboardShortcuts();
   const [isSeeking, setIsSeeking] = useState(false);
   const [seekValue, setSeekValue] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const current = usePlayerStore(selectCurrent);
   const isPlaying = usePlayerStore((s) => s.isPlaying);
@@ -73,7 +80,12 @@ export function MusicPlayer() {
           <p className="player-artist">{artists}</p>
         </div>
         <PlaylistPickerPopover performanceId={current.id}>
-          <button type="button" className="player-btn-sm" aria-label="Add to playlist">
+          <button
+            type="button"
+            className="player-btn-sm"
+            aria-label="Add to playlist"
+            data-tooltip="Add to playlist"
+          >
             <MusicNotesPlusIcon size={20} />
           </button>
         </PlaylistPickerPopover>
@@ -89,6 +101,7 @@ export function MusicPlayer() {
                 : "player-btn hidden md:flex"
             }
             aria-label="Shuffle"
+            data-tooltip="Shuffle"
             onClick={toggleShuffle}
           >
             <ShuffleIcon size={18} />
@@ -144,6 +157,9 @@ export function MusicPlayer() {
                 : "player-btn hidden md:flex"
             }
             aria-label="Repeat"
+            data-tooltip={
+              repeatMode === "all" ? "Repeat all" : repeatMode === "one" ? "Repeat one" : "Repeat"
+            }
             onClick={cycleRepeatMode}
           >
             {repeatMode === "one" ? <RepeatOnceIcon size={18} /> : <RepeatIcon size={18} />}
@@ -179,15 +195,13 @@ export function MusicPlayer() {
       </div>
 
       <div id="button-controls" className="hidden items-center justify-end gap-1 lg:flex">
-        <button type="button" className="player-btn" aria-label="Sleep timer">
-          <ClockCountdownIcon size={20} />
-        </button>
+        <SleepTimerPopover remaining={remaining} />
 
         <button
           type="button"
           className="player-btn"
-          data-tooltip="Performance Info"
-          aria-label="Performance Info"
+          data-tooltip="Performance info"
+          aria-label="Performance info"
           onClick={() => {
             void navigate(`/performance/${current.id}`);
           }}
@@ -203,6 +217,7 @@ export function MusicPlayer() {
             className="player-btn hidden lg:flex"
             onClick={toggleMute}
             aria-label={isMuted ? "Unmute" : "Mute"}
+            data-tooltip={isMuted ? "Unmute" : "Mute"}
           >
             {isMuted || volume === 0 ? (
               <SpeakerSlashIcon size={20} />
@@ -224,10 +239,23 @@ export function MusicPlayer() {
           />
         </div>
 
-        <button type="button" className="player-btn" aria-label="Fullscreen">
-          <CornersOutIcon size={20} />
+        <button
+          type="button"
+          className="player-btn"
+          aria-label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+          data-tooltip={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+          onClick={() => setIsFullscreen(!isFullscreen)}
+        >
+          {isFullscreen ? <CornersInIcon size={20} /> : <CornersOutIcon size={20} />}
         </button>
       </div>
+      <FullscreenPlayer
+        open={isFullscreen}
+        onClose={() => setIsFullscreen(false)}
+        currentTime={currentTime}
+        duration={duration}
+        seek={seek}
+      />
     </div>
   );
 }

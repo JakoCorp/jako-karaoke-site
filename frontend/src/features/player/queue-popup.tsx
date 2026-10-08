@@ -21,7 +21,7 @@ export function QueuePopup() {
 
   return (
     <Popover.Root>
-      <Popover.Trigger className="player-btn" aria-label="Queue">
+      <Popover.Trigger className="player-btn" aria-label="Queue" data-tooltip="Queue">
         <QueueIcon size={20} />
       </Popover.Trigger>
       <Popover.Portal>

@@ -50,7 +50,7 @@ export function ArtistDetailPanel({
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [editLinks, setEditLinks] = useState<LinkDraft[]>([]);
-  const [stagingAddImages, setStagingAddImages] = useState<StagingImageItem[]>([]);
+  const [stagingAddImages, setStagingAddImages] = useState<StagingImageItem<ArtistImageKind>[]>([]);
   const [pendingRemoveIds, setPendingRemoveIds] = useState<Set<string>>(new Set());
   const [pendingImageKindChanges, setPendingImageKindChanges] = useState<
     Map<string, ArtistImageKind>
@@ -82,10 +82,10 @@ export function ArtistDetailPanel({
       );
       await applyAll(stagingAddImages, (item) =>
         item.type === "file"
-          ? artistsApi.uploadImage(data.id, item.file, "avatar")
+          ? artistsApi.uploadImage(data.id, item.file, item.kind)
           : artistsApi.addImageLink(data.id, {
               external_url: item.externalUrl,
-              kind: "avatar",
+              kind: item.kind,
               title: item.title ?? null,
             }),
       );
@@ -138,10 +138,10 @@ export function ArtistDetailPanel({
       }
       await applyAll(stagingAddImages, (item) =>
         item.type === "file"
-          ? artistsApi.uploadImage(artist.id, item.file, "avatar")
+          ? artistsApi.uploadImage(artist.id, item.file, item.kind)
           : artistsApi.addImageLink(artist.id, {
               external_url: item.externalUrl,
-              kind: "avatar",
+              kind: item.kind,
               title: item.title ?? null,
             }),
       );
@@ -334,10 +334,10 @@ export function ArtistDetailPanel({
             stagingItems={stagingAddImages}
             kinds={ARTIST_IMAGE_KINDS}
             onAddFile={(file) => {
-              setStagingAddImages((prev) => [...prev, { type: "file", file }]);
+              setStagingAddImages((prev) => [...prev, { type: "file", file, kind: "avatar" }]);
             }}
             onAddLink={(item) => {
-              setStagingAddImages((prev) => [...prev, { type: "link", ...item }]);
+              setStagingAddImages((prev) => [...prev, { type: "link", ...item, kind: "avatar" }]);
             }}
             onRemoveExisting={(id) => {
               setPendingRemoveIds((prev) => new Set([...prev, id]));
@@ -347,6 +347,11 @@ export function ArtistDetailPanel({
             }}
             onRemoveStaged={(index) => {
               setStagingAddImages((prev) => prev.filter((_, i) => i !== index));
+            }}
+            onChangeStagedKind={(index, kind) => {
+              setStagingAddImages((prev) =>
+                prev.map((item, i) => (i === index ? { ...item, kind } : item)),
+              );
             }}
           />
           {formError !== null && <p className="form-error">{formError}</p>}
@@ -418,9 +423,19 @@ export function ArtistDetailPanel({
                 {artistDetail.images.map((image: ArtistImageInfo) => (
                   <div key={image.asset_id} className="admin-image-item">
                     <img
+                      className="admin-image-thumb"
                       src={image.storage_url ?? image.external_url ?? undefined}
-                      alt={image.kind}
+                      alt=""
                     />
+                    <span className="admin-asset-info">
+                      <span className="admin-link-url text-sm">
+                        {image.title ??
+                          image.storage_url?.split("/").pop() ??
+                          image.external_url ??
+                          "Untitled"}
+                      </span>
+                    </span>
+                    <span className="admin-pill-kind">{image.kind}</span>
                   </div>
                 ))}
               </div>
