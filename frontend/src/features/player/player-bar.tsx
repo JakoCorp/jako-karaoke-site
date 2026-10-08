@@ -11,6 +11,7 @@ import {
   SpeakerLowIcon,
   SpeakerSlashIcon,
   InfoIcon,
+  CornersInIcon,
   CornersOutIcon,
 } from "@phosphor-icons/react";
 import { useState } from "react";
@@ -20,6 +21,7 @@ import { PlaylistPickerPopover } from "@/features/playlists";
 import { formatDuration } from "@/lib/format";
 import { selectCurrent, selectHasNext, selectHasPrev, usePlayerStore } from "@/store/player";
 
+import { FullscreenPlayer } from "./fullscreen-player";
 import { QueuePopup } from "./queue-popup";
 import { SleepTimerPopover } from "./sleep-timer-popover";
 import { useAudioPlayback } from "./use-audio-playback";
@@ -37,6 +39,7 @@ export function MusicPlayer() {
   useKeyboardShortcuts();
   const [isSeeking, setIsSeeking] = useState(false);
   const [seekValue, setSeekValue] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const current = usePlayerStore(selectCurrent);
   const isPlaying = usePlayerStore((s) => s.isPlaying);
@@ -239,12 +242,20 @@ export function MusicPlayer() {
         <button
           type="button"
           className="player-btn"
-          aria-label="Fullscreen"
-          data-tooltip="Fullscreen"
+          aria-label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+          data-tooltip={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+          onClick={() => setIsFullscreen(!isFullscreen)}
         >
-          <CornersOutIcon size={20} />
+          {isFullscreen ? <CornersInIcon size={20} /> : <CornersOutIcon size={20} />}
         </button>
       </div>
+      <FullscreenPlayer
+        open={isFullscreen}
+        onClose={() => setIsFullscreen(false)}
+        currentTime={currentTime}
+        duration={duration}
+        seek={seek}
+      />
     </div>
   );
 }
