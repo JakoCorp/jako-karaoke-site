@@ -43,6 +43,34 @@ async fn create_duplicate_username_conflicts(pool: MySqlPool) {
 }
 
 #[sqlx::test(migrator = "db::MIGRATOR")]
+async fn update_username_records_change_time(pool: MySqlPool) {
+    let user = create_user(&pool, "user_a").await;
+    assert!(user.username_changed_at.is_none());
+
+    let mut conn = pool.acquire().await.unwrap();
+    let updated = users::update_username(&mut conn, user.id, "user_b")
+        .await
+        .unwrap();
+
+    assert_eq!(updated.username, "user_b");
+    assert!(updated.username_changed_at.is_some());
+}
+
+#[sqlx::test(migrator = "db::MIGRATOR")]
+async fn update_username_to_taken_name_conflicts(pool: MySqlPool) {
+    let user = create_user(&pool, "user_a").await;
+    create_user(&pool, "user_b").await;
+
+    let mut conn = pool.acquire().await.unwrap();
+    let result = users::update_username(&mut conn, user.id, "USER_B").await;
+
+    assert!(matches!(result, Err(DbError::Conflict)));
+    let unchanged = users::get_by_id(&pool, user.id).await.unwrap().unwrap();
+    assert_eq!(unchanged.username, "user_a");
+    assert!(unchanged.username_changed_at.is_none());
+}
+
+#[sqlx::test(migrator = "db::MIGRATOR")]
 async fn search_no_filter_returns_all(pool: MySqlPool) {
     create_user(&pool, "user_alpha").await;
     create_user(&pool, "user_beta").await;
