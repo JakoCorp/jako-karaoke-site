@@ -4651,6 +4651,13 @@
             ],
             "description": "Referenced external URL. Present for externally linked content only."
           },
+          "hash": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "SHA-256 hex digest of the file bytes."
+          },
           "source_url": {
             "type": [
               "string",

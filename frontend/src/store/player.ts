@@ -8,6 +8,7 @@ export type RepeatMode = "none" | "all" | "one";
 export type QueueSource =
   | { readonly type: "search" }
   | { readonly type: "playlist"; readonly id: string; readonly name: string }
+  | { readonly type: "local" }
   | { readonly type: "single" };
 
 interface PlayerState {

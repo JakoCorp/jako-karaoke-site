@@ -59,6 +59,19 @@ export function parseStreamTime(input: string): number | null {
   return null;
 }
 
+/** Formats a byte count with a binary unit. */
+export function formatBytes(bytes: number): string {
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  let value = bytes;
+  let unitIndex = 0;
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex += 1;
+  }
+  const digits = unitIndex === 0 || value >= 100 ? 0 : 1;
+  return `${value.toFixed(digits)} ${units[unitIndex] ?? "B"}`;
+}
+
 /** Returns a relative label for dates within the last 7 days ("Today", "Yesterday", "N days ago"), then falls back to `formatDate`. */
 export function formatRelativeDate(isoString: string): string {
   const date = new Date(isoString);

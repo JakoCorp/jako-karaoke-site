@@ -3,6 +3,7 @@ import { useEffect } from "react";
 
 import type { AudioInfo } from "@/api/performances";
 import { performancesApi } from "@/api/performances";
+import { openOfflineAudio, releaseOfflineAudio } from "@/features/local";
 import { performanceKeys } from "@/hooks/api/performances";
 import { queryClient } from "@/lib/query-client";
 import { extractYouTubeVideoId } from "@/lib/video-embed";
@@ -51,20 +52,26 @@ export function useCurrentTrackResolver(): void {
           const preferredAudio = preferredAudioAssetId
             ? detail.audio.find((a) => a.asset_id === preferredAudioAssetId)
             : null;
-          const audioUrl =
-            resolveAudioUrl(preferredAudio) ??
-            resolveAudioUrl(detail.audio.find((a) => a.kind === "primary")) ??
-            null;
+          const chosenAudio =
+            (preferredAudio && resolveAudioUrl(preferredAudio) ? preferredAudio : null) ??
+            detail.audio.find((a) => a.kind === "primary");
+          const offlineUrl = await openOfflineAudio(currentId, chosenAudio?.hash ?? null);
+          if (cancelled) return;
+          const audioUrl = offlineUrl ?? resolveAudioUrl(chosenAudio);
           if (preferredAudioAssetId) setPreferredAudioAssetId(null);
           const coverImg = detail.songs[0]?.images.find((img) => img.kind === "cover_art");
           const thumbnailUrl = coverImg?.storage_url ?? coverImg?.external_url ?? null;
           setCurrentAudioUrl(audioUrl);
           setCurrentThumbnailUrl(thumbnailUrl);
         } catch {
-          // Fetch failed, URLs remain null
+          // The server is unreachable, so fall back to the saved copy when one exists.
+          const offlineUrl = await openOfflineAudio(currentId, undefined);
+          if (cancelled) return;
+          setCurrentAudioUrl(offlineUrl);
         }
       })();
     } else {
+      releaseOfflineAudio();
       setCurrentAudioUrl(null);
       setCurrentThumbnailUrl(null);
     }

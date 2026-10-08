@@ -69,6 +69,7 @@ pub(crate) fn asset_info_from_row(
     source_url: Option<String>,
     storage_url: Option<String>,
     external_url: Option<String>,
+    hash: Option<String>,
 ) -> AssetInfo {
     AssetInfo {
         asset_id,
@@ -77,6 +78,7 @@ pub(crate) fn asset_info_from_row(
         source_url,
         storage_url,
         external_url,
+        hash,
     }
 }
 
@@ -91,6 +93,7 @@ pub(crate) fn audio_info(row: db::models::PerformanceAudioRow) -> AudioInfo {
             row.source_url,
             row.storage_url,
             row.external_url,
+            row.hash,
         ),
     }
 }
@@ -106,6 +109,7 @@ pub(crate) fn video_info(row: db::models::PerformanceVideoRow) -> VideoInfo {
             row.source_url,
             row.storage_url,
             row.external_url,
+            row.hash,
         ),
     }
 }
@@ -121,6 +125,7 @@ pub(crate) fn song_image_info(row: SongImageRow) -> SongImageInfo {
             row.source_url,
             row.storage_url,
             row.external_url,
+            None,
         ),
     }
 }
@@ -136,6 +141,7 @@ pub(crate) fn artist_image_info(row: ArtistImageRow) -> ArtistImageInfo {
             row.source_url,
             row.storage_url,
             row.external_url,
+            None,
         ),
     }
 }

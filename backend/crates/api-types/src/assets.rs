@@ -21,4 +21,6 @@ pub struct AssetInfo {
     pub storage_url: Option<String>,
     /// Referenced external URL. Present for externally linked content only.
     pub external_url: Option<String>,
+    /// SHA-256 hex digest of the file bytes.
+    pub hash: Option<String>,
 }
