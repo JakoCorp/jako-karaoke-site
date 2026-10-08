@@ -4,6 +4,7 @@ import { create } from "zustand";
 export interface AuthUser {
   readonly id: string;
   readonly username: string;
+  readonly avatarUrl: string | null;
   readonly capabilities: readonly string[];
 }
 

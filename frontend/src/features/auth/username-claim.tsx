@@ -41,7 +41,12 @@ export function UsernameClaim() {
     const { data, response } = await authApi.claim({ username });
 
     if (data) {
-      setUser({ id: data.id, username: data.username, capabilities: data.capabilities });
+      setUser({
+        id: data.id,
+        username: data.username,
+        avatarUrl: data.avatar_url ?? null,
+        capabilities: data.capabilities,
+      });
       void navigate("/", { replace: true });
     } else if (response?.status === 409) {
       setError("Username already taken, please choose another.");
