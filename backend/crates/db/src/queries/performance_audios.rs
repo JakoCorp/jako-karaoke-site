@@ -15,7 +15,7 @@ pub async fn list_for_performance(
 ) -> Result<Vec<PerformanceAudioRow>> {
     sqlx::query_as::<_, PerformanceAudioRow>(
         "SELECT pa.performance_id, pa.asset_id, pa.kind, \
-         a.title, a.credits, a.source_url, a.storage_url, a.internal_path, a.external_url \
+         a.title, a.credits, a.source_url, a.storage_url, a.internal_path, a.external_url, a.hash \
          FROM performance_audios pa \
          JOIN assets a ON a.id = pa.asset_id \
          WHERE pa.performance_id = ?",
@@ -42,7 +42,7 @@ pub async fn link(
 
     sqlx::query_as::<_, PerformanceAudioRow>(
         "SELECT pa.performance_id, pa.asset_id, pa.kind, \
-         a.title, a.credits, a.source_url, a.storage_url, a.internal_path, a.external_url \
+         a.title, a.credits, a.source_url, a.storage_url, a.internal_path, a.external_url, a.hash \
          FROM performance_audios pa \
          JOIN assets a ON a.id = pa.asset_id \
          WHERE pa.performance_id = ? AND pa.asset_id = ?",
