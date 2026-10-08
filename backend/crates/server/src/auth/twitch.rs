@@ -38,6 +38,16 @@ struct TwitchUsersResponse {
 struct TwitchUser {
     id: String,
     login: String,
+    profile_image_url: Option<String>,
+}
+
+impl TwitchUser {
+    /// Returns the profile image URL, or `None` when the user has only Twitch's default image.
+    fn custom_avatar_url(&self) -> Option<&str> {
+        self.profile_image_url
+            .as_deref()
+            .filter(|url| !url.contains("user-default-pictures"))
+    }
 }
 
 #[utoipa::path(
@@ -154,6 +164,7 @@ pub(crate) async fn callback(
         "twitch",
         twitch_id,
         &twitch_user.login,
+        twitch_user.custom_avatar_url(),
         expires_at,
     )
     .await?;

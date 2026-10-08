@@ -12,4 +12,5 @@ pub mod playlists;
 pub mod sessions;
 pub mod songs;
 pub mod tags;
+pub mod user_avatars;
 pub mod users;

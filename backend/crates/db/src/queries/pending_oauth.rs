@@ -19,16 +19,19 @@ pub async fn create(
     provider: &str,
     provider_id: u64,
     suggested_username: &str,
+    avatar_url: Option<&str>,
     expires_at: DateTime<Utc>,
 ) -> Result<()> {
     sqlx::query(
-        "INSERT INTO pending_oauth (token, provider, provider_id, suggested_username, expires_at) \
-         VALUES (?, ?, ?, ?, ?)",
+        "INSERT INTO pending_oauth \
+         (token, provider, provider_id, suggested_username, avatar_url, expires_at) \
+         VALUES (?, ?, ?, ?, ?, ?)",
     )
     .bind(token)
     .bind(provider)
     .bind(provider_id)
     .bind(suggested_username)
+    .bind(avatar_url)
     .bind(expires_at)
     .execute(executor)
     .await
@@ -42,7 +45,7 @@ pub async fn get(
     token: &str,
 ) -> Result<Option<PendingOAuth>> {
     sqlx::query_as::<_, PendingOAuth>(
-        "SELECT token, provider, provider_id, suggested_username \
+        "SELECT token, provider, provider_id, suggested_username, avatar_url \
          FROM pending_oauth WHERE token = ? AND expires_at > UTC_TIMESTAMP()",
     )
     .bind(token)

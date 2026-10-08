@@ -4,6 +4,7 @@
 //! session cookie on success. See [`session`] for token issuance and storage,
 //! and [`middleware`] for the `AuthUser` extractor used by protected handlers.
 
+pub(crate) mod avatar;
 pub(crate) mod discord;
 pub(crate) mod middleware;
 pub(crate) mod session;
@@ -23,6 +24,7 @@ use api_types::{
     common::ErrorResponse,
 };
 use db::{error::DbError, models::NewUser, queries};
+use tracing::warn;
 
 use crate::{error::ApiError, state::AppState};
 use middleware::AuthUser;
@@ -163,12 +165,19 @@ async fn claim(
 
     tx.commit().await.map_err(DbError::Sqlx)?;
 
+    if let Some(avatar_url) = pending.avatar_url.as_deref()
+        && let Err(e) = avatar::import_provider_avatar(&state, user.id, avatar_url).await
+    {
+        warn!("avatar import failed for user {}: {e}", user.id);
+    }
+
     let session_token = session::issue(&state.pool, user.id).await?;
 
     let capabilities = queries::capabilities::list_for_user(&state.pool, user.id)
         .await?
         .into_iter()
         .collect();
+    let avatar_url = queries::user_avatars::get_storage_url(&state.pool, user.id).await?;
 
     let mut rm_pending = Cookie::new("oauth_pending", "");
     rm_pending.set_path("/");
@@ -179,6 +188,7 @@ async fn claim(
         Json(MeResponse {
             id: user.id,
             username: user.username,
+            avatar_url,
             capabilities,
         }),
     ))
@@ -201,9 +211,11 @@ pub(crate) async fn me(
     let user = queries::users::get_by_id(&state.pool, auth.user_id)
         .await?
         .ok_or(ApiError::NotFound)?;
+    let avatar_url = queries::user_avatars::get_storage_url(&state.pool, user.id).await?;
     Ok(Json(MeResponse {
         id: user.id,
         username: user.username,
+        avatar_url,
         capabilities: auth.capabilities.into_iter().collect(),
     }))
 }
@@ -250,6 +262,8 @@ async fn dev_login(
         .into_iter()
         .collect();
 
+    let avatar_url = queries::user_avatars::get_storage_url(&state.pool, user.id).await?;
+
     let session_token = session::issue(&state.pool, user.id).await?;
 
     Ok((
@@ -257,6 +271,7 @@ async fn dev_login(
         Json(MeResponse {
             id: user.id,
             username: user.username,
+            avatar_url,
             capabilities,
         }),
     ))

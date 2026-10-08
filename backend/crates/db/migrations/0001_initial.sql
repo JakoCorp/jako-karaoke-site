@@ -1,3 +1,22 @@
+-- Assets
+-- Each row is either an internal file (hash + storage_url set) or an external URL (external_url set).
+CREATE TABLE IF NOT EXISTS assets (
+    id BINARY(16) NOT NULL DEFAULT (UNHEX(REPLACE(UUID_V7(), '-', ''))),
+    title VARCHAR(255) NULL,
+    credits TEXT NULL,
+    source_url VARCHAR(1024) NULL,
+    hash CHAR(64) NULL,
+    storage_url VARCHAR(512) NULL,
+    internal_path VARCHAR(512) NULL,
+    external_url VARCHAR(1024) NULL,
+    PRIMARY KEY (id),
+    UNIQUE INDEX (hash),
+    CONSTRAINT chk_asset_source CHECK (
+        (hash IS NOT NULL AND external_url IS NULL)
+        OR (hash IS NULL AND external_url IS NOT NULL)
+    )
+) ENGINE = InnoDB;
+
 -- Users
 -- Username is case-insensitive for uniqueness (ci collation) but case-preserving
 CREATE TABLE IF NOT EXISTS users (
@@ -11,12 +30,21 @@ CREATE TABLE IF NOT EXISTS users (
     UNIQUE INDEX (discord_id)
 ) ENGINE = InnoDB;
 
+-- User <-> Asset/Avatar (one avatar per user)
+CREATE TABLE IF NOT EXISTS user_avatars (
+    user_id BINARY(16) NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    asset_id BINARY(16) NOT NULL REFERENCES assets (id),
+    PRIMARY KEY (user_id),
+    INDEX (asset_id)
+) ENGINE = InnoDB;
+
 -- Pending OAuth claims awaiting username selection
 CREATE TABLE IF NOT EXISTS pending_oauth (
     token CHAR(64) NOT NULL,
     provider VARCHAR(16) NOT NULL,
     provider_id BIGINT UNSIGNED NOT NULL,
     suggested_username VARCHAR(64) NOT NULL,
+    avatar_url VARCHAR(512) NULL,
     expires_at DATETIME NOT NULL,
     PRIMARY KEY (token),
     INDEX (expires_at)
@@ -55,25 +83,6 @@ CREATE TABLE IF NOT EXISTS lyrics (
     id BINARY(16) NOT NULL DEFAULT (UNHEX(REPLACE(UUID_V7(), '-', ''))),
     content TEXT NOT NULL,
     PRIMARY KEY (id)
-) ENGINE = InnoDB;
-
--- Assets
--- Each row is either an internal file (hash + storage_url set) or an external URL (external_url set).
-CREATE TABLE IF NOT EXISTS assets (
-    id BINARY(16) NOT NULL DEFAULT (UNHEX(REPLACE(UUID_V7(), '-', ''))),
-    title VARCHAR(255) NULL,
-    credits TEXT NULL,
-    source_url VARCHAR(1024) NULL,
-    hash CHAR(64) NULL,
-    storage_url VARCHAR(512) NULL,
-    internal_path VARCHAR(512) NULL,
-    external_url VARCHAR(1024) NULL,
-    PRIMARY KEY (id),
-    UNIQUE INDEX (hash),
-    CONSTRAINT chk_asset_source CHECK (
-        (hash IS NOT NULL AND external_url IS NULL) OR
-        (hash IS NULL AND external_url IS NOT NULL)
-    )
 ) ENGINE = InnoDB;
 
 -- Playlists

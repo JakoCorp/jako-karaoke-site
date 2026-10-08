@@ -21,6 +21,8 @@ pub struct MeResponse {
     pub id: Uuid,
     /// Display name chosen during registration.
     pub username: String,
+    /// URL of the user's avatar. Absent when the user has no avatar.
+    pub avatar_url: Option<String>,
     /// Capability titles embedded in the session JWT.
     pub capabilities: Vec<String>,
 }

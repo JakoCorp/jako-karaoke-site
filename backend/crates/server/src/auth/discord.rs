@@ -33,6 +33,19 @@ struct TokenResponse {
 struct DiscordUser {
     id: String,
     username: String,
+    avatar: Option<String>,
+}
+
+impl DiscordUser {
+    /// Returns the CDN URL of the user's avatar, or `None` when they use a default avatar.
+    fn avatar_url(&self) -> Option<String> {
+        self.avatar.as_ref().map(|hash| {
+            format!(
+                "https://cdn.discordapp.com/avatars/{}/{hash}.png?size=256",
+                self.id
+            )
+        })
+    }
 }
 
 #[utoipa::path(
@@ -143,6 +156,7 @@ pub(crate) async fn callback(
         "discord",
         discord_id,
         &discord_user.username,
+        discord_user.avatar_url().as_deref(),
         expires_at,
     )
     .await?;
