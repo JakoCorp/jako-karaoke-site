@@ -36,6 +36,9 @@ export function UserMenu() {
                 Admin
               </Link>
             )}
+            <Link to="/settings" className="btn w-full btn-secondary">
+              Settings
+            </Link>
             <button
               onClick={() => {
                 void handleLogout();

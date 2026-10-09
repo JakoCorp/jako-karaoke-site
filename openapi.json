@@ -4156,6 +4156,124 @@
             "session": []
           }
         ]
+      },
+      "patch": {
+        "tags": [
+          "auth"
+        ],
+        "operationId": "update_me",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Username updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid username or changed too recently",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Username already taken",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
+    "/auth/me/avatar": {
+      "put": {
+        "tags": [
+          "auth"
+        ],
+        "operationId": "upload_avatar",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/AvatarUpload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Avatar replaced",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing, oversized or unsupported image",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
       }
     },
     "/auth/pending": {
@@ -4745,6 +4863,19 @@
           }
         }
       },
+      "AvatarUpload": {
+        "type": "object",
+        "description": "Placeholder schema for the avatar multipart upload body.",
+        "required": [
+          "file"
+        ],
+        "properties": {
+          "file": {
+            "type": "string",
+            "format": "binary"
+          }
+        }
+      },
       "ClaimRequest": {
         "type": "object",
         "description": "Request body for `POST /auth/claim`.\n\nCompletes a new OAuth signup by finalizing the username. Requires an active\n`oauth_pending` cookie set during the OAuth callback.",
@@ -5049,6 +5180,14 @@
           "username": {
             "type": "string",
             "description": "Display name chosen during registration."
+          },
+          "username_changeable_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "Earliest time the username can be changed again. Absent when it can be changed now."
           }
         }
       },
@@ -6013,6 +6152,19 @@
           "content": {
             "type": "string",
             "description": "The full lyrics text to store, replacing any existing content."
+          }
+        }
+      },
+      "UpdateMeRequest": {
+        "type": "object",
+        "description": "Request body for `PATCH /auth/me`.",
+        "required": [
+          "username"
+        ],
+        "properties": {
+          "username": {
+            "type": "string",
+            "description": "New username. Alphanumeric with `_` and `.` allowed, max 64 chars, case insensitive unique."
           }
         }
       },

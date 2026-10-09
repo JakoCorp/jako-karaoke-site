@@ -24,6 +24,18 @@ pub async fn get_storage_url(
     .map_err(DbError::from)
 }
 
+/// Returns the asset ID of a user's avatar, or `None` if they have none.
+pub async fn get_asset_id(
+    executor: impl Executor<'_, Database = MySql>,
+    user_id: Uuid,
+) -> Result<Option<Uuid>> {
+    sqlx::query_scalar::<_, Uuid>("SELECT asset_id FROM user_avatars WHERE user_id = ?")
+        .bind(user_id)
+        .fetch_optional(executor)
+        .await
+        .map_err(DbError::from)
+}
+
 /// Sets a user's avatar to the given asset, replacing any existing link.
 pub async fn set(conn: &mut MySqlConnection, user_id: Uuid, asset_id: Uuid) -> Result<()> {
     sqlx::query(

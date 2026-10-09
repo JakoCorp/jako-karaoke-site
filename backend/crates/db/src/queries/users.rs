@@ -8,16 +8,27 @@ use crate::models::user::{NewUser, UpdateUser, User, UserSummary};
 
 type Result<T> = std::result::Result<T, DbError>;
 
+/// Column list matching the fields of [`User`].
+macro_rules! user_columns {
+    () => {
+        "id, username, twitch_id, discord_id, username_changed_at"
+    };
+}
+
 /// Fetches a user by primary key.
 pub async fn get_by_id(
     executor: impl Executor<'_, Database = MySql>,
     id: Uuid,
 ) -> Result<Option<User>> {
-    sqlx::query_as::<_, User>("SELECT id, username, twitch_id, discord_id FROM users WHERE id = ?")
-        .bind(id)
-        .fetch_optional(executor)
-        .await
-        .map_err(DbError::from)
+    sqlx::query_as::<_, User>(concat!(
+        "SELECT ",
+        user_columns!(),
+        " FROM users WHERE id = ?"
+    ))
+    .bind(id)
+    .fetch_optional(executor)
+    .await
+    .map_err(DbError::from)
 }
 
 /// Fetches a user by Twitch provider ID.
@@ -25,9 +36,11 @@ pub async fn get_by_twitch_id(
     executor: impl Executor<'_, Database = MySql>,
     twitch_id: u64,
 ) -> Result<Option<User>> {
-    sqlx::query_as::<_, User>(
-        "SELECT id, username, twitch_id, discord_id FROM users WHERE twitch_id = ?",
-    )
+    sqlx::query_as::<_, User>(concat!(
+        "SELECT ",
+        user_columns!(),
+        " FROM users WHERE twitch_id = ?"
+    ))
     .bind(twitch_id)
     .fetch_optional(executor)
     .await
@@ -39,9 +52,11 @@ pub async fn get_by_discord_id(
     executor: impl Executor<'_, Database = MySql>,
     discord_id: u64,
 ) -> Result<Option<User>> {
-    sqlx::query_as::<_, User>(
-        "SELECT id, username, twitch_id, discord_id FROM users WHERE discord_id = ?",
-    )
+    sqlx::query_as::<_, User>(concat!(
+        "SELECT ",
+        user_columns!(),
+        " FROM users WHERE discord_id = ?"
+    ))
     .bind(discord_id)
     .fetch_optional(executor)
     .await
@@ -53,9 +68,11 @@ pub async fn get_by_username(
     executor: impl Executor<'_, Database = MySql>,
     username: &str,
 ) -> Result<Option<User>> {
-    sqlx::query_as::<_, User>(
-        "SELECT id, username, twitch_id, discord_id FROM users WHERE username = ?",
-    )
+    sqlx::query_as::<_, User>(concat!(
+        "SELECT ",
+        user_columns!(),
+        " FROM users WHERE username = ?"
+    ))
     .bind(username)
     .fetch_optional(executor)
     .await
@@ -64,10 +81,14 @@ pub async fn get_by_username(
 
 /// Returns all users ordered by ID.
 pub async fn list(executor: impl Executor<'_, Database = MySql>) -> Result<Vec<User>> {
-    sqlx::query_as::<_, User>("SELECT id, username, twitch_id, discord_id FROM users ORDER BY id")
-        .fetch_all(executor)
-        .await
-        .map_err(DbError::from)
+    sqlx::query_as::<_, User>(concat!(
+        "SELECT ",
+        user_columns!(),
+        " FROM users ORDER BY id"
+    ))
+    .fetch_all(executor)
+    .await
+    .map_err(DbError::from)
 }
 
 /// Searches users by optional username substring. Returns all users when `q` is `None`.
@@ -101,10 +122,10 @@ pub async fn search(
 ///
 /// Returns [`DbError::Conflict`] if the username is already taken.
 pub async fn create(conn: &mut MySqlConnection, new: &NewUser) -> Result<User> {
-    let result = sqlx::query_as::<_, User>(
-        "INSERT INTO users (username, twitch_id, discord_id) VALUES (?, ?, ?) \
-         RETURNING id, username, twitch_id, discord_id",
-    )
+    let result = sqlx::query_as::<_, User>(concat!(
+        "INSERT INTO users (username, twitch_id, discord_id) VALUES (?, ?, ?) RETURNING ",
+        user_columns!()
+    ))
     .bind(&new.username)
     .bind(new.twitch_id)
     .bind(new.discord_id)
@@ -183,6 +204,28 @@ pub async fn update(
         .await
         .map_err(DbError::from)?;
     get_by_id(&mut *conn, id).await
+}
+
+/// Changes a user's username and records the change time, then returns the updated row.
+///
+/// # Errors
+///
+/// Returns [`DbError::Conflict`] if the username is already taken, and
+/// [`DbError::NotFound`] if the user does not exist.
+pub async fn update_username(conn: &mut MySqlConnection, id: Uuid, username: &str) -> Result<User> {
+    let result = sqlx::query(
+        "UPDATE users SET username = ?, username_changed_at = UTC_TIMESTAMP() WHERE id = ?",
+    )
+    .bind(username)
+    .bind(id)
+    .execute(&mut *conn)
+    .await;
+
+    match result {
+        Ok(_) => get_by_id(&mut *conn, id).await?.ok_or(DbError::NotFound),
+        Err(sqlx::Error::Database(e)) if e.is_unique_violation() => Err(DbError::Conflict),
+        Err(e) => Err(DbError::Sqlx(e)),
+    }
 }
 
 /// Deletes a user by ID. Returns `true` if a row was deleted.

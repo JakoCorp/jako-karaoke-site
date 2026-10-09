@@ -1,12 +1,6 @@
 import { create } from "zustand";
 
-/** The currently authenticated user. Properties are readonly, update via `setUser`. */
-export interface AuthUser {
-  readonly id: string;
-  readonly username: string;
-  readonly avatarUrl: string | null;
-  readonly capabilities: readonly string[];
-}
+import type { AuthUser } from "@/api/auth";
 
 interface AuthState {
   user: AuthUser | null;

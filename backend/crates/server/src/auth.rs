@@ -4,6 +4,7 @@
 //! session cookie on success. See [`session`] for token issuance and storage,
 //! and [`middleware`] for the `AuthUser` extractor used by protected handlers.
 
+pub(crate) mod account;
 pub(crate) mod avatar;
 pub(crate) mod discord;
 pub(crate) mod middleware;
@@ -12,15 +13,15 @@ pub(crate) mod twitch;
 
 use axum::{
     Json, Router,
-    extract::State,
+    extract::{DefaultBodyLimit, State},
     http::StatusCode,
-    routing::{get, post},
+    routing::{get, post, put},
 };
 use axum_extra::extract::CookieJar;
 use cookie::Cookie;
 
 use api_types::{
-    auth::{ClaimRequest, MeResponse},
+    auth::{ClaimRequest, MeResponse, UpdateMeRequest},
     common::ErrorResponse,
 };
 use db::{error::DbError, models::NewUser, queries};
@@ -29,7 +30,7 @@ use tracing::warn;
 use crate::{error::ApiError, state::AppState};
 use middleware::AuthUser;
 
-fn validate_username(username: &str) -> Result<(), ApiError> {
+pub(crate) fn validate_username(username: &str) -> Result<(), ApiError> {
     if username.is_empty() || username.len() > 64 {
         return Err(ApiError::BadRequest(
             "username must be between 1 and 64 characters".into(),
@@ -57,6 +58,8 @@ const DEV_ADMIN_USER_ID: uuid::Uuid = uuid::Uuid::from_bytes([
         pending_check,
         claim,
         me,
+        account::update_me,
+        account::upload_avatar,
         logout,
         dev_login,
         twitch::initiate,
@@ -64,7 +67,13 @@ const DEV_ADMIN_USER_ID: uuid::Uuid = uuid::Uuid::from_bytes([
         discord::initiate,
         discord::callback,
     ),
-    components(schemas(ClaimRequest, MeResponse, ErrorResponse,))
+    components(schemas(
+        ClaimRequest,
+        MeResponse,
+        UpdateMeRequest,
+        account::AvatarUpload,
+        ErrorResponse,
+    ))
 )]
 pub(crate) struct AuthApi;
 
@@ -77,7 +86,12 @@ pub fn router(dev_auth: bool) -> Router<AppState> {
         .route("/twitch/callback", get(twitch::callback))
         .route("/discord", get(discord::initiate))
         .route("/discord/callback", get(discord::callback))
-        .route("/me", get(me))
+        .route("/me", get(me).patch(account::update_me))
+        .route(
+            "/me/avatar",
+            put(account::upload_avatar)
+                .layer(DefaultBodyLimit::max(avatar::MAX_AVATAR_BYTES + 64 * 1024)),
+        )
         .route("/logout", post(logout));
     if dev_auth {
         router.route("/dev-login", get(dev_login))
@@ -173,11 +187,7 @@ async fn claim(
 
     let session_token = session::issue(&state.pool, user.id).await?;
 
-    let capabilities = queries::capabilities::list_for_user(&state.pool, user.id)
-        .await?
-        .into_iter()
-        .collect();
-    let avatar_url = queries::user_avatars::get_storage_url(&state.pool, user.id).await?;
+    let capabilities = queries::capabilities::list_for_user(&state.pool, user.id).await?;
 
     let mut rm_pending = Cookie::new("oauth_pending", "");
     rm_pending.set_path("/");
@@ -185,12 +195,7 @@ async fn claim(
     Ok((
         jar.remove(rm_pending)
             .add(session::session_cookie(session_token)),
-        Json(MeResponse {
-            id: user.id,
-            username: user.username,
-            avatar_url,
-            capabilities,
-        }),
+        Json(account::me_response(&state, user, capabilities).await?),
     ))
 }
 
@@ -211,13 +216,9 @@ pub(crate) async fn me(
     let user = queries::users::get_by_id(&state.pool, auth.user_id)
         .await?
         .ok_or(ApiError::NotFound)?;
-    let avatar_url = queries::user_avatars::get_storage_url(&state.pool, user.id).await?;
-    Ok(Json(MeResponse {
-        id: user.id,
-        username: user.username,
-        avatar_url,
-        capabilities: auth.capabilities.into_iter().collect(),
-    }))
+    Ok(Json(
+        account::me_response(&state, user, auth.capabilities).await?,
+    ))
 }
 
 #[utoipa::path(
@@ -257,22 +258,12 @@ async fn dev_login(
         .await?
         .ok_or(ApiError::NotFound)?;
 
-    let capabilities = queries::capabilities::list_for_user(&state.pool, user.id)
-        .await?
-        .into_iter()
-        .collect();
-
-    let avatar_url = queries::user_avatars::get_storage_url(&state.pool, user.id).await?;
+    let capabilities = queries::capabilities::list_for_user(&state.pool, user.id).await?;
 
     let session_token = session::issue(&state.pool, user.id).await?;
 
     Ok((
         jar.add(session::session_cookie(session_token)),
-        Json(MeResponse {
-            id: user.id,
-            username: user.username,
-            avatar_url,
-            capabilities,
-        }),
+        Json(account::me_response(&state, user, capabilities).await?),
     ))
 }
