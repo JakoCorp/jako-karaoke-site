@@ -85,7 +85,7 @@ export function useCurrentTrackResolver(): void {
   useEffect(() => {
     if (nextId === null) return;
     void queryClient.ensureQueryData(performanceDetailOptions(nextId)).catch(() => {
-      // Prefetch failure is non-fatal
+      // Prefetch failure is not fatal.
     });
   }, [nextId]);
 }
