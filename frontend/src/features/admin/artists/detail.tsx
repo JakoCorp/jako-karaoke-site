@@ -6,7 +6,6 @@ import {
   ARTIST_IMAGE_KINDS,
   ARTIST_LINK_KINDS,
   artistsApi,
-  type ArtistImageInfo,
   type ArtistImageKind,
   type ArtistLinkKind,
   type ArtistSummary,
@@ -16,6 +15,7 @@ import { artistKeys, useArtist } from "@/hooks/api/artists";
 import { applyAll } from "@/lib/staging";
 
 import { ImageEditSection, type StagingImageItem } from "../components/image-edit-section";
+import { ImageList } from "../components/image-list";
 
 type LinkDraft = { id?: string; url: string; kind: ArtistLinkKind; label: string };
 
@@ -416,31 +416,7 @@ export function ArtistDetailPanel({
               </div>
             </div>
           )}
-          {artistDetail.images.length > 0 && (
-            <div className="admin-detail-section">
-              <span className="admin-detail-label">Images</span>
-              <div className="admin-image-list">
-                {artistDetail.images.map((image: ArtistImageInfo) => (
-                  <div key={image.asset_id} className="admin-image-item">
-                    <img
-                      className="admin-image-thumb"
-                      src={image.storage_url ?? image.external_url ?? undefined}
-                      alt=""
-                    />
-                    <span className="admin-asset-info">
-                      <span className="admin-link-url text-sm">
-                        {image.title ??
-                          image.storage_url?.split("/").pop() ??
-                          image.external_url ??
-                          "Untitled"}
-                      </span>
-                    </span>
-                    <span className="admin-pill-kind">{image.kind}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          <ImageList images={artistDetail.images} />
         </div>
       )}
     </>

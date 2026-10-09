@@ -1,3 +1,5 @@
+import { multipartSerializer } from "@/lib/multipart";
+
 import { api } from "./client";
 import type { components } from "./generated";
 import type { SearchPaginationParams } from "./types";
@@ -61,12 +63,7 @@ export const performancesApi = {
     api.POST("/api/performances/{id}/audio", {
       params: { path: { id } },
       body: { file: "", kind } satisfies components["schemas"]["AudioUpload"],
-      bodySerializer: () => {
-        const form = new FormData();
-        form.append("file", file);
-        form.append("kind", kind);
-        return form;
-      },
+      bodySerializer: multipartSerializer({ file, kind }),
     }),
 
   /** Updates the kind of an audio record attached to a performance. */
@@ -87,12 +84,7 @@ export const performancesApi = {
     api.POST("/api/performances/{id}/video", {
       params: { path: { id } },
       body: { file: "", kind } satisfies components["schemas"]["VideoUpload"],
-      bodySerializer: () => {
-        const form = new FormData();
-        form.append("file", file);
-        form.append("kind", kind);
-        return form;
-      },
+      bodySerializer: multipartSerializer({ file, kind }),
     }),
 
   /** Updates the kind of a video record attached to a performance. */

@@ -1,24 +1,16 @@
 import { TrashIcon } from "@phosphor-icons/react";
 import { useRef, useState } from "react";
 
-interface ExistingImage {
-  asset_id: string;
-  title?: string | null;
-  storage_url?: string | null;
-  external_url?: string | null;
-  kind: string;
-}
+import { resolveAssetUrl } from "@/lib/asset-url";
 
-function imageLabel(img: ExistingImage): string {
-  return img.title ?? img.storage_url?.split("/").pop() ?? img.external_url ?? "Untitled";
-}
+import { type AdminImage, imageLabel } from "./image-utils";
 
 export type StagingImageItem<K extends string> =
   | { type: "file"; file: File; kind: K }
   | { type: "link"; externalUrl: string; title?: string; kind: K };
 
 interface ImageEditSectionProps<K extends string> {
-  existingImages: ExistingImage[];
+  existingImages: AdminImage[];
   pendingRemoveIds: Set<string>;
   pendingKindChanges: Map<string, K>;
   stagingItems: StagingImageItem<K>[];
@@ -115,11 +107,7 @@ export function ImageEditSection<K extends string>({
         <div className="admin-image-list">
           {visible.map((img) => (
             <div key={img.asset_id} className="admin-image-item">
-              <img
-                className="admin-image-thumb"
-                src={img.storage_url ?? img.external_url ?? undefined}
-                alt=""
-              />
+              <img className="admin-image-thumb" src={resolveAssetUrl(img)} alt="" />
               <span className="admin-asset-info">
                 <span className="admin-link-url text-sm">{imageLabel(img)}</span>
               </span>

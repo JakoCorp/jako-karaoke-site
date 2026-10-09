@@ -20,6 +20,7 @@ import { useArtists } from "@/hooks/api/artists";
 import { performanceKeys, usePerformance } from "@/hooks/api/performances";
 import { useSongs } from "@/hooks/api/songs";
 import { tagKeys, useTags } from "@/hooks/api/tags";
+import { resolveAssetUrl } from "@/lib/asset-url";
 import { formatDate, formatStreamTime, parseStreamTime } from "@/lib/format";
 import { applyAll } from "@/lib/staging";
 
@@ -901,7 +902,7 @@ export function PerformanceDetailPanel({
                 <div key={audio.asset_id} className="admin-audio-item">
                   <span className="admin-pill-kind">{audio.kind}</span>
                   <a
-                    href={audio.storage_url ?? audio.external_url ?? undefined}
+                    href={resolveAssetUrl(audio)}
                     target="_blank"
                     rel="noreferrer"
                     className="admin-link-url"
@@ -919,7 +920,7 @@ export function PerformanceDetailPanel({
                 <div key={video.asset_id} className="admin-audio-item">
                   <span className="admin-pill-kind">{video.kind}</span>
                   <a
-                    href={video.storage_url ?? video.external_url ?? undefined}
+                    href={resolveAssetUrl(video)}
                     target="_blank"
                     rel="noreferrer"
                     className="admin-link-url"
