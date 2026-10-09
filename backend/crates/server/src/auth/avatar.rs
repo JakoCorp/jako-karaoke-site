@@ -1,12 +1,11 @@
 //! Copies an OAuth provider avatar into local storage and links it to a user.
 
 use sha2::{Digest, Sha256};
-use tracing::error;
 use uuid::Uuid;
 
 use db::{error::DbError, models::NewInternalAsset, queries};
 
-use crate::{error::ApiError, media, state::AppState};
+use crate::{assets, error::ApiError, media, state::AppState};
 
 /// Hosts provider avatars are allowed to be downloaded from.
 const ALLOWED_HOSTS: &[&str] = &["static-cdn.jtvnw.net", "cdn.discordapp.com"];
@@ -105,23 +104,7 @@ pub(crate) async fn set_user_avatar(
     if let Some(previous) = previous_asset_id
         && previous != asset.id
     {
-        delete_asset_if_unreferenced(state, previous).await?;
-    }
-    Ok(())
-}
-
-async fn delete_asset_if_unreferenced(state: &AppState, asset_id: Uuid) -> Result<(), ApiError> {
-    if queries::assets::reference_count(&state.pool, asset_id).await? > 0 {
-        return Ok(());
-    }
-    let Some(asset) = queries::assets::get_by_id(&state.pool, asset_id).await? else {
-        return Ok(());
-    };
-    queries::assets::delete(&state.pool, asset_id).await?;
-    if let Some(path) = &asset.internal_path
-        && let Err(e) = state.store.delete(path).await
-    {
-        error!("failed to delete avatar file {path}: {e}");
+        assets::delete_if_unreferenced(state, previous).await?;
     }
     Ok(())
 }
