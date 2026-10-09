@@ -24,17 +24,17 @@ export function PlaylistDetailView({
 }: Props) {
   return (
     <div>
-      <div className="playlist-detail-header">
+      <div className="page-header">
         <div className="playlist-detail-title-row">
-          <div className="playlist-detail-title">{title}</div>
+          <div className="page-title">{title}</div>
           {onDelete && <PlaylistDetailMenu playlistTitle={title} onDelete={onDelete} />}
         </div>
         {description && <div className="playlist-detail-sub">{description}</div>}
       </div>
       {isLoading ? (
-        <div className="playlist-empty">Loading…</div>
+        <div className="page-empty">Loading…</div>
       ) : entries.length === 0 ? (
-        <div className="playlist-empty">No performances in this playlist.</div>
+        <div className="page-empty">No performances in this playlist.</div>
       ) : (
         <PlaylistPerfTable
           entries={entries}

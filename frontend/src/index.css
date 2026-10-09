@@ -1,8 +1,10 @@
 @import "tailwindcss";
+@import "./styles/avatar.css";
 @import "./styles/buttons.css";
 @import "./styles/dialogs.css";
 @import "./styles/forms.css";
 @import "./styles/tooltip.css";
+@import "./styles/page.css";
 @import "./styles/header-mobile.css";
 @import "./styles/sidebar.css";
 @import "./styles/admin.css";

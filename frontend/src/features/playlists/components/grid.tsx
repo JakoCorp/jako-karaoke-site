@@ -16,7 +16,7 @@ export function PlaylistGrid({
   onDelete,
 }: Props) {
   if (playlists.length === 0) {
-    return <div className="playlist-empty">{emptyMessage}</div>;
+    return <div className="page-empty">{emptyMessage}</div>;
   }
   return (
     <div className="playlist-grid">
