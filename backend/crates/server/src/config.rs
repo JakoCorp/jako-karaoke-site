@@ -13,7 +13,7 @@ pub struct Config {
     pub port: u16,
     /// Absolute filesystem path where uploaded files are stored.
     pub storage_path: String,
-    /// Public base URL prepended to stored file paths when building `public_url` values.
+    /// Public base URL prepended to stored file paths when building asset storage URLs.
     pub storage_base_url: String,
     /// Twitch OAuth application client ID.
     pub twitch_client_id: String,
