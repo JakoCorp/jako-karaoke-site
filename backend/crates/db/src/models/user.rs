@@ -31,11 +31,3 @@ pub struct UserSummary {
     pub id: Uuid,
     pub username: String,
 }
-
-/// Input for replacing a user's mutable fields.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct UpdateUser {
-    pub username: String,
-    pub twitch_id: Option<u64>,
-    pub discord_id: Option<u64>,
-}

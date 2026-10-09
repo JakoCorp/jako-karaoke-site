@@ -442,28 +442,3 @@ pub async fn update_image_kind(
         .map(|r| r.rows_affected() > 0)
         .map_err(DbError::from)
 }
-
-/// Replaces the full set of images for a song.
-///
-/// Must be called within a caller provided transaction for atomicity.
-pub async fn set_images(
-    conn: &mut MySqlConnection,
-    song_id: Uuid,
-    images: &[(Uuid, &str)],
-) -> Result<()> {
-    sqlx::query("DELETE FROM song_images WHERE song_id = ?")
-        .bind(song_id)
-        .execute(&mut *conn)
-        .await
-        .map_err(DbError::from)?;
-    for &(asset_id, kind) in images {
-        sqlx::query("INSERT INTO song_images (song_id, asset_id, kind) VALUES (?, ?, ?)")
-            .bind(song_id)
-            .bind(asset_id)
-            .bind(kind)
-            .execute(&mut *conn)
-            .await
-            .map_err(DbError::from)?;
-    }
-    Ok(())
-}
