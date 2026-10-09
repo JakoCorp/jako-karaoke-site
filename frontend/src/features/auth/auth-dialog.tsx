@@ -14,7 +14,12 @@ export function AuthDialog() {
   async function handleDevLogin() {
     const { data } = await authApi.devLogin();
     if (data) {
-      setUser({ id: data.id, username: data.username, capabilities: data.capabilities });
+      setUser({
+        id: data.id,
+        username: data.username,
+        avatarUrl: data.avatar_url ?? null,
+        capabilities: data.capabilities,
+      });
       setOpen(false);
     }
   }

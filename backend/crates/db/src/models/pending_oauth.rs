@@ -11,4 +11,6 @@ pub struct PendingOAuth {
     pub provider_id: u64,
     /// Username derived from the provider profile, shown as the default in the claim UI.
     pub suggested_username: String,
+    /// Profile image URL from the provider, copied to the user on claim.
+    pub avatar_url: Option<String>,
 }

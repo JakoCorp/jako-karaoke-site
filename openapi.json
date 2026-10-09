@@ -5027,6 +5027,13 @@
           "capabilities"
         ],
         "properties": {
+          "avatar_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "URL of the user's avatar. Absent when the user has no avatar."
+          },
           "capabilities": {
             "type": "array",
             "items": {

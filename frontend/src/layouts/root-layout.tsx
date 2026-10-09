@@ -19,7 +19,12 @@ export function RootLayout({ children }: RootLayoutProps) {
     void (async () => {
       const { data } = await authApi.me();
       if (data) {
-        setUser({ id: data.id, username: data.username, capabilities: data.capabilities });
+        setUser({
+          id: data.id,
+          username: data.username,
+          avatarUrl: data.avatar_url ?? null,
+          capabilities: data.capabilities,
+        });
       }
     })();
   }, [setUser]);

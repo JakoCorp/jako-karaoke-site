@@ -50,8 +50,10 @@ pub async fn reference_count(
             (SELECT COUNT(*) FROM song_images WHERE asset_id = ?) + \
             (SELECT COUNT(*) FROM artist_images WHERE asset_id = ?) + \
             (SELECT COUNT(*) FROM performance_audios WHERE asset_id = ?) + \
-            (SELECT COUNT(*) FROM performance_videos WHERE asset_id = ?)",
+            (SELECT COUNT(*) FROM performance_videos WHERE asset_id = ?) + \
+            (SELECT COUNT(*) FROM user_avatars WHERE asset_id = ?)",
     )
+    .bind(asset_id)
     .bind(asset_id)
     .bind(asset_id)
     .bind(asset_id)
