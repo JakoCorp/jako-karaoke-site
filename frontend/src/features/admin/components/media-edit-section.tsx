@@ -1,19 +1,20 @@
 import { TrashIcon } from "@phosphor-icons/react";
 import { useRef, useState } from "react";
 
-import { resolveAssetUrl } from "@/lib/asset-url";
-
 import { type AdminAsset, assetLabel } from "./asset-utils";
 
-export type StagingImageItem<K extends string> =
+export type StagingMediaItem<K extends string> =
   | { type: "file"; file: File; kind: K }
   | { type: "link"; externalUrl: string; title?: string; kind: K };
 
-interface ImageEditSectionProps<K extends string> {
-  existingImages: AdminAsset[];
+interface MediaEditSectionProps<K extends string> {
+  label: string;
+  urlPlaceholder: string;
+  accept: string;
+  existingItems: AdminAsset[];
   pendingRemoveIds: Set<string>;
   pendingKindChanges: Map<string, K>;
-  stagingItems: StagingImageItem<K>[];
+  stagingItems: StagingMediaItem<K>[];
   kinds: readonly K[];
   onAddFile: (file: File) => void;
   onAddLink: (item: { externalUrl: string; title?: string }) => void;
@@ -23,8 +24,36 @@ interface ImageEditSectionProps<K extends string> {
   onChangeStagedKind: (index: number, kind: K) => void;
 }
 
-export function ImageEditSection<K extends string>({
-  existingImages,
+interface KindSelectProps<K extends string> {
+  value: string;
+  kinds: readonly K[];
+  onChange: (kind: K) => void;
+}
+
+function KindSelect<K extends string>({ value, kinds, onChange }: KindSelectProps<K>) {
+  return (
+    <select
+      className="admin-kind-select"
+      value={value}
+      onChange={(event) => {
+        const newKind = kinds.find((k) => k === event.target.value);
+        if (newKind) onChange(newKind);
+      }}
+    >
+      {kinds.map((k) => (
+        <option key={k} value={k}>
+          {k}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+export function MediaEditSection<K extends string>({
+  label,
+  urlPlaceholder,
+  accept,
+  existingItems,
   pendingRemoveIds,
   pendingKindChanges,
   stagingItems,
@@ -35,17 +64,17 @@ export function ImageEditSection<K extends string>({
   onChangeExistingKind,
   onRemoveStaged,
   onChangeStagedKind,
-}: ImageEditSectionProps<K>) {
+}: MediaEditSectionProps<K>) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [linkUrl, setLinkUrl] = useState("");
   const [linkTitle, setLinkTitle] = useState("");
 
-  const visible = existingImages.filter((img) => !pendingRemoveIds.has(img.asset_id));
+  const visible = existingItems.filter((item) => !pendingRemoveIds.has(item.asset_id));
 
   return (
     <div className="form-field">
       <div className="admin-link-card-header">
-        <span className="form-label">Images</span>
+        <span className="form-label">{label}</span>
         <div className="admin-link-card-actions">
           <button
             type="button"
@@ -62,7 +91,7 @@ export function ImageEditSection<K extends string>({
         <input
           type="url"
           className="form-input"
-          placeholder="External image URL"
+          placeholder={urlPlaceholder}
           value={linkUrl}
           onChange={(event) => {
             setLinkUrl(event.target.value);
@@ -95,7 +124,7 @@ export function ImageEditSection<K extends string>({
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
+        accept={accept}
         className="sr-only"
         onChange={(event) => {
           const file = event.target.files?.[0];
@@ -103,62 +132,51 @@ export function ImageEditSection<K extends string>({
           event.target.value = "";
         }}
       />
-      {visible.length > 0 && (
-        <div className="admin-image-list">
-          {visible.map((img) => (
-            <div key={img.asset_id} className="admin-image-item">
-              <img className="admin-image-thumb" src={resolveAssetUrl(img)} alt="" />
-              <span className="admin-asset-info">
-                <span className="admin-link-url text-sm">{assetLabel(img)}</span>
-              </span>
-              <select
-                className="admin-kind-select"
-                value={pendingKindChanges.get(img.asset_id) ?? img.kind}
-                onChange={(event) => {
-                  const newKind = kinds.find((k) => k === event.target.value);
-                  if (!newKind) return;
-                  onChangeExistingKind(img.asset_id, newKind);
-                }}
-              >
-                {kinds.map((k) => (
-                  <option key={k} value={k}>
-                    {k}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => {
-                  onRemoveExisting(img.asset_id);
-                }}
-              >
-                <TrashIcon weight="bold" />
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-      {stagingItems.map((item, index) => (
-        <div key={index} className="admin-audio-item">
-          <span className="admin-link-url text-sm text-fg-muted">
-            {item.type === "file" ? item.file.name : (item.title ?? item.externalUrl)}
+      {visible.map((item) => (
+        <div key={item.asset_id} className="admin-audio-item">
+          <KindSelect
+            value={pendingKindChanges.get(item.asset_id) ?? item.kind}
+            kinds={kinds}
+            onChange={(kind) => {
+              onChangeExistingKind(item.asset_id, kind);
+            }}
+          />
+          <span className="admin-asset-info">
+            <span className="admin-link-url">{assetLabel(item)}</span>
+            {item.title && item.external_url && (
+              <span className="admin-link-label">{item.external_url}</span>
+            )}
           </span>
-          <select
-            className="admin-kind-select"
-            value={item.kind}
-            onChange={(event) => {
-              const newKind = kinds.find((k) => k === event.target.value);
-              if (!newKind) return;
-              onChangeStagedKind(index, newKind);
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => {
+              onRemoveExisting(item.asset_id);
             }}
           >
-            {kinds.map((k) => (
-              <option key={k} value={k}>
-                {k}
-              </option>
-            ))}
-          </select>
+            <TrashIcon weight="bold" />
+          </button>
+        </div>
+      ))}
+      {stagingItems.map((item, index) => (
+        <div key={index} className="admin-audio-item">
+          <KindSelect
+            value={item.kind}
+            kinds={kinds}
+            onChange={(kind) => {
+              onChangeStagedKind(index, kind);
+            }}
+          />
+          <span className="admin-asset-info">
+            {item.type === "file" ? (
+              <span className="admin-link-url">{item.file.name}</span>
+            ) : (
+              <>
+                <span className="admin-link-url">{item.title ?? item.externalUrl}</span>
+                {item.title && <span className="admin-link-label">{item.externalUrl}</span>}
+              </>
+            )}
+          </span>
           <button
             type="button"
             className="btn btn-secondary"
