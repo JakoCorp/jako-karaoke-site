@@ -1,13 +1,9 @@
 import type { PerformanceResponse, PerformanceSummary } from "@/api/performances";
 import { performancesApi } from "@/api/performances";
+import { fetchVerifiedAudio, findDownloadableAudio } from "@/lib/verified-audio";
 import { useOfflineStore } from "@/store/offline";
 
 import { clearAudioBlobs, deleteAudioBlob, putAudioBlob } from "./offline-db";
-
-/** Returns the primary hosted audio asset of a performance, if one can be downloaded. */
-export function findDownloadableAudio(detail: PerformanceResponse) {
-  return detail.audio.find((audio) => audio.kind === "primary" && audio.storage_url && audio.hash);
-}
 
 function toSummary(detail: PerformanceResponse): PerformanceSummary {
   return {
@@ -23,11 +19,6 @@ function toSummary(detail: PerformanceResponse): PerformanceSummary {
   };
 }
 
-async function sha256Hex(blob: Blob): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", await blob.arrayBuffer());
-  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
-}
-
 /**
  * Downloads the primary audio of a performance and stores it for offline playback.
  *
@@ -39,17 +30,9 @@ export async function saveOffline(performanceId: string): Promise<void> {
   if (error || !detail) throw new Error("Failed to load performance.");
 
   const audio = findDownloadableAudio(detail);
-  if (!audio?.storage_url || !audio.hash) {
-    throw new Error("This performance has no downloadable audio.");
-  }
+  if (!audio) throw new Error("This performance has no downloadable audio.");
 
-  const response = await fetch(audio.storage_url);
-  if (!response.ok) throw new Error("Failed to download audio.");
-  const blob = await response.blob();
-
-  if ((await sha256Hex(blob)) !== audio.hash) {
-    throw new Error("Downloaded audio did not match the server copy.");
-  }
+  const blob = new Blob([await fetchVerifiedAudio(audio)]);
 
   await putAudioBlob(performanceId, blob);
   useOfflineStore.getState().add({

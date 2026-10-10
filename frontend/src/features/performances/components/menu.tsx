@@ -3,6 +3,7 @@ import {
   CaretRightIcon,
   DotsThreeVerticalIcon,
   DownloadSimpleIcon,
+  FileArrowDownIcon,
   InfoIcon,
   MusicNotesPlusIcon,
   TrashSimpleIcon,
@@ -11,6 +12,7 @@ import { useNavigate } from "react-router";
 
 import { RowContextMenu } from "@/components/row-context-menu";
 import type { RowMenuItemDef } from "@/components/row-context-menu";
+import { useDownloadMenuAction, useDownloadMenuItem } from "@/features/download";
 import { useOfflineMenuAction, useOfflineMenuItem } from "@/features/local";
 import { PlaylistPickerContent } from "@/features/playlists";
 
@@ -26,6 +28,7 @@ interface DetailMenuProps {
 
 export function PerformanceRowMenu({ performanceId, children, onPlay }: RowMenuProps) {
   const navigate = useNavigate();
+  const downloadItem = useDownloadMenuItem(performanceId);
   const offlineItem = useOfflineMenuItem(performanceId);
   const items: RowMenuItemDef[] = [
     {
@@ -35,6 +38,7 @@ export function PerformanceRowMenu({ performanceId, children, onPlay }: RowMenuP
         void navigate(`/performance/${performanceId}`);
       },
     },
+    downloadItem,
     offlineItem,
     {
       type: "submenu",
@@ -57,6 +61,7 @@ export function PerformanceRowMenu({ performanceId, children, onPlay }: RowMenuP
 }
 
 export function PerformanceDetailMenu({ performanceId }: DetailMenuProps) {
+  const downloadAction = useDownloadMenuAction(performanceId);
   const offlineAction = useOfflineMenuAction(performanceId);
   return (
     <Menu.Root>
@@ -66,6 +71,10 @@ export function PerformanceDetailMenu({ performanceId }: DetailMenuProps) {
       <Menu.Portal>
         <Menu.Positioner>
           <Menu.Popup className="card-menu-popup">
+            <Menu.Item className="card-menu-item" onClick={downloadAction.download}>
+              <FileArrowDownIcon size={14} />
+              {downloadAction.label}
+            </Menu.Item>
             <Menu.Item className="card-menu-item" onClick={offlineAction.toggle}>
               {offlineAction.isSaved ? (
                 <TrashSimpleIcon size={14} />
