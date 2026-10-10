@@ -233,7 +233,10 @@ async fn hydrate(
     )?;
 
     let song_ids: Vec<Uuid> = songs.iter().map(|s| s.id).collect();
-    let mut images_by_song = queries::songs::get_images_batch(pool, &song_ids).await?;
+    let (mut images_by_song, mut artists_by_song) = tokio::try_join!(
+        queries::songs::get_images_batch(pool, &song_ids),
+        queries::songs::get_original_artists_batch(pool, &song_ids),
+    )?;
 
     let songs = songs
         .into_iter()
@@ -244,10 +247,20 @@ async fn hydrate(
                 .into_iter()
                 .map(convert::song_image_info)
                 .collect();
+            let artists = artists_by_song
+                .remove(&s.id)
+                .unwrap_or_default()
+                .into_iter()
+                .map(|a| ArtistInfo {
+                    id: a.id,
+                    name: a.name,
+                    description: a.description,
+                })
+                .collect();
             SongSummary {
                 id: s.id,
                 title: s.title,
-                artists: vec![],
+                artists,
                 images,
                 performance_count: 0,
             }
