@@ -12,6 +12,7 @@ pub mod session;
 pub mod song;
 pub mod tag;
 pub mod user;
+pub mod user_settings;
 
 pub use artist::{Artist, ArtistLink, NewArtist, NewArtistLink, UpdateArtist};
 pub use asset::{Asset, NewExternalAsset, NewInternalAsset};
@@ -25,3 +26,4 @@ pub use session::Session;
 pub use song::{NewSong, Song, UpdateSong};
 pub use tag::{NewTag, Tag, TagWithKind};
 pub use user::{NewUser, User, UserSummary};
+pub use user_settings::UserSettings;

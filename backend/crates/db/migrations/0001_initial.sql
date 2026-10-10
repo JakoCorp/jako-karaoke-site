@@ -39,6 +39,18 @@ CREATE TABLE IF NOT EXISTS user_avatars (
     INDEX (asset_id)
 ) ENGINE = InnoDB;
 
+-- Per user preferences
+CREATE TABLE IF NOT EXISTS user_settings (
+    user_id BINARY(16) NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    download_filename_template VARCHAR(128) NOT NULL DEFAULT '{date} {stream_number} #{performance_number} {title}',
+    download_include_cover_art BOOLEAN NOT NULL DEFAULT TRUE,
+    download_include_lyrics BOOLEAN NOT NULL DEFAULT FALSE,
+    download_include_date BOOLEAN NOT NULL DEFAULT TRUE,
+    download_include_singers BOOLEAN NOT NULL DEFAULT TRUE,
+    download_include_original_artists BOOLEAN NOT NULL DEFAULT FALSE,
+    PRIMARY KEY (user_id)
+) ENGINE = InnoDB;
+
 -- Pending OAuth claims awaiting username selection
 CREATE TABLE IF NOT EXISTS pending_oauth (
     token CHAR(64) NOT NULL,
