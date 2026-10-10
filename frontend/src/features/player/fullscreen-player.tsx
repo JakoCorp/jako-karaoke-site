@@ -15,6 +15,7 @@ import {
 import { useState } from "react";
 
 import { usePerformance } from "@/hooks/api/performances";
+import { resolveAssetUrl } from "@/lib/asset-url";
 import { formatDuration } from "@/lib/format";
 import { selectCurrent, selectHasNext, selectHasPrev, usePlayerStore } from "@/store/player";
 
@@ -64,7 +65,7 @@ export function FullscreenPlayer({
   const artImg =
     detail?.songs[0]?.images.find((img) => img.kind === "full_art") ??
     detail?.songs[0]?.images.find((img) => img.kind === "cover_art");
-  const artUrl = artImg?.storage_url ?? artImg?.external_url ?? null;
+  const artUrl = resolveAssetUrl(artImg) ?? null;
 
   return (
     <Dialog.Root

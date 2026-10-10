@@ -5,7 +5,6 @@ import {
   SONG_IMAGE_KINDS,
   SONG_TAG_KINDS,
   songsApi,
-  type SongImageInfo,
   type SongImageKind,
   type SongSummary,
   type SongTagKind,
@@ -18,6 +17,7 @@ import { tagKeys, useTags } from "@/hooks/api/tags";
 import { applyAll } from "@/lib/staging";
 
 import { ImageEditSection, type StagingImageItem } from "../components/image-edit-section";
+import { ImageList } from "../components/image-list";
 import { ItemPicker, TagPicker, type TagAssignment } from "../components/pickers";
 import { resolveTagAssignments } from "../components/tag-utils";
 
@@ -354,31 +354,7 @@ export function SongDetailPanel({
               </div>
             </div>
           )}
-          {songDetail.images.length > 0 && (
-            <div className="admin-detail-section">
-              <span className="admin-detail-label">Images</span>
-              <div className="admin-image-list">
-                {songDetail.images.map((image: SongImageInfo) => (
-                  <div key={image.asset_id} className="admin-image-item">
-                    <img
-                      className="admin-image-thumb"
-                      src={image.storage_url ?? image.external_url ?? undefined}
-                      alt=""
-                    />
-                    <span className="admin-asset-info">
-                      <span className="admin-link-url text-sm">
-                        {image.title ??
-                          image.storage_url?.split("/").pop() ??
-                          image.external_url ??
-                          "Untitled"}
-                      </span>
-                    </span>
-                    <span className="admin-pill-kind">{image.kind}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          <ImageList images={songDetail.images} />
         </div>
       )}
     </>

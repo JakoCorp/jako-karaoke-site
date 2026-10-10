@@ -231,35 +231,6 @@ pub async fn get_performances_in_playlist(
     .map_err(DbError::from)
 }
 
-/// Replaces the full ordered set of performances in a playlist.
-///
-/// The position in `performance_ids` becomes the `sort_order` value.
-/// Must be called within a caller provided transaction for atomicity.
-pub async fn set_performances(
-    conn: &mut MySqlConnection,
-    playlist_id: Uuid,
-    performance_ids: &[Uuid],
-) -> Result<()> {
-    sqlx::query("DELETE FROM playlist_performances WHERE playlist_id = ?")
-        .bind(playlist_id)
-        .execute(&mut *conn)
-        .await
-        .map_err(DbError::from)?;
-    for (pos, &performance_id) in performance_ids.iter().enumerate() {
-        sqlx::query(
-            "INSERT INTO playlist_performances (playlist_id, performance_id, sort_order) \
-             VALUES (?, ?, ?)",
-        )
-        .bind(playlist_id)
-        .bind(performance_id)
-        .bind(pos as u32)
-        .execute(&mut *conn)
-        .await
-        .map_err(DbError::from)?;
-    }
-    Ok(())
-}
-
 /// Appends multiple performances to the end of a playlist, skipping any already present.
 ///
 /// `sort_order` increments from the current maximum.

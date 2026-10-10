@@ -85,12 +85,12 @@ export function PublicPlaylistsPage() {
         )}
       </div>
       {isLoading ? (
-        <div className="playlist-empty">Loading…</div>
+        <div className="page-empty">Loading…</div>
       ) : (
         <PlaylistGrid playlists={items} emptyMessage="No public playlists yet." />
       )}
       <div ref={sentinelRef} />
-      {isFetchingNextPage && <div className="playlist-empty">Loading more…</div>}
+      {isFetchingNextPage && <div className="page-empty">Loading more…</div>}
     </div>
   );
 }

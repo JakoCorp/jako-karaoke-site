@@ -59,9 +59,9 @@ export function AvatarPicker({ user, onError }: Props) {
         onClick={() => fileInputRef.current?.click()}
       >
         {user.avatarUrl ? (
-          <img src={user.avatarUrl} alt="" className="settings-avatar" />
+          <img src={user.avatarUrl} alt="" className="block avatar-lg avatar" />
         ) : (
-          <span className="settings-avatar settings-avatar-placeholder" aria-hidden="true">
+          <span className="avatar-placeholder avatar-lg avatar" aria-hidden="true">
             <UserIcon size={40} weight="fill" />
           </span>
         )}

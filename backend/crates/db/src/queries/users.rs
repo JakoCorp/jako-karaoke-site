@@ -4,7 +4,7 @@ use sqlx::{Executor, MySql, MySqlConnection};
 use uuid::Uuid;
 
 use crate::error::DbError;
-use crate::models::user::{NewUser, UpdateUser, User, UserSummary};
+use crate::models::user::{NewUser, User, UserSummary};
 
 type Result<T> = std::result::Result<T, DbError>;
 
@@ -79,18 +79,6 @@ pub async fn get_by_username(
     .map_err(DbError::from)
 }
 
-/// Returns all users ordered by ID.
-pub async fn list(executor: impl Executor<'_, Database = MySql>) -> Result<Vec<User>> {
-    sqlx::query_as::<_, User>(concat!(
-        "SELECT ",
-        user_columns!(),
-        " FROM users ORDER BY id"
-    ))
-    .fetch_all(executor)
-    .await
-    .map_err(DbError::from)
-}
-
 /// Searches users by optional username substring. Returns all users when `q` is `None`.
 pub async fn search(
     executor: impl Executor<'_, Database = MySql>,
@@ -137,73 +125,6 @@ pub async fn create(conn: &mut MySqlConnection, new: &NewUser) -> Result<User> {
         Err(sqlx::Error::Database(e)) if e.is_unique_violation() => Err(DbError::Conflict),
         Err(e) => Err(DbError::Sqlx(e)),
     }
-}
-
-/// Inserts a user keyed on `twitch_id`, updating `username` on conflict.
-///
-/// Used on every successful Twitch OAuth login so the username stays in sync
-/// with the user's current Twitch display name.
-///
-/// Returns the user and `true` if a new row was inserted, `false` if an existing
-/// row was updated.
-pub async fn upsert_by_twitch(conn: &mut MySqlConnection, new: &NewUser) -> Result<(User, bool)> {
-    let result = sqlx::query(
-        "INSERT INTO users (username, twitch_id, discord_id) VALUES (?, ?, ?) \
-         ON DUPLICATE KEY UPDATE username = VALUES(username)",
-    )
-    .bind(&new.username)
-    .bind(new.twitch_id)
-    .bind(new.discord_id)
-    .execute(&mut *conn)
-    .await
-    .map_err(DbError::from)?;
-    let is_new = result.rows_affected() == 1;
-    let user = get_by_twitch_id(&mut *conn, new.twitch_id.ok_or(DbError::NotFound)?)
-        .await?
-        .ok_or(DbError::NotFound)?;
-    Ok((user, is_new))
-}
-
-/// Inserts a user keyed on `discord_id`, updating `username` on conflict.
-///
-/// Used on every successful Discord OAuth login so the username stays in sync
-/// with the user's current Discord username.
-///
-/// Returns the user and `true` if a new row was inserted, `false` if an existing
-/// row was updated.
-pub async fn upsert_by_discord(conn: &mut MySqlConnection, new: &NewUser) -> Result<(User, bool)> {
-    let result = sqlx::query(
-        "INSERT INTO users (username, twitch_id, discord_id) VALUES (?, ?, ?) \
-         ON DUPLICATE KEY UPDATE username = VALUES(username)",
-    )
-    .bind(&new.username)
-    .bind(new.twitch_id)
-    .bind(new.discord_id)
-    .execute(&mut *conn)
-    .await
-    .map_err(DbError::from)?;
-    let is_new = result.rows_affected() == 1;
-    let user = get_by_discord_id(&mut *conn, new.discord_id.ok_or(DbError::NotFound)?)
-        .await?
-        .ok_or(DbError::NotFound)?;
-    Ok((user, is_new))
-}
-
-/// Replaces all mutable fields on a user. Returns `None` if the ID does not exist.
-pub async fn update(
-    conn: &mut MySqlConnection,
-    id: Uuid,
-    upd: &UpdateUser,
-) -> Result<Option<User>> {
-    sqlx::query("UPDATE users SET username = ?, twitch_id = ?, discord_id = ? WHERE id = ?")
-        .bind(&upd.username)
-        .bind(upd.twitch_id)
-        .bind(upd.discord_id)
-        .bind(id)
-        .execute(&mut *conn)
-        .await
-        .map_err(DbError::from)?;
-    get_by_id(&mut *conn, id).await
 }
 
 /// Changes a user's username and records the change time, then returns the updated row.

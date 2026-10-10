@@ -1,3 +1,5 @@
+import { multipartSerializer } from "@/lib/multipart";
+
 import { api } from "./client";
 import type { components } from "./generated";
 
@@ -47,11 +49,7 @@ export const authApi = {
   uploadAvatar: (file: File) =>
     api.PUT("/auth/me/avatar", {
       body: { file: "" } satisfies components["schemas"]["AvatarUpload"],
-      bodySerializer: () => {
-        const form = new FormData();
-        form.append("file", file);
-        return form;
-      },
+      bodySerializer: multipartSerializer({ file }),
     }),
 
   /** Revokes the current session and clears the session cookie. */

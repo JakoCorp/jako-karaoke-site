@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Link } from "react-router";
 
 import type { PerformanceResponse } from "@/api/performances";
+import { resolveAssetUrl } from "@/lib/asset-url";
 import { formatDate, formatDuration, formatStreamTime } from "@/lib/format";
 import { extractYouTubeVideoId, getVideoEmbedInfo } from "@/lib/video-embed";
 import { selectCurrent, usePlayerStore } from "@/store/player";
@@ -36,7 +37,7 @@ export function PerformanceDetailView({ performance, lyricsContent }: Props) {
   const [popupVideoId, setPopupVideoId] = useState<string | null>(null);
 
   const coverImg = performance.songs[0]?.images.find((i) => i.kind === "cover_art");
-  const coverImage = coverImg?.storage_url ?? coverImg?.external_url ?? undefined;
+  const coverImage = resolveAssetUrl(coverImg);
 
   const title =
     performance.title?.trim() || performance.songs.map((s) => s.title).join(" / ") || "Untitled";
@@ -184,7 +185,7 @@ export function PerformanceDetailView({ performance, lyricsContent }: Props) {
                   const label = mediaLabel(audio);
                   const isPlayable =
                     !!audio.storage_url || !!extractYouTubeVideoId(audio.external_url ?? "");
-                  const audioUrl = audio.storage_url ?? audio.external_url ?? null;
+                  const audioUrl = resolveAssetUrl(audio) ?? null;
                   const isActive =
                     isPlayable &&
                     current?.id === performance.id &&

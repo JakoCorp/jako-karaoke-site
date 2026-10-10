@@ -98,27 +98,9 @@
   }
 }
 
-@utility artist-avatar {
-  width: 88px;
-  height: 88px;
-  border-radius: 50%;
-  object-fit: cover;
-  flex-shrink: 0;
-}
-
-@utility artist-avatar-placeholder {
-  width: 88px;
-  height: 88px;
-  border-radius: 50%;
-  background-color: var(--color-subtle);
-  color: var(--color-fg-muted);
+@utility artist-avatar-initial {
   font-size: 2rem;
   font-weight: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  user-select: none;
 }
 
 @utility artist-card-name {

@@ -81,15 +81,6 @@ pub struct AddArtistImageLinkRequest {
     pub source_url: Option<String>,
 }
 
-/// Input for attaching an existing asset as an image to an artist.
-#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
-pub struct ArtistImageInput {
-    /// ID of an existing asset record to attach.
-    pub asset_id: Uuid,
-    /// Semantic role for this image.
-    pub kind: ArtistImageKind,
-}
-
 /// An external link associated with an artist.
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct ArtistLinkInfo {

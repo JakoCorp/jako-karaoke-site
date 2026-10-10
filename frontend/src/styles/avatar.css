@@ -1,0 +1,29 @@
+@utility avatar {
+  flex-shrink: 0;
+  border-radius: 9999px;
+  object-fit: cover;
+}
+
+@utility avatar-sm {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+@utility avatar-md {
+  width: 88px;
+  height: 88px;
+}
+
+@utility avatar-lg {
+  width: 6rem;
+  height: 6rem;
+}
+
+@utility avatar-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-subtle);
+  color: var(--color-fg-muted);
+  user-select: none;
+}

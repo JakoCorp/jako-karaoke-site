@@ -20,7 +20,8 @@ use db::{
 };
 
 use crate::{
-    auth::middleware::AuthUser, capabilities, convert, error::ApiError, media, state::AppState,
+    assets, auth::middleware::AuthUser, capabilities, convert, error::ApiError, media,
+    state::AppState,
 };
 
 /// Placeholder schema for image multipart upload bodies.
@@ -325,23 +326,11 @@ pub(crate) async fn delete_artist_image(
         return Err(ApiError::Forbidden);
     }
 
-    let asset = queries::assets::get_by_id(&state.pool, asset_id)
-        .await?
-        .ok_or(ApiError::NotFound)?;
     let removed = queries::artists::unlink_image(&state.pool, id, asset_id).await?;
     if !removed {
         return Err(ApiError::NotFound);
     }
-
-    let ref_count = queries::assets::reference_count(&state.pool, asset_id).await?;
-    if ref_count == 0 {
-        queries::assets::delete(&state.pool, asset_id).await?;
-        if let Some(path) = &asset.internal_path
-            && let Err(e) = state.store.delete(path).await
-        {
-            error!("failed to delete image file {path}: {e}");
-        }
-    }
+    assets::delete_if_unreferenced(&state, asset_id).await?;
 
     Ok(StatusCode::NO_CONTENT)
 }

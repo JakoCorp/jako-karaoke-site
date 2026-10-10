@@ -14,7 +14,7 @@ export function PlaylistDetailPage() {
   const deletePlaylist = useDeletePlaylist();
 
   if (!playlistLoading && playlist === null) {
-    return <div className="playlist-empty">Playlist not found.</div>;
+    return <div className="page-empty">Playlist not found.</div>;
   }
 
   const isOwner = !!user && playlist?.created_by === user.id && playlist?.kind !== "favorites";
