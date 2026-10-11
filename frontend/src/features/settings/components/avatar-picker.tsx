@@ -4,6 +4,7 @@ import { useRef } from "react";
 
 import { authApi, toAuthUser } from "@/api/auth";
 import type { AuthUser } from "@/api/auth";
+import { toast } from "@/lib/toast";
 import { useAuthStore } from "@/store/auth";
 
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
@@ -25,6 +26,7 @@ export function AvatarPicker({ user, onError }: Props) {
     },
     onSuccess: (data) => {
       setUser(toAuthUser(data));
+      toast.success("Avatar updated");
     },
     onError: () => {
       onError("Could not upload that image. Use a PNG, JPEG, WebP, AVIF or GIF under 5 MB.");

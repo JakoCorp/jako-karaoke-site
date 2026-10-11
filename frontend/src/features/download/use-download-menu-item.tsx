@@ -5,13 +5,11 @@ import { DEFAULT_DOWNLOAD_SETTINGS } from "@/api/settings";
 import type { DownloadSettings } from "@/api/settings";
 import type { RowMenuItemDef } from "@/components/row-context-menu";
 import { userSettingsQueryOptions } from "@/hooks/api/settings";
+import { errorMessage } from "@/lib/error-message";
+import { toast } from "@/lib/toast";
 import { useAuthStore } from "@/store/auth";
 
 import { downloadPerformance } from "./lib/download-performance";
-
-function reportFailure(error: unknown) {
-  window.alert(error instanceof Error ? error.message : "Failed to download.");
-}
 
 interface DownloadMenuAction {
   label: string;
@@ -29,6 +27,9 @@ export function useDownloadMenuAction(performanceId: string): DownloadMenuAction
       const settings = await queryClient.ensureQueryData(userSettingsQueryOptions());
       return settings.download;
     } catch {
+      toast.warning("Using default download settings", {
+        description: "Your saved download settings could not be loaded.",
+      });
       return DEFAULT_DOWNLOAD_SETTINGS;
     }
   }
@@ -36,9 +37,24 @@ export function useDownloadMenuAction(performanceId: string): DownloadMenuAction
   return {
     label: "Download",
     download: () => {
-      void resolveSettings()
-        .then((settings) => downloadPerformance(performanceId, settings))
-        .catch(reportFailure);
+      void toast.task(
+        resolveSettings().then((settings) => downloadPerformance(performanceId, settings)),
+        {
+          loading: "Preparing download…",
+          success: (result) =>
+            result.tagsFailed
+              ? {
+                  type: "warning",
+                  title: "Downloaded without tags",
+                  description: result.filename,
+                }
+              : { title: "Downloaded", description: result.filename },
+          error: (error) => ({
+            title: "Download failed",
+            description: errorMessage(error, "Something went wrong while downloading."),
+          }),
+        },
+      );
     },
   };
 }

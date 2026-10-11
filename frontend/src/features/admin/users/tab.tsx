@@ -1,10 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
+import { ensureOk } from "@/api/client";
 import { usersApi, type UserSummary } from "@/api/users";
 import { useCapabilities } from "@/hooks/api/capabilities";
 import { useUserCapabilities, userKeys, useUsers } from "@/hooks/api/users";
 import { useDebounced } from "@/hooks/use-debounced";
+import { errorMessage } from "@/lib/error-message";
+import { toast } from "@/lib/toast";
 
 export function UsersAdminTab() {
   const [searchInput, setSearchInput] = useState("");
@@ -25,13 +28,25 @@ export function UsersAdminTab() {
     });
 
   const grantMutation = useMutation({
-    mutationFn: (capability: string) => usersApi.grantCapability(selectedUser!.id, capability),
+    mutationFn: (capability: string) =>
+      usersApi.grantCapability(selectedUser!.id, capability).then(ensureOk),
     onSuccess: invalidateCaps,
+    onError: (error) => {
+      toast.error("Could not grant capability", {
+        description: errorMessage(error, "Something went wrong."),
+      });
+    },
   });
 
   const revokeMutation = useMutation({
-    mutationFn: (capability: string) => usersApi.revokeCapability(selectedUser!.id, capability),
+    mutationFn: (capability: string) =>
+      usersApi.revokeCapability(selectedUser!.id, capability).then(ensureOk),
     onSuccess: invalidateCaps,
+    onError: (error) => {
+      toast.error("Could not revoke capability", {
+        description: errorMessage(error, "Something went wrong."),
+      });
+    },
   });
 
   function handleToggle(cap: string, has: boolean) {
@@ -48,9 +63,15 @@ export function UsersAdminTab() {
     if (missing.length === 0) return;
     setIsGrantingAll(true);
     try {
-      await Promise.all(missing.map((cap) => usersApi.grantCapability(selectedUser.id, cap)));
-      await invalidateCaps();
+      await Promise.all(
+        missing.map((cap) => usersApi.grantCapability(selectedUser.id, cap).then(ensureOk)),
+      );
+    } catch (error) {
+      toast.error("Could not grant all capabilities", {
+        description: errorMessage(error, "Something went wrong."),
+      });
     } finally {
+      await invalidateCaps();
       setIsGrantingAll(false);
     }
   }

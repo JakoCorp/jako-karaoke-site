@@ -2,6 +2,7 @@ import { queryOptions, useMutation, useQuery, useQueryClient } from "@tanstack/r
 
 import { settingsApi } from "@/api/settings";
 import type { UserSettings } from "@/api/settings";
+import { toast } from "@/lib/toast";
 
 export const settingsKeys = {
   all: () => ["settings"] as const,
@@ -35,6 +36,7 @@ export function useUpdateUserSettings() {
     },
     onSuccess: (data) => {
       queryClient.setQueryData(settingsKeys.all(), data);
+      toast.success("Settings saved");
     },
   });
 }

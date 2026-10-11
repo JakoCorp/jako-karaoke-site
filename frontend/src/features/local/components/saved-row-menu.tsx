@@ -4,6 +4,7 @@ import { useNavigate } from "react-router";
 import { RowContextMenu } from "@/components/row-context-menu";
 import type { RowMenuItemDef } from "@/components/row-context-menu";
 
+import { reportOfflineChange } from "../lib/report-offline-change";
 import { removeOffline } from "../lib/save-offline";
 
 interface Props {
@@ -29,7 +30,10 @@ export function SavedRowMenu({ performanceId, children, onPlay }: Props) {
       variant: "danger",
       confirm: { title: "Delete saved copy?", confirmLabel: "Delete" },
       onClick: () => {
-        void removeOffline(performanceId);
+        void reportOfflineChange(removeOffline(performanceId), {
+          success: "Removed from offline",
+          failure: "Could not remove from offline",
+        });
       },
     },
   ];

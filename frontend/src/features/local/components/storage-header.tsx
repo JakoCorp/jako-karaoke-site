@@ -4,6 +4,7 @@ import { ConfirmDialog } from "@/components/confirm-dialog";
 import { formatBytes } from "@/lib/format";
 import { selectTotalBytes, useOfflineStore } from "@/store/offline";
 
+import { reportOfflineChange } from "../lib/report-offline-change";
 import { clearOffline } from "../lib/save-offline";
 
 export function StorageHeader() {
@@ -41,7 +42,10 @@ export function StorageHeader() {
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
         onConfirm={() => {
-          void clearOffline();
+          void reportOfflineChange(clearOffline(), {
+            success: "Removed all offline saves",
+            failure: "Could not clear offline saves",
+          });
           setConfirmOpen(false);
         }}
         title="Clear all saved performances?"

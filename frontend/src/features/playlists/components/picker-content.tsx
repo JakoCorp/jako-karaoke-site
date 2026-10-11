@@ -31,9 +31,9 @@ export function PlaylistPickerContent({ performanceId }: Props) {
     ...filtered.filter((p) => addedIds.has(p.id)),
   ];
 
-  function handleAdd(playlistId: string) {
+  function handleAdd(playlistId: string, playlistTitle: string) {
     addToPlaylist.mutate(
-      { playlistId, performanceIds: [performanceId] },
+      { playlistId, playlistTitle, performanceIds: [performanceId] },
       {
         onSuccess: () => {
           setSessionAddedIds((prev) => new Set([...prev, playlistId]));
@@ -73,7 +73,7 @@ export function PlaylistPickerContent({ performanceId }: Props) {
                 className="playlist-picker-add-btn"
                 aria-label={added ? "Added" : `Add to ${playlist.title}`}
                 disabled={added || addToPlaylist.isPending}
-                onClick={() => handleAdd(playlist.id)}
+                onClick={() => handleAdd(playlist.id, playlist.title)}
               >
                 {added ? (
                   <CheckIcon size={14} />

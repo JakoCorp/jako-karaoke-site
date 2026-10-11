@@ -3,6 +3,7 @@ import { useState } from "react";
 
 import { type PlaylistResponse } from "@/api/playlists";
 import { useCreatePlaylist } from "@/hooks/api/playlists";
+import { errorMessage } from "@/lib/error-message";
 
 type Props = {
   open: boolean;
@@ -37,17 +38,12 @@ export function CreatePlaylistDialog({ open, onOpenChange, onCreated }: Props) {
         is_public: isPublic,
       },
       {
-        onSuccess: (result) => {
-          if (result.data) {
-            onCreated(result.data);
-            resetForm();
-          } else if (result.error) {
-            const msg =
-              typeof result.error === "object" && result.error !== null && "error" in result.error
-                ? String((result.error as { error: unknown }).error)
-                : "Failed to create playlist.";
-            setError(msg);
-          }
+        onSuccess: (playlist) => {
+          onCreated(playlist);
+          resetForm();
+        },
+        onError: (mutationError) => {
+          setError(errorMessage(mutationError, "Failed to create playlist."));
         },
       },
     );

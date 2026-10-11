@@ -6,6 +6,7 @@ import { useState } from "react";
 import { authApi, toAuthUser } from "@/api/auth";
 import type { AuthUser } from "@/api/auth";
 import { formatDate } from "@/lib/format";
+import { toast } from "@/lib/toast";
 import { useAuthStore } from "@/store/auth";
 
 const USERNAME_PATTERN = /^[A-Za-z0-9_.]{1,64}$/;
@@ -37,6 +38,7 @@ function UsernameForm({ user, onDone }: { user: AuthUser; onDone: () => void }) 
     },
     onSuccess: (data) => {
       setUser(toAuthUser(data));
+      toast.success("Username changed");
       onDone();
     },
     onError: (status: unknown) => {
