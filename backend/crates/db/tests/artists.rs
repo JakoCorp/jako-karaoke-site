@@ -2,6 +2,8 @@ use db::models::artist::{NewArtist, NewArtistLink, UpdateArtist};
 use db::models::asset::NewInternalAsset;
 use db::queries::{artists, assets};
 use sqlx::MySqlPool;
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 use uuid::Uuid;
 
 fn new_artist(name: &str) -> NewArtist {
@@ -9,6 +11,12 @@ fn new_artist(name: &str) -> NewArtist {
         name: name.to_string(),
         description: None,
     }
+}
+
+fn hash_of(value: &str) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    value.hash(&mut hasher);
+    hasher.finish()
 }
 
 async fn create_asset(pool: &MySqlPool, url: &str) -> Uuid {
@@ -19,7 +27,7 @@ async fn create_asset(pool: &MySqlPool, url: &str) -> Uuid {
             title: None,
             credits: None,
             source_url: None,
-            hash: format!("{:064x}", url.len()),
+            hash: format!("{:064x}", hash_of(url)),
             storage_url: url.to_string(),
             internal_path: None,
         },
