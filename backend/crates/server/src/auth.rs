@@ -16,6 +16,7 @@ use axum::{
     Json, Router,
     extract::{DefaultBodyLimit, State},
     http::StatusCode,
+    response::{IntoResponse, Response},
     routing::{get, post, put},
 };
 use axum_extra::extract::CookieJar;
@@ -215,21 +216,23 @@ async fn claim(
     path = "/auth/me",
     responses(
         (status = 200, description = "Current user", body = MeResponse),
-        (status = 401, description = "Not authenticated", body = ErrorResponse),
+        (status = 204, description = "Not signed in"),
     ),
     tag = "auth",
     security(("session" = []))
 )]
 pub(crate) async fn me(
     State(state): State<AppState>,
-    auth: AuthUser,
-) -> Result<Json<MeResponse>, ApiError> {
+    auth: Option<AuthUser>,
+) -> Result<Response, ApiError> {
+    let Some(auth) = auth else {
+        return Ok(StatusCode::NO_CONTENT.into_response());
+    };
     let user = queries::users::get_by_id(&state.pool, auth.user_id)
         .await?
         .ok_or(ApiError::NotFound)?;
-    Ok(Json(
-        account::me_response(&state, user, auth.capabilities).await?,
-    ))
+    let response = account::me_response(&state, user, auth.capabilities).await?;
+    Ok(Json(response).into_response())
 }
 
 #[utoipa::path(

@@ -4140,15 +4140,8 @@
               }
             }
           },
-          "401": {
-            "description": "Not authenticated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
+          "204": {
+            "description": "Not signed in"
           }
         },
         "security": [
