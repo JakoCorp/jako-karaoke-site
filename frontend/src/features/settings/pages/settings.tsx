@@ -1,5 +1,6 @@
 import { useAuthStore } from "@/store/auth";
 
+import { DownloadSettingsCard } from "../components/download-settings-card";
 import { ProfileCard } from "../components/profile-card";
 
 export function SettingsPage() {
@@ -16,6 +17,7 @@ export function SettingsPage() {
       </div>
       <div className="settings-content">
         <ProfileCard user={user} />
+        <DownloadSettingsCard />
       </div>
     </div>
   );

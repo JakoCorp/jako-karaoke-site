@@ -9,6 +9,7 @@ pub(crate) mod avatar;
 pub(crate) mod discord;
 pub(crate) mod middleware;
 pub(crate) mod session;
+pub(crate) mod settings;
 pub(crate) mod twitch;
 
 use axum::{
@@ -23,6 +24,7 @@ use cookie::Cookie;
 use api_types::{
     auth::{ClaimRequest, MeResponse, UpdateMeRequest},
     common::ErrorResponse,
+    settings::{DownloadSettings, UpdateUserSettingsRequest, UserSettingsResponse},
 };
 use db::{error::DbError, models::NewUser, queries};
 use tracing::warn;
@@ -64,6 +66,8 @@ const DEV_ADMIN_USER_ID: uuid::Uuid = uuid::Uuid::from_bytes([
         me,
         account::update_me,
         account::upload_avatar,
+        settings::get_settings,
+        settings::update_settings,
         logout,
         dev_login,
     ),
@@ -71,6 +75,9 @@ const DEV_ADMIN_USER_ID: uuid::Uuid = uuid::Uuid::from_bytes([
         ClaimRequest,
         MeResponse,
         UpdateMeRequest,
+        DownloadSettings,
+        UpdateUserSettingsRequest,
+        UserSettingsResponse,
         account::AvatarUpload,
         ErrorResponse,
     ))
@@ -91,6 +98,10 @@ pub fn router(dev_auth: bool) -> Router<AppState> {
             "/me/avatar",
             put(account::upload_avatar)
                 .layer(DefaultBodyLimit::max(avatar::MAX_AVATAR_BYTES + 64 * 1024)),
+        )
+        .route(
+            "/me/settings",
+            get(settings::get_settings).put(settings::update_settings),
         )
         .route("/logout", post(logout));
     if dev_auth {

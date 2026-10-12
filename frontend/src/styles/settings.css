@@ -16,6 +16,56 @@
   background: var(--color-surface);
 }
 
+@utility settings-section {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 2rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  background: var(--color-surface);
+}
+
+@utility settings-section-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+@utility settings-token-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+@utility settings-token-btn {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.375rem;
+  background: var(--color-subtle);
+  color: var(--color-fg);
+  font-family: monospace;
+  font-size: 0.8125rem;
+  cursor: pointer;
+
+  &:hover {
+    opacity: 0.85;
+  }
+}
+
+@utility settings-preview {
+  overflow-wrap: anywhere;
+  font-family: monospace;
+  font-size: 0.8125rem;
+  color: var(--color-fg-muted);
+}
+
+@utility settings-checkbox-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
 @utility settings-card-body {
   display: flex;
   min-width: 0;

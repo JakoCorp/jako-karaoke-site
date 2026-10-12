@@ -4276,6 +4276,94 @@
         ]
       }
     },
+    "/auth/me/settings": {
+      "get": {
+        "tags": [
+          "auth"
+        ],
+        "operationId": "get_settings",
+        "responses": {
+          "200": {
+            "description": "Current settings, defaults when never saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserSettingsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "auth"
+        ],
+        "operationId": "update_settings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserSettingsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Settings replaced",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserSettingsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filename template",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
     "/auth/pending": {
       "get": {
         "tags": [
@@ -5071,6 +5159,44 @@
         "properties": {
           "name": {
             "type": "string"
+          }
+        }
+      },
+      "DownloadSettings": {
+        "type": "object",
+        "description": "Preferences applied when downloading a performance to disk.",
+        "required": [
+          "filename_template",
+          "include_cover_art",
+          "include_lyrics",
+          "include_date",
+          "include_singers",
+          "include_original_artists"
+        ],
+        "properties": {
+          "filename_template": {
+            "type": "string",
+            "description": "Filename template without extension. Recognized tokens are `{title}`, `{singer}`,\n`{original_artist}`, `{song}`, `{date}`, `{stream_number}` and `{performance_number}`."
+          },
+          "include_cover_art": {
+            "type": "boolean",
+            "description": "Embed the song cover art in the file tags when one is hosted."
+          },
+          "include_date": {
+            "type": "boolean",
+            "description": "Embed the performance date in the file tags."
+          },
+          "include_lyrics": {
+            "type": "boolean",
+            "description": "Embed the lyrics in the file tags when they exist."
+          },
+          "include_original_artists": {
+            "type": "boolean",
+            "description": "Include the original artists of the songs in the artist tag."
+          },
+          "include_singers": {
+            "type": "boolean",
+            "description": "Include the singers in the artist tag."
           }
         }
       },
@@ -6320,6 +6446,19 @@
           }
         }
       },
+      "UpdateUserSettingsRequest": {
+        "type": "object",
+        "description": "Request body for `PUT /auth/me/settings`. Replaces all settings.",
+        "required": [
+          "download"
+        ],
+        "properties": {
+          "download": {
+            "$ref": "#/components/schemas/DownloadSettings",
+            "description": "Download preferences."
+          }
+        }
+      },
       "UpdateVideoKindRequest": {
         "type": "object",
         "description": "Request body for `PATCH /api/performances/{id}/video/{asset_id}`.",
@@ -6330,6 +6469,19 @@
           "kind": {
             "type": "string",
             "description": "Serialized [`VideoKind`] value to assign."
+          }
+        }
+      },
+      "UserSettingsResponse": {
+        "type": "object",
+        "description": "Response body for `GET /auth/me/settings` and `PUT /auth/me/settings`.",
+        "required": [
+          "download"
+        ],
+        "properties": {
+          "download": {
+            "$ref": "#/components/schemas/DownloadSettings",
+            "description": "Download preferences."
           }
         }
       },

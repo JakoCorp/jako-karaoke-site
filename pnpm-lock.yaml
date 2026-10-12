@@ -202,6 +202,9 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.104.1
         version: 5.104.1(react@19.3.0)
+      mp3tag.js:
+        specifier: ^3.17.0
+        version: 3.17.0
       openapi-fetch:
         specifier: ^0.17.0
         version: 0.17.0
@@ -1640,6 +1643,9 @@ packages:
   minimist@1.2.8:
     resolution: {integrity: sha512-2yyAR8qBkN3YuheJanUpWC5U3bb5osDywNB8RzDVlDwDHbocAJveqqj1u8+SVD7jkWT4yvsHCpWqqWqAxb0zCA==}
 
+  mp3tag.js@3.17.0:
+    resolution: {integrity: sha512-quLFKmaOcyz6gUd0lwWkTHLvu7Ktd2ytM4/N4qQh0B4Q/SHZ6M2dh6+3Y5PRP0chKMBpqYJWgVgsZ3P3Q8rC/w==}
+
   ms@2.1.3:
     resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
 
@@ -2999,6 +3005,8 @@ snapshots:
       brace-expansion: 2.1.7
 
   minimist@1.2.8: {}
+
+  mp3tag.js@3.17.0: {}
 
   ms@2.1.3: {}
 

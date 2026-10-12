@@ -11,6 +11,7 @@ pub mod lyrics;
 pub mod pagination;
 pub mod performances;
 pub mod playlists;
+pub mod settings;
 pub mod songs;
 pub mod tags;
 pub mod users;

@@ -95,7 +95,7 @@ export function CreatePlaylistDialog({ open, onOpenChange, onCreated }: Props) {
                 onChange={(e) => setDescription(e.target.value)}
               />
             </div>
-            <label className="playlist-create-visibility-label">
+            <label className="form-checkbox">
               <input
                 type="checkbox"
                 checked={isPublic}

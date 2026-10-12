@@ -26,6 +26,21 @@
   }
 }
 
+@utility form-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--color-fg-muted);
+  cursor: pointer;
+
+  & input[type="checkbox"] {
+    width: 1rem;
+    height: 1rem;
+    cursor: pointer;
+  }
+}
+
 @utility form-error {
   border-radius: 0.375rem;
   background-color: var(--color-error);
