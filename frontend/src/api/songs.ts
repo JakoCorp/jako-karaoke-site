@@ -1,3 +1,5 @@
+import { multipartSerializer } from "@/lib/multipart";
+
 import { api } from "./client";
 import type { components } from "./generated";
 import type { SearchPaginationParams } from "./types";
@@ -59,13 +61,7 @@ export const songsApi = {
         kind,
         credits: credits ?? null,
       } satisfies components["schemas"]["ImageUpload"],
-      bodySerializer: () => {
-        const form = new FormData();
-        form.append("file", file);
-        form.append("kind", kind);
-        if (credits) form.append("credits", credits);
-        return form;
-      },
+      bodySerializer: multipartSerializer({ file, kind, credits }),
     }),
 
   /** Updates the kind of an image linked to a song. */

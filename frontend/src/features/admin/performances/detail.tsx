@@ -1,17 +1,14 @@
-import { TrashIcon } from "@phosphor-icons/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRef, useState } from "react";
+import { useState } from "react";
 
 import {
   AUDIO_KINDS,
   PERFORMANCE_TAG_KINDS,
   VIDEO_KINDS,
   performancesApi,
-  type AudioInfo,
   type AudioKind,
   type PerformanceSummary,
   type PerformanceTagKind,
-  type VideoInfo,
   type VideoKind,
 } from "@/api/performances";
 import { tagsApi } from "@/api/tags";
@@ -23,26 +20,10 @@ import { tagKeys, useTags } from "@/hooks/api/tags";
 import { formatDate, formatStreamTime, parseStreamTime } from "@/lib/format";
 import { applyAll } from "@/lib/staging";
 
+import { MediaEditSection, type StagingMediaItem } from "../components/media-edit-section";
+import { MediaList } from "../components/media-list";
 import { ItemPicker, TagPicker, type TagAssignment } from "../components/pickers";
 import { resolveTagAssignments } from "../components/tag-utils";
-
-type StagingAudioItem =
-  | { type: "file"; file: File; kind: AudioKind }
-  | { type: "link"; externalUrl: string; kind: AudioKind; title?: string };
-
-type StagingVideoItem =
-  | { type: "file"; file: File; kind: VideoKind }
-  | { type: "link"; externalUrl: string; kind: VideoKind; title?: string };
-
-function assetLabel(asset: {
-  title?: string | null;
-  storage_url?: string | null;
-  external_url?: string | null;
-}): string {
-  if (asset.title) return asset.title;
-  if (asset.storage_url) return asset.storage_url.split("/").pop() ?? "";
-  return asset.external_url ?? "";
-}
 
 export function PerformanceDetailPanel({
   performance,
@@ -63,24 +44,17 @@ export function PerformanceDetailPanel({
   const [editSingerIds, setEditSingerIds] = useState<string[]>([]);
   const [editTags, setEditTags] = useState<TagAssignment<PerformanceTagKind>[]>([]);
   const [editLyrics, setEditLyrics] = useState("");
-  const [stagingAddAudio, setStagingAddAudio] = useState<StagingAudioItem[]>([]);
+  const [stagingAddAudio, setStagingAddAudio] = useState<StagingMediaItem<AudioKind>[]>([]);
   const [pendingRemoveAudioIds, setPendingRemoveAudioIds] = useState<Set<string>>(new Set());
   const [pendingAudioKindChanges, setPendingAudioKindChanges] = useState<Map<string, AudioKind>>(
     new Map(),
   );
-  const [stagingAddVideo, setStagingAddVideo] = useState<StagingVideoItem[]>([]);
+  const [stagingAddVideo, setStagingAddVideo] = useState<StagingMediaItem<VideoKind>[]>([]);
   const [pendingRemoveVideoIds, setPendingRemoveVideoIds] = useState<Set<string>>(new Set());
   const [pendingVideoKindChanges, setPendingVideoKindChanges] = useState<Map<string, VideoKind>>(
     new Map(),
   );
-  const [audioLinkUrl, setAudioLinkUrl] = useState("");
-  const [audioLinkTitle, setAudioLinkTitle] = useState("");
-  const [videoLinkUrl, setVideoLinkUrl] = useState("");
-  const [videoLinkTitle, setVideoLinkTitle] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
-
-  const audioInputRef = useRef<HTMLInputElement>(null);
-  const videoInputRef = useRef<HTMLInputElement>(null);
 
   const queryClient = useQueryClient();
   const isFormOpen = isCreating || isEditing;
@@ -200,10 +174,6 @@ export function PerformanceDetailPanel({
       setPendingRemoveVideoIds(new Set());
       setPendingAudioKindChanges(new Map());
       setPendingVideoKindChanges(new Map());
-      setAudioLinkUrl("");
-      setAudioLinkTitle("");
-      setVideoLinkUrl("");
-      setVideoLinkTitle("");
       setIsEditing(false);
       setFormError(null);
     },
@@ -259,10 +229,6 @@ export function PerformanceDetailPanel({
     setPendingRemoveVideoIds(new Set());
     setPendingAudioKindChanges(new Map());
     setPendingVideoKindChanges(new Map());
-    setAudioLinkUrl("");
-    setAudioLinkTitle("");
-    setVideoLinkUrl("");
-    setVideoLinkTitle("");
     setIsEditing(false);
     setFormError(null);
   }
@@ -305,13 +271,48 @@ export function PerformanceDetailPanel({
     );
   }
 
+  const existingAudio = isEditing ? (performanceDetail?.audio ?? []) : [];
+  const existingVideo = isEditing ? (performanceDetail?.video ?? []) : [];
+
+  const hasPrimaryAudio =
+    existingAudio
+      .filter((audio) => !pendingRemoveAudioIds.has(audio.asset_id))
+      .some((audio) => (pendingAudioKindChanges.get(audio.asset_id) ?? audio.kind) === "primary") ||
+    stagingAddAudio.some((item) => item.kind === "primary");
+  const defaultAudioKind: AudioKind = hasPrimaryAudio ? "misc" : "primary";
+
+  function changeExistingAudioKind(id: string, kind: AudioKind) {
+    setPendingAudioKindChanges((previous) => {
+      const next = new Map(previous);
+      if (kind === "primary") {
+        for (const audio of existingAudio) {
+          if (audio.asset_id !== id) next.set(audio.asset_id, "misc");
+        }
+      }
+      return next.set(id, kind);
+    });
+    if (kind === "primary") {
+      setStagingAddAudio((previous) =>
+        previous.map((item) => (item.kind === "primary" ? { ...item, kind: "misc" } : item)),
+      );
+    }
+  }
+
+  function changeStagedAudioKind(index: number, kind: AudioKind) {
+    setStagingAddAudio((previous) =>
+      previous.map((item, i) => {
+        if (i === index) return { ...item, kind };
+        if (kind === "primary" && item.kind === "primary") return { ...item, kind: "misc" };
+        return item;
+      }),
+    );
+  }
+
   if (isFormOpen) {
     const isPending = isCreating ? createMutation.isPending : updateMutation.isPending;
     const displayTitle = isCreating
       ? "New performance"
       : (performance.title ?? formatDate(performance.performance_date));
-    const existingAudio = isEditing ? (performanceDetail?.audio ?? []) : [];
-    const existingVideo = isEditing ? (performanceDetail?.video ?? []) : [];
     return (
       <>
         <div className="admin-panel-header">
@@ -469,336 +470,69 @@ export function PerformanceDetailPanel({
               />
             </div>
           )}
-          <div className="form-field">
-            <div className="admin-link-card-header">
-              <span className="form-label">Audio</span>
-              <div className="admin-link-card-actions">
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => {
-                    audioInputRef.current?.click();
-                  }}
-                >
-                  Upload file
-                </button>
-              </div>
-            </div>
-            <div className="admin-link-input-row">
-              <input
-                type="url"
-                className="form-input"
-                placeholder="External audio URL"
-                value={audioLinkUrl}
-                onChange={(event) => {
-                  setAudioLinkUrl(event.target.value);
-                }}
-              />
-              <input
-                type="text"
-                className="form-input"
-                placeholder="Title (optional)"
-                value={audioLinkTitle}
-                onChange={(event) => {
-                  setAudioLinkTitle(event.target.value);
-                }}
-              />
-              <button
-                type="button"
-                className="btn btn-secondary"
-                disabled={audioLinkUrl.trim() === ""}
-                onClick={() => {
-                  const url = audioLinkUrl.trim();
-                  if (!url) return;
-                  const hasPrimary =
-                    existingAudio
-                      .filter((a) => !pendingRemoveAudioIds.has(a.asset_id))
-                      .some(
-                        (a) => (pendingAudioKindChanges.get(a.asset_id) ?? a.kind) === "primary",
-                      ) || stagingAddAudio.some((a) => a.kind === "primary");
-                  setStagingAddAudio((prev) => [
-                    ...prev,
-                    {
-                      type: "link",
-                      externalUrl: url,
-                      kind: hasPrimary ? "misc" : "primary",
-                      title: audioLinkTitle.trim() || undefined,
-                    },
-                  ]);
-                  setAudioLinkUrl("");
-                  setAudioLinkTitle("");
-                }}
-              >
-                Add link
-              </button>
-            </div>
-            <input
-              ref={audioInputRef}
-              type="file"
-              accept="audio/*,video/mp4"
-              className="sr-only"
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-                if (file) {
-                  const hasPrimary =
-                    existingAudio
-                      .filter((a) => !pendingRemoveAudioIds.has(a.asset_id))
-                      .some(
-                        (a) => (pendingAudioKindChanges.get(a.asset_id) ?? a.kind) === "primary",
-                      ) || stagingAddAudio.some((a) => a.kind === "primary");
-                  setStagingAddAudio((prev) => [
-                    ...prev,
-                    { type: "file", file, kind: hasPrimary ? "misc" : "primary" },
-                  ]);
-                }
-                event.target.value = "";
-              }}
-            />
-            {existingAudio
-              .filter((a) => !pendingRemoveAudioIds.has(a.asset_id))
-              .map((audio: AudioInfo) => (
-                <div key={audio.asset_id} className="admin-audio-item">
-                  <select
-                    className="admin-kind-select"
-                    value={pendingAudioKindChanges.get(audio.asset_id) ?? audio.kind}
-                    onChange={(event) => {
-                      const newKind = AUDIO_KINDS.find((k) => k === event.target.value);
-                      if (!newKind) return;
-                      setPendingAudioKindChanges((prev) => {
-                        const next = new Map(prev);
-                        if (newKind === "primary") {
-                          for (const a of existingAudio) {
-                            if (a.asset_id !== audio.asset_id) next.set(a.asset_id, "misc");
-                          }
-                          setStagingAddAudio((prevStaging) =>
-                            prevStaging.map((item) =>
-                              item.kind === "primary" ? { ...item, kind: "misc" } : item,
-                            ),
-                          );
-                        }
-                        next.set(audio.asset_id, newKind);
-                        return next;
-                      });
-                    }}
-                  >
-                    {AUDIO_KINDS.map((k) => (
-                      <option key={k} value={k}>
-                        {k}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="admin-asset-info">
-                    <span className="admin-link-url">{assetLabel(audio)}</span>
-                    {audio.title && audio.external_url && (
-                      <span className="admin-link-label">{audio.external_url}</span>
-                    )}
-                  </span>
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={() => {
-                      setPendingRemoveAudioIds((prev) => new Set([...prev, audio.asset_id]));
-                    }}
-                  >
-                    <TrashIcon weight="bold" />
-                  </button>
-                </div>
-              ))}
-            {stagingAddAudio.map((item, index) => (
-              <div key={index} className="admin-audio-item">
-                <select
-                  className="admin-kind-select"
-                  value={item.kind}
-                  onChange={(event) => {
-                    const newKind = AUDIO_KINDS.find((k) => k === event.target.value);
-                    if (!newKind) return;
-                    setStagingAddAudio((prev) =>
-                      prev.map((s, i) => {
-                        if (i === index) return { ...s, kind: newKind };
-                        if (newKind === "primary" && s.kind === "primary")
-                          return { ...s, kind: "misc" };
-                        return s;
-                      }),
-                    );
-                  }}
-                >
-                  {AUDIO_KINDS.map((k) => (
-                    <option key={k} value={k}>
-                      {k}
-                    </option>
-                  ))}
-                </select>
-                <span className="admin-asset-info">
-                  {item.type === "file" ? (
-                    <span className="admin-link-url">{item.file.name}</span>
-                  ) : (
-                    <>
-                      <span className="admin-link-url">{item.title ?? item.externalUrl}</span>
-                      {item.title && <span className="admin-link-label">{item.externalUrl}</span>}
-                    </>
-                  )}
-                </span>
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => {
-                    setStagingAddAudio((prev) => prev.filter((_, i) => i !== index));
-                  }}
-                >
-                  <TrashIcon weight="bold" />
-                </button>
-              </div>
-            ))}
-          </div>
-          <div className="form-field">
-            <div className="admin-link-card-header">
-              <span className="form-label">Video</span>
-              <div className="admin-link-card-actions">
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => {
-                    videoInputRef.current?.click();
-                  }}
-                >
-                  Upload file
-                </button>
-              </div>
-            </div>
-            <div className="admin-link-input-row">
-              <input
-                type="url"
-                className="form-input"
-                placeholder="External video URL"
-                value={videoLinkUrl}
-                onChange={(event) => {
-                  setVideoLinkUrl(event.target.value);
-                }}
-              />
-              <input
-                type="text"
-                className="form-input"
-                placeholder="Title (optional)"
-                value={videoLinkTitle}
-                onChange={(event) => {
-                  setVideoLinkTitle(event.target.value);
-                }}
-              />
-              <button
-                type="button"
-                className="btn btn-secondary"
-                disabled={videoLinkUrl.trim() === ""}
-                onClick={() => {
-                  const url = videoLinkUrl.trim();
-                  if (!url) return;
-                  setStagingAddVideo((prev) => [
-                    ...prev,
-                    {
-                      type: "link",
-                      externalUrl: url,
-                      kind: "misc",
-                      title: videoLinkTitle.trim() || undefined,
-                    },
-                  ]);
-                  setVideoLinkUrl("");
-                  setVideoLinkTitle("");
-                }}
-              >
-                Add link
-              </button>
-            </div>
-            <input
-              ref={videoInputRef}
-              type="file"
-              accept="video/*"
-              className="sr-only"
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-                if (file) {
-                  setStagingAddVideo((prev) => [...prev, { type: "file", file, kind: "misc" }]);
-                }
-                event.target.value = "";
-              }}
-            />
-            {existingVideo
-              .filter((v) => !pendingRemoveVideoIds.has(v.asset_id))
-              .map((video: VideoInfo) => (
-                <div key={video.asset_id} className="admin-audio-item">
-                  <select
-                    className="admin-kind-select"
-                    value={pendingVideoKindChanges.get(video.asset_id) ?? video.kind}
-                    onChange={(event) => {
-                      const newKind = VIDEO_KINDS.find((k) => k === event.target.value);
-                      if (!newKind) return;
-                      setPendingVideoKindChanges((prev) =>
-                        new Map(prev).set(video.asset_id, newKind),
-                      );
-                    }}
-                  >
-                    {VIDEO_KINDS.map((k) => (
-                      <option key={k} value={k}>
-                        {k}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="admin-asset-info">
-                    <span className="admin-link-url">{assetLabel(video)}</span>
-                    {video.title && video.external_url && (
-                      <span className="admin-link-label">{video.external_url}</span>
-                    )}
-                  </span>
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={() => {
-                      setPendingRemoveVideoIds((prev) => new Set([...prev, video.asset_id]));
-                    }}
-                  >
-                    <TrashIcon weight="bold" />
-                  </button>
-                </div>
-              ))}
-            {stagingAddVideo.map((item, index) => (
-              <div key={index} className="admin-audio-item">
-                <select
-                  className="admin-kind-select"
-                  value={item.kind}
-                  onChange={(event) => {
-                    const newKind = VIDEO_KINDS.find((k) => k === event.target.value);
-                    if (!newKind) return;
-                    setStagingAddVideo((prev) =>
-                      prev.map((s, i) => (i === index ? { ...s, kind: newKind } : s)),
-                    );
-                  }}
-                >
-                  {VIDEO_KINDS.map((k) => (
-                    <option key={k} value={k}>
-                      {k}
-                    </option>
-                  ))}
-                </select>
-                <span className="admin-asset-info">
-                  {item.type === "file" ? (
-                    <span className="admin-link-url">{item.file.name}</span>
-                  ) : (
-                    <>
-                      <span className="admin-link-url">{item.title ?? item.externalUrl}</span>
-                      {item.title && <span className="admin-link-label">{item.externalUrl}</span>}
-                    </>
-                  )}
-                </span>
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => {
-                    setStagingAddVideo((prev) => prev.filter((_, i) => i !== index));
-                  }}
-                >
-                  <TrashIcon weight="bold" />
-                </button>
-              </div>
-            ))}
-          </div>
+          <MediaEditSection
+            label="Audio"
+            urlPlaceholder="External audio URL"
+            accept="audio/*,video/mp4"
+            existingItems={existingAudio}
+            pendingRemoveIds={pendingRemoveAudioIds}
+            pendingKindChanges={pendingAudioKindChanges}
+            stagingItems={stagingAddAudio}
+            kinds={AUDIO_KINDS}
+            onAddFile={(file) => {
+              setStagingAddAudio((prev) => [
+                ...prev,
+                { type: "file", file, kind: defaultAudioKind },
+              ]);
+            }}
+            onAddLink={({ externalUrl, title }) => {
+              setStagingAddAudio((prev) => [
+                ...prev,
+                { type: "link", externalUrl, title, kind: defaultAudioKind },
+              ]);
+            }}
+            onRemoveExisting={(id) => {
+              setPendingRemoveAudioIds((prev) => new Set([...prev, id]));
+            }}
+            onChangeExistingKind={changeExistingAudioKind}
+            onRemoveStaged={(index) => {
+              setStagingAddAudio((prev) => prev.filter((_, i) => i !== index));
+            }}
+            onChangeStagedKind={changeStagedAudioKind}
+          />
+          <MediaEditSection
+            label="Video"
+            urlPlaceholder="External video URL"
+            accept="video/*"
+            existingItems={existingVideo}
+            pendingRemoveIds={pendingRemoveVideoIds}
+            pendingKindChanges={pendingVideoKindChanges}
+            stagingItems={stagingAddVideo}
+            kinds={VIDEO_KINDS}
+            onAddFile={(file) => {
+              setStagingAddVideo((prev) => [...prev, { type: "file", file, kind: "misc" }]);
+            }}
+            onAddLink={({ externalUrl, title }) => {
+              setStagingAddVideo((prev) => [
+                ...prev,
+                { type: "link", externalUrl, title, kind: "misc" },
+              ]);
+            }}
+            onRemoveExisting={(id) => {
+              setPendingRemoveVideoIds((prev) => new Set([...prev, id]));
+            }}
+            onChangeExistingKind={(id, kind) => {
+              setPendingVideoKindChanges((prev) => new Map(prev).set(id, kind));
+            }}
+            onRemoveStaged={(index) => {
+              setStagingAddVideo((prev) => prev.filter((_, i) => i !== index));
+            }}
+            onChangeStagedKind={(index, kind) => {
+              setStagingAddVideo((prev) =>
+                prev.map((item, i) => (i === index ? { ...item, kind } : item)),
+              );
+            }}
+          />
           {formError !== null && <p className="form-error">{formError}</p>}
         </div>
       </>
@@ -894,42 +628,8 @@ export function PerformanceDetailPanel({
               </div>
             </div>
           )}
-          {performanceDetail.audio.length > 0 && (
-            <div className="admin-detail-section">
-              <span className="admin-detail-label">Audio</span>
-              {performanceDetail.audio.map((audio: AudioInfo) => (
-                <div key={audio.asset_id} className="admin-audio-item">
-                  <span className="admin-pill-kind">{audio.kind}</span>
-                  <a
-                    href={audio.storage_url ?? audio.external_url ?? undefined}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="admin-link-url"
-                  >
-                    {assetLabel(audio)}
-                  </a>
-                </div>
-              ))}
-            </div>
-          )}
-          {performanceDetail.video.length > 0 && (
-            <div className="admin-detail-section">
-              <span className="admin-detail-label">Video</span>
-              {performanceDetail.video.map((video: VideoInfo) => (
-                <div key={video.asset_id} className="admin-audio-item">
-                  <span className="admin-pill-kind">{video.kind}</span>
-                  <a
-                    href={video.storage_url ?? video.external_url ?? undefined}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="admin-link-url"
-                  >
-                    {assetLabel(video)}
-                  </a>
-                </div>
-              ))}
-            </div>
-          )}
+          <MediaList label="Audio" items={performanceDetail.audio} />
+          <MediaList label="Video" items={performanceDetail.video} />
         </div>
       )}
     </>

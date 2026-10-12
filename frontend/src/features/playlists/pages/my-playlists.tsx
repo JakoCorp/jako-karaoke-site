@@ -64,7 +64,7 @@ export function MyPlaylistsPage() {
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   if (!user) {
-    return <div className="playlist-empty">Sign in to see your playlists.</div>;
+    return <div className="page-empty">Sign in to see your playlists.</div>;
   }
 
   const total = data?.pages[0]?.total ?? 0;
@@ -98,7 +98,7 @@ export function MyPlaylistsPage() {
         )}
       </div>
       {isLoading ? (
-        <div className="playlist-empty">Loading…</div>
+        <div className="page-empty">Loading…</div>
       ) : (
         <PlaylistGrid
           playlists={items}
@@ -108,7 +108,7 @@ export function MyPlaylistsPage() {
         />
       )}
       <div ref={sentinelRef} />
-      {isFetchingNextPage && <div className="playlist-empty">Loading more…</div>}
+      {isFetchingNextPage && <div className="page-empty">Loading more…</div>}
       <CreatePlaylistDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}

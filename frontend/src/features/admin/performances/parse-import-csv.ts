@@ -88,8 +88,8 @@ function isValidDate(s: string): boolean {
  * Parses a performance import CSV into structured rows.
  *
  * Expected columns: performance_date, stream_number, performance_number, stream_time,
- * duration, title, songs, singers, tags. Multi-value fields (songs, singers, tags) are
- * pipe-delimited. Tags use `name:kind` format. Row errors are collected rather than thrown,
+ * duration, title, songs, singers, tags. Fields with multiple values (songs, singers, tags) are
+ * delimited by pipes. Tags use `name:kind` format. Row errors are collected rather than thrown,
  * so all failures across the file are returned together in `errors`.
  */
 export function parseImportCsv(text: string): ParseImportCsvResult {

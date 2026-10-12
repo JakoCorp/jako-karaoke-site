@@ -6,7 +6,7 @@ export interface VideoEmbedInfo {
   autoplayEmbedUrl: string | null;
   /** Static preview image URL. Null when unavailable without an API call. */
   thumbnailUrl: string | null;
-  /** Human-readable platform label, e.g. "YouTube" or "Twitch". */
+  /** Readable platform label, e.g. "YouTube" or "Twitch". */
   platform: string | null;
 }
 

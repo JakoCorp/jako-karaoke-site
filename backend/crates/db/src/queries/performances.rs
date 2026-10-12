@@ -33,7 +33,7 @@ pub async fn get_by_id(
 }
 
 /// Returns the total number of performances.
-pub async fn count(executor: impl Executor<'_, Database = MySql>) -> Result<u64> {
+async fn count(executor: impl Executor<'_, Database = MySql>) -> Result<u64> {
     sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM performances")
         .fetch_one(executor)
         .await
@@ -300,19 +300,6 @@ pub async fn delete(executor: impl Executor<'_, Database = MySql>, id: Uuid) -> 
         .execute(executor)
         .await
         .map(|r| r.rows_affected() > 0)
-        .map_err(DbError::from)
-}
-
-/// Atomically increments the play count for a performance.
-pub async fn increment_play_count(
-    executor: impl Executor<'_, Database = MySql>,
-    id: Uuid,
-) -> Result<()> {
-    sqlx::query("UPDATE performances SET play_count = play_count + 1 WHERE id = ?")
-        .bind(id)
-        .execute(executor)
-        .await
-        .map(|_| ())
         .map_err(DbError::from)
 }
 

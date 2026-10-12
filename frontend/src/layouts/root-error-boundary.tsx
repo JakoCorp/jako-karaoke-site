@@ -1,4 +1,4 @@
-import { NotFoundPage } from "@/features/not-found/page";
+import { NotFoundPage } from "@/features/not-found";
 
 import { RootLayout } from "./root-layout";
 

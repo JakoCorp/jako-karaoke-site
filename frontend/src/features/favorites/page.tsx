@@ -12,13 +12,13 @@ export function FavoritesPage() {
   const [activeTab, setActiveTab] = useState<FavoritesTab>("playlist");
 
   if (!user) {
-    return <div className="playlist-empty">Sign in to see your favorites.</div>;
+    return <div className="page-empty">Sign in to see your favorites.</div>;
   }
 
   return (
     <div>
-      <div className="playlist-detail-header">
-        <div className="playlist-detail-title">Favorites</div>
+      <div className="page-header">
+        <div className="page-title">Favorites</div>
       </div>
       <div className="favorites-tabs">
         {TABS.map((tab) => (

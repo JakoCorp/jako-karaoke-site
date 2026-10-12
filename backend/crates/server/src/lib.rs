@@ -1,3 +1,4 @@
+pub(crate) mod assets;
 pub(crate) mod auth;
 pub mod capabilities;
 pub mod config;

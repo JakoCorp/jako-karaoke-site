@@ -1,4 +1,5 @@
 import type { ArtistSummary } from "@/api/artists";
+import { resolveAssetUrl } from "@/lib/asset-url";
 
 interface ArtistCardProps {
   artist: ArtistSummary;
@@ -11,13 +12,12 @@ export function ArtistCard({ artist }: ArtistCardProps) {
   return (
     <div className="artist-card">
       {avatar ? (
-        <img
-          className="artist-avatar"
-          src={avatar.storage_url ?? avatar.external_url ?? undefined}
-          alt={artist.name}
-        />
+        <img className="avatar-md avatar" src={resolveAssetUrl(avatar)} alt={artist.name} />
       ) : (
-        <div className="artist-avatar-placeholder" aria-hidden="true">
+        <div
+          className="avatar-placeholder avatar-md avatar artist-avatar-initial"
+          aria-hidden="true"
+        >
           {initial}
         </div>
       )}

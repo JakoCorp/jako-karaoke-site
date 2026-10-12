@@ -1,5 +1,6 @@
 import type { SongResponse } from "@/api/songs";
 import { FilteredPerformanceList } from "@/features/performances";
+import { resolveAssetUrl } from "@/lib/asset-url";
 
 interface Props {
   song: SongResponse;
@@ -8,7 +9,7 @@ interface Props {
 
 export function SongDetailView({ song, lyricsContent }: Props) {
   const coverImg = song.images.find((i) => i.kind === "cover_art");
-  const coverImage = coverImg?.storage_url ?? coverImg?.external_url ?? undefined;
+  const coverImage = resolveAssetUrl(coverImg);
   const initial = song.title.trimStart()[0]?.toUpperCase() ?? "?";
   const artistNames = song.artists.map((a) => a.name).join(", ");
 

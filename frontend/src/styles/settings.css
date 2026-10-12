@@ -74,22 +74,6 @@
   }
 }
 
-@utility settings-avatar {
-  display: block;
-  width: 6rem;
-  height: 6rem;
-  border-radius: 9999px;
-  object-fit: cover;
-}
-
-@utility settings-avatar-placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--color-subtle);
-  color: var(--color-fg-muted);
-}
-
 @utility settings-avatar-overlay {
   position: absolute;
   inset: 0;

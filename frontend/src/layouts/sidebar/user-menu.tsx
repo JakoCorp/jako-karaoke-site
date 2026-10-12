@@ -21,7 +21,7 @@ export function UserMenu() {
     <Popover.Root>
       <Popover.Trigger className="auth-trigger">
         {user.avatarUrl ? (
-          <img src={user.avatarUrl} alt="" className="auth-avatar" />
+          <img src={user.avatarUrl} alt="" className="avatar-sm avatar" />
         ) : (
           <UserIcon size={16} weight="fill" className="shrink-0" />
         )}

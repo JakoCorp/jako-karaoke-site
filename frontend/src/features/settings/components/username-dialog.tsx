@@ -21,8 +21,10 @@ function UsernameForm({ user, onDone }: { user: AuthUser; onDone: () => void }) 
   const [username, setUsername] = useState(user.username);
   const [error, setError] = useState<string | null>(null);
 
+  const [openedAt] = useState(() => Date.now());
+
   const changeableAt =
-    user.usernameChangeableAt !== null && new Date(user.usernameChangeableAt) > new Date()
+    user.usernameChangeableAt !== null && new Date(user.usernameChangeableAt).getTime() > openedAt
       ? user.usernameChangeableAt
       : null;
   const locked = changeableAt !== null;

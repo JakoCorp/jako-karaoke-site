@@ -53,7 +53,7 @@ pub async fn performance_count(
 }
 
 /// Returns the total number of artists.
-pub async fn count(executor: impl Executor<'_, Database = MySql>) -> Result<u64> {
+async fn count(executor: impl Executor<'_, Database = MySql>) -> Result<u64> {
     sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM artists")
         .fetch_one(executor)
         .await

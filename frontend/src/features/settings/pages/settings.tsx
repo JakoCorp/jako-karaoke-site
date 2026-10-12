@@ -6,13 +6,13 @@ export function SettingsPage() {
   const user = useAuthStore((state) => state.user);
 
   if (!user) {
-    return <div className="playlist-empty">Sign in to manage your settings.</div>;
+    return <div className="page-empty">Sign in to manage your settings.</div>;
   }
 
   return (
     <div>
-      <div className="playlist-detail-header">
-        <div className="playlist-detail-title">Settings</div>
+      <div className="page-header">
+        <div className="page-title">Settings</div>
       </div>
       <div className="settings-content">
         <ProfileCard user={user} />

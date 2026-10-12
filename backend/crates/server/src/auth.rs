@@ -55,6 +55,10 @@ const DEV_ADMIN_USER_ID: uuid::Uuid = uuid::Uuid::from_bytes([
 #[derive(utoipa::OpenApi)]
 #[openapi(
     paths(
+        twitch::initiate,
+        twitch::callback,
+        discord::initiate,
+        discord::callback,
         pending_check,
         claim,
         me,
@@ -62,10 +66,6 @@ const DEV_ADMIN_USER_ID: uuid::Uuid = uuid::Uuid::from_bytes([
         account::upload_avatar,
         logout,
         dev_login,
-        twitch::initiate,
-        twitch::callback,
-        discord::initiate,
-        discord::callback,
     ),
     components(schemas(
         ClaimRequest,
@@ -80,12 +80,12 @@ pub(crate) struct AuthApi;
 /// Builds the `/auth` subrouter.
 pub fn router(dev_auth: bool) -> Router<AppState> {
     let router = Router::new()
-        .route("/pending", get(pending_check))
-        .route("/claim", post(claim))
         .route("/twitch", get(twitch::initiate))
         .route("/twitch/callback", get(twitch::callback))
         .route("/discord", get(discord::initiate))
         .route("/discord/callback", get(discord::callback))
+        .route("/pending", get(pending_check))
+        .route("/claim", post(claim))
         .route("/me", get(me).patch(account::update_me))
         .route(
             "/me/avatar",

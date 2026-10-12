@@ -122,7 +122,7 @@ CREATE TABLE IF NOT EXISTS artist_links (
     INDEX (artist_id)
 ) ENGINE = InnoDB;
 
--- Artist <-> Asset/Image (M2M)
+-- Artist <-> Asset (M2M)
 -- kind denotes the semantic role of the image (e.g. "avatar").
 CREATE TABLE IF NOT EXISTS artist_images (
     artist_id BINARY(16) NOT NULL REFERENCES artists (id) ON DELETE CASCADE,
@@ -143,7 +143,7 @@ CREATE TABLE IF NOT EXISTS songs (
     UNIQUE INDEX (title)
 ) ENGINE = InnoDB;
 
--- Song <-> Asset/Image (M2M)
+-- Song <-> Asset (M2M)
 -- kind denotes the semantic role of the image (e.g. "cover_art").
 CREATE TABLE IF NOT EXISTS song_images (
     song_id BINARY(16) NOT NULL REFERENCES songs (id) ON DELETE CASCADE,

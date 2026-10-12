@@ -10,13 +10,13 @@ export function LocalPage() {
 
   return (
     <div>
-      <div className="playlist-detail-header">
-        <div className="playlist-detail-title">Local</div>
+      <div className="page-header">
+        <div className="page-title">Local</div>
         <div className="playlist-detail-sub">Performances saved for offline playback.</div>
       </div>
       <StorageHeader />
       {entries.length === 0 ? (
-        <div className="playlist-empty">
+        <div className="page-empty">
           Nothing saved yet. Use "Save offline" on a performance to add it here.
         </div>
       ) : (

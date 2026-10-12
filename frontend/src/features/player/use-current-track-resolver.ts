@@ -5,6 +5,7 @@ import type { AudioInfo } from "@/api/performances";
 import { performancesApi } from "@/api/performances";
 import { openOfflineAudio, releaseOfflineAudio } from "@/features/local";
 import { performanceKeys } from "@/hooks/api/performances";
+import { resolveAssetUrl } from "@/lib/asset-url";
 import { queryClient } from "@/lib/query-client";
 import { extractYouTubeVideoId } from "@/lib/video-embed";
 import { selectCurrent, usePlayerStore } from "@/store/player";
@@ -60,7 +61,7 @@ export function useCurrentTrackResolver(): void {
           const audioUrl = offlineUrl ?? resolveAudioUrl(chosenAudio);
           if (preferredAudioAssetId) setPreferredAudioAssetId(null);
           const coverImg = detail.songs[0]?.images.find((img) => img.kind === "cover_art");
-          const thumbnailUrl = coverImg?.storage_url ?? coverImg?.external_url ?? null;
+          const thumbnailUrl = resolveAssetUrl(coverImg) ?? null;
           setCurrentAudioUrl(audioUrl);
           setCurrentThumbnailUrl(thumbnailUrl);
         } catch {
@@ -84,7 +85,7 @@ export function useCurrentTrackResolver(): void {
   useEffect(() => {
     if (nextId === null) return;
     void queryClient.ensureQueryData(performanceDetailOptions(nextId)).catch(() => {
-      // Prefetch failure is non-fatal
+      // Prefetch failure is not fatal.
     });
   }, [nextId]);
 }
