@@ -94,6 +94,8 @@ export class NativeAudioEngine implements AudioEngine {
       this.audio.removeEventListener("timeupdate", this.timeUpdateHandler);
       this.timeUpdateHandler = null;
     }
-    this.audio.src = "";
+
+    this.audio.removeAttribute("src");
+    this.audio.load();
   }
 }

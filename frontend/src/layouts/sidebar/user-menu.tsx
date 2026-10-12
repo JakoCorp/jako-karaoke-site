@@ -3,6 +3,7 @@ import { UserIcon } from "@phosphor-icons/react";
 import { Link } from "react-router";
 
 import { authApi } from "@/api/auth";
+import { toast } from "@/lib/toast";
 import { useAuthStore } from "@/store/auth";
 
 export function UserMenu() {
@@ -11,7 +12,16 @@ export function UserMenu() {
   const hasCapability = useAuthStore((state) => state.hasCapability);
 
   async function handleLogout() {
-    await authApi.logout();
+    try {
+      const { response } = await authApi.logout();
+      if (!response.ok && response.status !== 401) {
+        toast.error("Could not sign out", { description: "Please try again." });
+        return;
+      }
+    } catch {
+      toast.error("Could not sign out", { description: "Check your connection and try again." });
+      return;
+    }
     setUser(null);
   }
 

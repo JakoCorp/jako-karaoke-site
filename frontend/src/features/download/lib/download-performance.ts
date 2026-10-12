@@ -11,6 +11,14 @@ import type { AudioTags } from "./tag-audio";
 const EMBEDDABLE_IMAGE_TYPES = new Set(["image/jpeg", "image/png"]);
 const OBJECT_URL_LIFETIME_MS = 60_000;
 
+/** Outcome of a completed download. */
+export interface DownloadResult {
+  filename: string;
+
+  /** True when tags were attempted but could not be written, so the file is untagged. */
+  tagsFailed: boolean;
+}
+
 function extensionOf(url: string): string {
   const name = new URL(url).pathname.split("/").pop() ?? "";
   const dot = name.lastIndexOf(".");
@@ -74,7 +82,7 @@ function saveBlob(blob: Blob, filename: string) {
 export async function downloadPerformance(
   performanceId: string,
   settings: DownloadSettings,
-): Promise<void> {
+): Promise<DownloadResult> {
   const { data: detail, error } = await performancesApi.get(performanceId);
   if (error || !detail) throw new Error("Failed to load performance.");
 
@@ -84,6 +92,7 @@ export async function downloadPerformance(
   const extension = extensionOf(audio.storage_url);
   const original = await fetchVerifiedAudio(audio);
   let bytes: BlobPart = original;
+  let tagsFailed = false;
 
   if (isTaggable(extension)) {
     const values = performanceFilenameValues(detail);
@@ -102,6 +111,7 @@ export async function downloadPerformance(
       });
     } catch {
       bytes = original;
+      tagsFailed = true;
     }
   }
 
@@ -111,4 +121,5 @@ export async function downloadPerformance(
     extension,
   );
   saveBlob(new Blob([bytes]), filename);
+  return { filename, tagsFailed };
 }

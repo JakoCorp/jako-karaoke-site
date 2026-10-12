@@ -1,13 +1,12 @@
 import { DownloadSimpleIcon, TrashSimpleIcon } from "@phosphor-icons/react";
 
 import type { RowMenuItemDef } from "@/components/row-context-menu";
+import { errorMessage } from "@/lib/error-message";
+import { toast } from "@/lib/toast";
 import { useOfflineStore } from "@/store/offline";
 
+import { reportOfflineChange } from "./lib/report-offline-change";
 import { removeOffline, saveOffline } from "./lib/save-offline";
-
-function reportFailure(error: unknown) {
-  window.alert(error instanceof Error ? error.message : "Failed to save offline.");
-}
 
 interface OfflineMenuAction {
   isSaved: boolean;
@@ -23,8 +22,21 @@ export function useOfflineMenuAction(performanceId: string): OfflineMenuAction {
     isSaved,
     label: isSaved ? "Remove from offline" : "Save offline",
     toggle: () => {
-      const task = isSaved ? removeOffline(performanceId) : saveOffline(performanceId);
-      task.catch(reportFailure);
+      if (isSaved) {
+        void reportOfflineChange(removeOffline(performanceId), {
+          success: "Removed from offline",
+          failure: "Could not remove from offline",
+        });
+        return;
+      }
+      void toast.task(saveOffline(performanceId), {
+        loading: "Saving offline…",
+        success: () => ({ title: "Saved offline" }),
+        error: (error) => ({
+          title: "Could not save offline",
+          description: errorMessage(error, "Something went wrong."),
+        }),
+      });
     },
   };
 }

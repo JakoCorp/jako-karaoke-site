@@ -1,0 +1,127 @@
+@utility toast-viewport {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 110;
+  display: flex;
+  width: 22rem;
+  max-width: calc(100vw - 2rem);
+  flex-direction: column;
+  gap: 0.5rem;
+  pointer-events: none;
+
+  @media (max-width: 767px) {
+    top: 5rem;
+  }
+
+  body:has(.player-fullscreen) & {
+    top: 5rem;
+  }
+}
+
+@utility toast {
+  pointer-events: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  background-color: var(--color-surface);
+  color: var(--color-fg);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
+  transform: translateX(var(--toast-swipe-movement-x, 0));
+
+  &[data-swiping] {
+    transition: none;
+  }
+
+  &[data-starting-style],
+  &[data-ending-style] {
+    opacity: 0;
+    transform: translateX(1rem);
+  }
+
+  &[data-ending-style][data-swipe-direction="left"] {
+    transform: translateX(calc(var(--toast-swipe-movement-x) - 100%));
+  }
+
+  &[data-ending-style][data-swipe-direction="right"] {
+    transform: translateX(calc(var(--toast-swipe-movement-x) + 100%));
+  }
+
+  &[data-limited] {
+    display: none;
+  }
+
+  &[data-type="success"] .toast-icon {
+    color: var(--color-green);
+  }
+
+  &[data-type="error"] .toast-icon {
+    color: var(--color-error-fg);
+  }
+
+  &[data-type="warning"] .toast-icon {
+    color: var(--color-warning);
+  }
+
+  &[data-type="info"] .toast-icon,
+  &[data-type="loading"] .toast-icon {
+    color: var(--color-fg-muted);
+  }
+}
+
+@utility toast-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+}
+
+@utility toast-icon {
+  display: flex;
+  flex-shrink: 0;
+  padding-top: 0.0625rem;
+}
+
+@utility toast-body {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+@utility toast-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+@utility toast-description {
+  font-size: 0.8125rem;
+  color: var(--color-fg-muted);
+  overflow-wrap: anywhere;
+}
+
+@utility toast-close {
+  display: flex;
+  flex-shrink: 0;
+  cursor: pointer;
+  border: none;
+  background: none;
+  padding: 0.125rem;
+  line-height: 1;
+  color: var(--color-fg-muted);
+  transition: color 0.15s;
+
+  &:hover {
+    color: var(--color-fg);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+    border-radius: 0.25rem;
+  }
+}

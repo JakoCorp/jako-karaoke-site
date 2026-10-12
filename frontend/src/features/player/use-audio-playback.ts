@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { selectHasNext, usePlayerStore } from "@/store/player";
+import { toast } from "@/lib/toast";
+import { selectCurrent, selectHasNext, usePlayerStore } from "@/store/player";
 
 import { AdaptiveAudioEngine } from "./adaptive-audio-engine";
 import type { AudioEngine } from "./audio-engine";
+
+const PLAYBACK_ERROR_TOAST_ID = "playback-error";
 
 export interface PlaybackProgress {
   currentTime: number;
@@ -71,10 +74,16 @@ export function useAudioPlayback(): PlaybackProgress {
     });
 
     engine.onError(() => {
-      if (repeatMode === "one" || !hasNext) {
-        pause();
-      } else {
+      const track = selectCurrent(usePlayerStore.getState());
+      const canSkip = repeatMode !== "one" && hasNext;
+      toast.error("Couldn't play this track", {
+        id: PLAYBACK_ERROR_TOAST_ID,
+        description: track?.title ?? track?.songs[0]?.title,
+      });
+      if (canSkip) {
         next();
+      } else {
+        pause();
       }
     });
   }, [hasNext, next, pause, repeatMode, sleepTimerTrackEnd, clearSleepTimer]);
