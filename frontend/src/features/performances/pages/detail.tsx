@@ -7,7 +7,10 @@ import { PerformanceDetailView } from "../components/detail-view";
 export function PerformanceDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { data: performance, isLoading: perfLoading } = usePerformance(id!);
-  const { data: lyrics, isLoading: lyricsLoading } = usePerformanceLyrics(id!);
+  const { data: lyrics, isLoading: lyricsLoading } = usePerformanceLyrics(
+    id!,
+    performance?.has_lyrics === true,
+  );
 
   if (perfLoading) {
     return <div className="perf-detail-empty">Loading…</div>;

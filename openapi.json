@@ -4140,15 +4140,8 @@
               }
             }
           },
-          "401": {
-            "description": "Not authenticated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
+          "204": {
+            "description": "Not signed in"
           }
         },
         "security": [
@@ -5672,7 +5665,8 @@
           "singers",
           "tags",
           "audio",
-          "video"
+          "video",
+          "has_lyrics"
         ],
         "properties": {
           "audio": {
@@ -5690,6 +5684,10 @@
             "format": "int32",
             "description": "Duration in seconds.",
             "minimum": 0
+          },
+          "has_lyrics": {
+            "type": "boolean",
+            "description": "Whether `GET /api/performances/{id}/lyrics` has lyrics to return"
           },
           "id": {
             "type": "string",
@@ -6029,7 +6027,8 @@
           "artists",
           "tags",
           "images",
-          "performance_count"
+          "performance_count",
+          "has_lyrics"
         ],
         "properties": {
           "artists": {
@@ -6038,6 +6037,10 @@
               "$ref": "#/components/schemas/ArtistInfo"
             },
             "description": "Original artists credited for this song."
+          },
+          "has_lyrics": {
+            "type": "boolean",
+            "description": "Whether `GET /api/songs/{id}/lyrics` has lyrics to return."
           },
           "id": {
             "type": "string",

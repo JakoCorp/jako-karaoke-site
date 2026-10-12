@@ -232,6 +232,8 @@ async fn hydrate(
         queries::performance_videos::list_for_performance(pool, perf.id),
     )?;
 
+    let has_lyrics = perf.lyrics_id.is_some() || songs.iter().any(|s| s.lyrics_id.is_some());
+
     let song_ids: Vec<Uuid> = songs.iter().map(|s| s.id).collect();
     let (mut images_by_song, mut artists_by_song) = tokio::try_join!(
         queries::songs::get_images_batch(pool, &song_ids),
@@ -302,6 +304,7 @@ async fn hydrate(
         tags,
         audio,
         video,
+        has_lyrics,
     })
 }
 

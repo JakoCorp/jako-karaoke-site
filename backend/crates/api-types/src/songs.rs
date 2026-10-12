@@ -154,4 +154,6 @@ pub struct SongResponse {
     pub images: Vec<SongImageInfo>,
     /// Number of performances that reference this song.
     pub performance_count: u64,
+    /// Whether `GET /api/songs/{id}/lyrics` has lyrics to return.
+    pub has_lyrics: bool,
 }

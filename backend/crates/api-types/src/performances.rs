@@ -234,4 +234,6 @@ pub struct PerformanceResponse {
     pub audio: Vec<AudioInfo>,
     /// Video files attached to this performance.
     pub video: Vec<VideoInfo>,
+    /// Whether `GET /api/performances/{id}/lyrics` has lyrics to return
+    pub has_lyrics: bool,
 }

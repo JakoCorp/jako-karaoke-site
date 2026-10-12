@@ -12,6 +12,7 @@ import {
 } from "@/api/artists";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { artistKeys, useArtist } from "@/hooks/api/artists";
+import { failureMessage } from "@/lib/error-message";
 import { applyAll } from "@/lib/staging";
 
 import { ImageEditSection, type StagingImageItem } from "../components/image-edit-section";
@@ -94,8 +95,8 @@ export function ArtistDetailPanel({
       void queryClient.invalidateQueries({ queryKey: artistKeys.all() });
       onClose();
     },
-    onError: () => {
-      setFormError("Failed to create artist.");
+    onError: (error) => {
+      setFormError(failureMessage("Failed to create artist", error));
     },
   });
 
@@ -158,8 +159,8 @@ export function ArtistDetailPanel({
       setIsEditing(false);
       setFormError(null);
     },
-    onError: () => {
-      setFormError("Failed to update artist.");
+    onError: (error) => {
+      setFormError(failureMessage("Failed to update artist", error));
     },
   });
 
@@ -389,7 +390,11 @@ export function ArtistDetailPanel({
         }}
         variant="danger"
         isPending={deleteMutation.isPending}
-        error={deleteMutation.isError ? "Failed to delete artist." : null}
+        error={
+          deleteMutation.isError
+            ? failureMessage("Failed to delete artist", deleteMutation.error)
+            : null
+        }
       />
 
       {artistDetail && (

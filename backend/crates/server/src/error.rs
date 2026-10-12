@@ -28,7 +28,7 @@ impl From<db::error::DbError> for ApiError {
     fn from(e: db::error::DbError) -> Self {
         match e {
             db::error::DbError::NotFound => ApiError::NotFound,
-            db::error::DbError::Conflict => ApiError::Conflict("conflict".to_string()),
+            db::error::DbError::Conflict => ApiError::Conflict("already exists".to_string()),
             db::error::DbError::Sqlx(e) => ApiError::Internal(e.to_string()),
             db::error::DbError::Migrate(e) => ApiError::Internal(e.to_string()),
         }
