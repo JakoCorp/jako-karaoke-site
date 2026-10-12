@@ -17,6 +17,7 @@ import { useArtists } from "@/hooks/api/artists";
 import { performanceKeys, usePerformance } from "@/hooks/api/performances";
 import { useSongs } from "@/hooks/api/songs";
 import { tagKeys, useTags } from "@/hooks/api/tags";
+import { failureMessage } from "@/lib/error-message";
 import { formatDate, formatStreamTime, parseStreamTime } from "@/lib/format";
 import { applyAll } from "@/lib/staging";
 
@@ -109,8 +110,8 @@ export function PerformanceDetailPanel({
       void queryClient.invalidateQueries({ queryKey: tagKeys.all() });
       onClose();
     },
-    onError: () => {
-      setFormError("Failed to create performance.");
+    onError: (error) => {
+      setFormError(failureMessage("Failed to create performance", error));
     },
   });
 
@@ -177,8 +178,8 @@ export function PerformanceDetailPanel({
       setIsEditing(false);
       setFormError(null);
     },
-    onError: () => {
-      setFormError("Failed to update performance.");
+    onError: (error) => {
+      setFormError(failureMessage("Failed to update performance", error));
     },
   });
 
@@ -574,7 +575,11 @@ export function PerformanceDetailPanel({
         }}
         variant="danger"
         isPending={deleteMutation.isPending}
-        error={deleteMutation.isError ? "Failed to delete performance." : null}
+        error={
+          deleteMutation.isError
+            ? failureMessage("Failed to delete performance", deleteMutation.error)
+            : null
+        }
       />
 
       {performanceDetail && (

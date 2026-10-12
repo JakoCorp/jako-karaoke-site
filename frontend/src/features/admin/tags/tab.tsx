@@ -5,6 +5,7 @@ import { useState } from "react";
 import { tagsApi } from "@/api/tags";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { tagKeys, useTags } from "@/hooks/api/tags";
+import { failureMessage } from "@/lib/error-message";
 
 export function TagsAdminTab() {
   const [search, setSearch] = useState("");
@@ -28,8 +29,8 @@ export function TagsAdminTab() {
       setNewTagName("");
       setCreateError(null);
     },
-    onError: () => {
-      setCreateError("Failed to create tag.");
+    onError: (error) => {
+      setCreateError(failureMessage("Failed to create tag", error));
     },
   });
 
@@ -111,7 +112,11 @@ export function TagsAdminTab() {
         }}
         variant="danger"
         isPending={deleteMutation.isPending}
-        error={deleteMutation.isError ? "Failed to delete tag." : null}
+        error={
+          deleteMutation.isError
+            ? failureMessage("Failed to delete tag", deleteMutation.error)
+            : null
+        }
       />
 
       <Dialog.Root open={createOpen} onOpenChange={handleCreateOpenChange}>

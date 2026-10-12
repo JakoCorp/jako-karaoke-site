@@ -7,7 +7,7 @@ import { SongDetailView } from "../components/detail-view";
 export function SongDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { data: song, isLoading } = useSong(id!);
-  const { data: lyricsContent } = useSongLyrics(id!, !!song);
+  const { data: lyricsContent } = useSongLyrics(id!, song?.has_lyrics === true);
 
   if (isLoading) return <div className="perf-detail-empty">Loading…</div>;
   if (!song) return <div className="perf-detail-empty">Song not found.</div>;

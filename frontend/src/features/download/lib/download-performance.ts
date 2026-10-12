@@ -98,7 +98,7 @@ export async function downloadPerformance(
     const values = performanceFilenameValues(detail);
     const [cover, lyrics] = await Promise.all([
       settings.include_cover_art ? fetchCover(detail) : undefined,
-      settings.include_lyrics ? fetchLyrics(performanceId) : undefined,
+      settings.include_lyrics && detail.has_lyrics ? fetchLyrics(performanceId) : undefined,
     ]);
 
     try {

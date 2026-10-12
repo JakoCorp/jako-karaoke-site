@@ -14,6 +14,7 @@ import { ConfirmDialog } from "@/components/confirm-dialog";
 import { useArtists } from "@/hooks/api/artists";
 import { songKeys, useSong } from "@/hooks/api/songs";
 import { tagKeys, useTags } from "@/hooks/api/tags";
+import { failureMessage } from "@/lib/error-message";
 import { applyAll } from "@/lib/staging";
 
 import { ImageEditSection, type StagingImageItem } from "../components/image-edit-section";
@@ -78,8 +79,8 @@ export function SongDetailPanel({
       void queryClient.invalidateQueries({ queryKey: tagKeys.all() });
       onClose();
     },
-    onError: () => {
-      setFormError("Failed to create song.");
+    onError: (error) => {
+      setFormError(failureMessage("Failed to create song", error));
     },
   });
 
@@ -121,8 +122,8 @@ export function SongDetailPanel({
       setIsEditing(false);
       setFormError(null);
     },
-    onError: () => {
-      setFormError("Failed to update song.");
+    onError: (error) => {
+      setFormError(failureMessage("Failed to update song", error));
     },
   });
 
@@ -324,7 +325,11 @@ export function SongDetailPanel({
         }}
         variant="danger"
         isPending={deleteMutation.isPending}
-        error={deleteMutation.isError ? "Failed to delete song." : null}
+        error={
+          deleteMutation.isError
+            ? failureMessage("Failed to delete song", deleteMutation.error)
+            : null
+        }
       />
 
       {songDetail && (
