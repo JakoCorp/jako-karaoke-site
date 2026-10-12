@@ -8,6 +8,7 @@ import { LocalPage } from "@/features/local";
 import { PerformanceDetailPage } from "@/features/performances";
 import { MyPlaylistsPage, PlaylistDetailPage, PublicPlaylistsPage } from "@/features/playlists";
 import { SearchPage } from "@/features/search";
+import { SettingsPage } from "@/features/settings";
 import { SongDetailPage } from "@/features/songs";
 import { RootErrorBoundary } from "@/layouts/root-error-boundary";
 import { RootLayout } from "@/layouts/root-layout";
@@ -28,6 +29,7 @@ export const router = createBrowserRouter([
       { path: "playlist/:id", element: <PlaylistDetailPage /> },
       { path: "public-playlists", element: <PublicPlaylistsPage /> },
       { path: "search", element: <SearchPage /> },
+      { path: "settings", element: <SettingsPage /> },
       { path: "song/:id", element: <SongDetailPage /> },
     ],
   },

@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS users (
     username VARCHAR(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
     twitch_id BIGINT UNSIGNED NULL,
     discord_id BIGINT UNSIGNED NULL,
+    username_changed_at DATETIME NULL,
     PRIMARY KEY (id),
     UNIQUE INDEX (username),
     UNIQUE INDEX (twitch_id),

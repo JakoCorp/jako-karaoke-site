@@ -2,7 +2,7 @@ import { Dialog } from "@base-ui/react";
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 
-import { authApi } from "@/api/auth";
+import { authApi, toAuthUser } from "@/api/auth";
 import { useAuthStore } from "@/store/auth";
 
 export function UsernameClaim() {
@@ -41,12 +41,7 @@ export function UsernameClaim() {
     const { data, response } = await authApi.claim({ username });
 
     if (data) {
-      setUser({
-        id: data.id,
-        username: data.username,
-        avatarUrl: data.avatar_url ?? null,
-        capabilities: data.capabilities,
-      });
+      setUser(toAuthUser(data));
       void navigate("/", { replace: true });
     } else if (response?.status === 409) {
       setError("Username already taken, please choose another.");

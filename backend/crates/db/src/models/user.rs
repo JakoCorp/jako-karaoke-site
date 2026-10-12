@@ -1,5 +1,6 @@
 //! User model.
 
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -13,6 +14,7 @@ pub struct User {
     pub username: String,
     pub twitch_id: Option<u64>,
     pub discord_id: Option<u64>,
+    pub username_changed_at: Option<DateTime<Utc>>,
 }
 
 /// Input for creating a new user.

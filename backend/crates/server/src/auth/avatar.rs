@@ -1,6 +1,7 @@
 //! Copies an OAuth provider avatar into local storage and links it to a user.
 
 use sha2::{Digest, Sha256};
+use tracing::error;
 use uuid::Uuid;
 
 use db::{error::DbError, models::NewInternalAsset, queries};
@@ -10,7 +11,8 @@ use crate::{error::ApiError, media, state::AppState};
 /// Hosts provider avatars are allowed to be downloaded from.
 const ALLOWED_HOSTS: &[&str] = &["static-cdn.jtvnw.net", "cdn.discordapp.com"];
 
-const MAX_AVATAR_BYTES: usize = 5 * 1024 * 1024;
+/// Largest avatar file accepted, in bytes.
+pub(crate) const MAX_AVATAR_BYTES: usize = 5 * 1024 * 1024;
 
 /// Downloads the avatar at `avatar_url`, stores it as a deduplicated image asset, and
 /// links it as the user's avatar.
@@ -52,24 +54,42 @@ pub(crate) async fn import_provider_avatar(
         .bytes()
         .await
         .map_err(|e| ApiError::BadRequest(format!("avatar download failed: {e}")))?;
+
+    let ext = media::resolve_ext(media::MediaKind::Image, &content_type, Some(url.path()))?;
+    set_user_avatar(state, user_id, &data, ext, Some(avatar_url.to_string())).await
+}
+
+/// Stores `data` as a deduplicated image asset and links it as the user's avatar.
+///
+/// A previous avatar asset that nothing else references is deleted along with its file.
+///
+/// # Errors
+///
+/// Returns [`ApiError::BadRequest`] if `data` exceeds [`MAX_AVATAR_BYTES`], and an
+/// internal error on storage or database failures.
+pub(crate) async fn set_user_avatar(
+    state: &AppState,
+    user_id: Uuid,
+    data: &[u8],
+    ext: &str,
+    source_url: Option<String>,
+) -> Result<(), ApiError> {
     if data.len() > MAX_AVATAR_BYTES {
         return Err(ApiError::BadRequest("avatar file too large".into()));
     }
-
-    let ext = media::resolve_ext(media::MediaKind::Image, &content_type, Some(url.path()))?;
-    let hash = hex::encode(Sha256::digest(&data));
+    let hash = hex::encode(Sha256::digest(data));
 
     let asset = if let Some(existing) = queries::assets::get_by_hash(&state.pool, &hash).await? {
         existing
     } else {
-        let saved = state.store.save("avatars", ext, &data).await?;
+        let saved = state.store.save("avatars", ext, data).await?;
         let mut conn = state.pool.acquire().await.map_err(DbError::Sqlx)?;
         queries::assets::create_internal(
             &mut conn,
             &NewInternalAsset {
                 title: Some("User avatar".to_string()),
                 credits: None,
-                source_url: Some(avatar_url.to_string()),
+                source_url,
                 hash,
                 storage_url: saved.storage_url,
                 internal_path: Some(saved.internal_path),
@@ -78,7 +98,30 @@ pub(crate) async fn import_provider_avatar(
         .await?
     };
 
+    let previous_asset_id = queries::user_avatars::get_asset_id(&state.pool, user_id).await?;
     let mut conn = state.pool.acquire().await.map_err(DbError::Sqlx)?;
     queries::user_avatars::set(&mut conn, user_id, asset.id).await?;
+
+    if let Some(previous) = previous_asset_id
+        && previous != asset.id
+    {
+        delete_asset_if_unreferenced(state, previous).await?;
+    }
+    Ok(())
+}
+
+async fn delete_asset_if_unreferenced(state: &AppState, asset_id: Uuid) -> Result<(), ApiError> {
+    if queries::assets::reference_count(&state.pool, asset_id).await? > 0 {
+        return Ok(());
+    }
+    let Some(asset) = queries::assets::get_by_id(&state.pool, asset_id).await? else {
+        return Ok(());
+    };
+    queries::assets::delete(&state.pool, asset_id).await?;
+    if let Some(path) = &asset.internal_path
+        && let Err(e) = state.store.delete(path).await
+    {
+        error!("failed to delete avatar file {path}: {e}");
+    }
     Ok(())
 }

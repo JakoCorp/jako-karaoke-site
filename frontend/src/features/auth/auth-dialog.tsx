@@ -2,7 +2,7 @@ import { Dialog } from "@base-ui/react";
 import { UserIcon, XIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 
-import { authApi } from "@/api/auth";
+import { authApi, toAuthUser } from "@/api/auth";
 import discordIcon from "@/assets/Discord-Clyde-Blurple.svg";
 import twitchIcon from "@/assets/Twitch-Glitch.svg";
 import { useAuthStore } from "@/store/auth";
@@ -14,12 +14,7 @@ export function AuthDialog() {
   async function handleDevLogin() {
     const { data } = await authApi.devLogin();
     if (data) {
-      setUser({
-        id: data.id,
-        username: data.username,
-        avatarUrl: data.avatar_url ?? null,
-        capabilities: data.capabilities,
-      });
+      setUser(toAuthUser(data));
       setOpen(false);
     }
   }
