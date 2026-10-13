@@ -1,7 +1,7 @@
 import { PauseIcon, PlayIcon } from "@phosphor-icons/react";
 
 import type { PerformanceSummary } from "@/api/performances";
-import { formatDate, formatDuration } from "@/lib/format";
+import { formatDate, formatDuration, hasStreamPosition } from "@/lib/format";
 import { selectCurrent, usePlayerStore } from "@/store/player";
 
 import { PerformanceRowMenu } from "./menu";
@@ -66,9 +66,11 @@ export function PerformanceRow({ performance, performances, index }: Props) {
       </div>
       <div className="perf-row-date">
         <span>{formatDate(performance.performance_date)}</span>
-        <span className="perf-row-date-id">
-          S{performance.stream_number} · #{performance.performance_number}
-        </span>
+        {hasStreamPosition(performance) && (
+          <span className="perf-row-date-id">
+            S{performance.stream_number} · #{performance.performance_number}
+          </span>
+        )}
       </div>
     </PerformanceRowMenu>
   );

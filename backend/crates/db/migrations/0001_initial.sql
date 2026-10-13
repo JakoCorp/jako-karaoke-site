@@ -182,10 +182,12 @@ CREATE TABLE IF NOT EXISTS song_tags (
 ) ENGINE = InnoDB;
 
 -- Performances
--- Representative of a song/mashup performed on stream
+-- Representative of a song/mashup performed on stream, or published elsewhere (e.g. an upload)
 -- Providing a lyrics means:
 --  Its a custom lyrics tied to this particular performance.
 --  Or its a mashup of multiple songs and needs one lyrics from the set.
+--
+-- Stream and performance numbers are both NULL for performances that did not happen on a stream.
 CREATE TABLE IF NOT EXISTS performances (
     id BINARY(16) NOT NULL DEFAULT (UNHEX(REPLACE(UUID_V7(), '-', ''))),
     title VARCHAR(256) NULL,
@@ -195,11 +197,12 @@ CREATE TABLE IF NOT EXISTS performances (
     duration INT UNSIGNED NULL,
     stream_time INT UNSIGNED NULL,
     performance_date DATE NOT NULL,
-    stream_number TINYINT UNSIGNED NOT NULL,
-    performance_number SMALLINT UNSIGNED NOT NULL,
+    stream_number TINYINT UNSIGNED NULL,
+    performance_number SMALLINT UNSIGNED NULL,
     PRIMARY KEY (id),
     INDEX (performance_date),
-    UNIQUE INDEX (performance_date, stream_number, performance_number)
+    UNIQUE INDEX (performance_date, stream_number, performance_number),
+    CONSTRAINT performances_stream_position CHECK ((stream_number IS NULL) = (performance_number IS NULL))
 ) ENGINE = InnoDB;
 
 -- Performance <-> Song (M2M)

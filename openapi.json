@@ -1054,6 +1054,16 @@
               }
             }
           },
+          "400": {
+            "description": "Invalid stream position",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorized",
             "content": {
@@ -1157,6 +1167,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PerformanceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid stream position",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -4995,8 +5015,6 @@
         "description": "Request body for `POST /api/performances`.",
         "required": [
           "performance_date",
-          "stream_number",
-          "performance_number",
           "song_ids",
           "singer_ids",
           "tags"
@@ -5024,9 +5042,12 @@
             "description": "Calendar date of the stream in which this performance occurred."
           },
           "performance_number": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "null"
+            ],
             "format": "int32",
-            "description": "Performance index within `performance_date` + `stream_number`, 1-based.",
+            "description": "Performance index within `performance_date` + `stream_number`, 1-based. Absent when not\nperformed on a stream.",
             "minimum": 0
           },
           "singer_ids": {
@@ -5046,9 +5067,12 @@
             "description": "IDs of songs featured in this performance."
           },
           "stream_number": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "null"
+            ],
             "format": "int32",
-            "description": "Stream index within `performance_date`, 1-based.",
+            "description": "Stream index within `performance_date`, 1-based. Absent when not performed on a stream.",
             "minimum": 0
           },
           "stream_time": {
@@ -5169,7 +5193,7 @@
         "properties": {
           "filename_template": {
             "type": "string",
-            "description": "Filename template without extension. Recognized tokens are `{title}`, `{singer}`,\n`{original_artist}`, `{song}`, `{date}`, `{stream_number}` and `{performance_number}`."
+            "description": "Filename template without extension. Recognized tokens are `{title}`, `{singer}`,\n`{original_artist}`, `{song}`, `{date}`, `{stream_number}` and `{performance_number}`.\n`{stream_number}` and `{performance_number}` are empty when not performed on a stream."
           },
           "include_cover_art": {
             "type": "boolean",
@@ -5404,8 +5428,6 @@
                 "id",
                 "play_count",
                 "performance_date",
-                "stream_number",
-                "performance_number",
                 "singers",
                 "songs"
               ],
@@ -5430,9 +5452,12 @@
                   "description": "Calendar date of the stream."
                 },
                 "performance_number": {
-                  "type": "integer",
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
                   "format": "int32",
-                  "description": "Performance index within `performance_date` + `stream_number`, 1-based.",
+                  "description": "Performance index within `performance_date` + `stream_number`, 1-based. Absent when not\nperformed on a stream.",
                   "minimum": 0
                 },
                 "play_count": {
@@ -5455,9 +5480,12 @@
                   "description": "Songs featured in this performance."
                 },
                 "stream_number": {
-                  "type": "integer",
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
                   "format": "int32",
-                  "description": "Stream index within `performance_date`, 1-based.",
+                  "description": "Stream index within `performance_date`, 1-based. Absent when not performed on a stream.",
                   "minimum": 0
                 },
                 "title": {
@@ -5659,8 +5687,6 @@
           "id",
           "play_count",
           "performance_date",
-          "stream_number",
-          "performance_number",
           "songs",
           "singers",
           "tags",
@@ -5700,9 +5726,12 @@
             "description": "Calendar date of the stream."
           },
           "performance_number": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "null"
+            ],
             "format": "int32",
-            "description": "Performance index within `performance_date` + `stream_number`, 1-based.",
+            "description": "Performance index within `performance_date` + `stream_number`, 1-based. Absent when not\nperformed on a stream.",
             "minimum": 0
           },
           "play_count": {
@@ -5725,9 +5754,12 @@
             "description": "Songs featured in this performance."
           },
           "stream_number": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "null"
+            ],
             "format": "int32",
-            "description": "Stream index within `performance_date`, 1-based.",
+            "description": "Stream index within `performance_date`, 1-based. Absent when not performed on a stream.",
             "minimum": 0
           },
           "stream_time": {
@@ -5778,8 +5810,6 @@
           "id",
           "play_count",
           "performance_date",
-          "stream_number",
-          "performance_number",
           "singers",
           "songs"
         ],
@@ -5804,9 +5834,12 @@
             "description": "Calendar date of the stream."
           },
           "performance_number": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "null"
+            ],
             "format": "int32",
-            "description": "Performance index within `performance_date` + `stream_number`, 1-based.",
+            "description": "Performance index within `performance_date` + `stream_number`, 1-based. Absent when not\nperformed on a stream.",
             "minimum": 0
           },
           "play_count": {
@@ -5829,9 +5862,12 @@
             "description": "Songs featured in this performance."
           },
           "stream_number": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "null"
+            ],
             "format": "int32",
-            "description": "Stream index within `performance_date`, 1-based.",
+            "description": "Stream index within `performance_date`, 1-based. Absent when not performed on a stream.",
             "minimum": 0
           },
           "title": {
@@ -6302,8 +6338,6 @@
         "description": "Request body for `PUT /api/performances/{id}`.\n\nLyrics are excluded, use `PUT /api/performances/{id}/lyrics` instead.",
         "required": [
           "performance_date",
-          "stream_number",
-          "performance_number",
           "song_ids",
           "singer_ids",
           "tags"
@@ -6324,9 +6358,12 @@
             "description": "Calendar date of the stream in which this performance occurred."
           },
           "performance_number": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "null"
+            ],
             "format": "int32",
-            "description": "Performance index within `performance_date` + `stream_number`, 1-based.",
+            "description": "Performance index within `performance_date` + `stream_number`, 1-based. Absent when not\nperformed on a stream.",
             "minimum": 0
           },
           "singer_ids": {
@@ -6346,9 +6383,12 @@
             "description": "IDs of songs featured in this performance."
           },
           "stream_number": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "null"
+            ],
             "format": "int32",
-            "description": "Stream index within `performance_date`, 1-based.",
+            "description": "Stream index within `performance_date`, 1-based. Absent when not performed on a stream.",
             "minimum": 0
           },
           "stream_time": {

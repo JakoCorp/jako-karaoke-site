@@ -26,10 +26,11 @@ pub struct Performance {
     pub stream_time: Option<u32>,
     /// Calendar date of the stream.
     pub performance_date: NaiveDate,
-    /// Stream index within `performance_date`, 1-based.
-    pub stream_number: u8,
-    /// Performance index within `performance_date` + `stream_number`, 1-based.
-    pub performance_number: u16,
+    /// Stream index within `performance_date`, 1-based. `None` when not performed on a stream.
+    pub stream_number: Option<u8>,
+    /// Performance index within `performance_date` + `stream_number`, 1-based. `None` when not
+    /// performed on a stream.
+    pub performance_number: Option<u16>,
 }
 
 /// Input for creating a new performance.
@@ -47,10 +48,11 @@ pub struct NewPerformance {
     pub stream_time: Option<u32>,
     /// Calendar date of the stream.
     pub performance_date: NaiveDate,
-    /// Stream index within `performance_date`, 1-based.
-    pub stream_number: u8,
-    /// Performance index within `performance_date` + `stream_number`, 1-based.
-    pub performance_number: u16,
+    /// Stream index within `performance_date`, 1-based. `None` when not performed on a stream.
+    pub stream_number: Option<u8>,
+    /// Performance index within `performance_date` + `stream_number`, 1-based. `None` when not
+    /// performed on a stream.
+    pub performance_number: Option<u16>,
 }
 
 /// Input for replacing a performance's mutable scalar fields.
@@ -67,8 +69,9 @@ pub struct UpdatePerformance {
     pub stream_time: Option<u32>,
     /// Calendar date of the stream.
     pub performance_date: NaiveDate,
-    /// Stream index within `performance_date`, 1-based.
-    pub stream_number: u8,
-    /// Performance index within `performance_date` + `stream_number`, 1-based.
-    pub performance_number: u16,
+    /// Stream index within `performance_date`, 1-based. `None` when not performed on a stream.
+    pub stream_number: Option<u8>,
+    /// Performance index within `performance_date` + `stream_number`, 1-based. `None` when not
+    /// performed on a stream.
+    pub performance_number: Option<u16>,
 }
