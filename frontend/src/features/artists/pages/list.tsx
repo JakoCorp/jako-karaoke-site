@@ -7,7 +7,7 @@ import { useInfiniteArtists } from "@/hooks/api/artists";
 import { useDebounced } from "@/hooks/use-debounced";
 import { createStateCodec } from "@/lib/url-state";
 
-import { ArtistCard } from "./artist-card";
+import { ArtistCard } from "../components/artist-card";
 
 type SortOption = `${ArtistSortField}-${"asc" | "desc"}`;
 

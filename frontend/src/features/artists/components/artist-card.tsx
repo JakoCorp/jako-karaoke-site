@@ -1,3 +1,5 @@
+import { Link } from "react-router";
+
 import type { ArtistSummary } from "@/api/artists";
 import { resolveAssetUrl } from "@/lib/asset-url";
 
@@ -10,7 +12,7 @@ export function ArtistCard({ artist }: ArtistCardProps) {
   const initial = artist.name.trimStart()[0]?.toUpperCase() ?? "?";
 
   return (
-    <div className="artist-card">
+    <Link to={`/artist/${artist.id}`} className="artist-card">
       {avatar ? (
         <img className="avatar-md avatar" src={resolveAssetUrl(avatar)} alt={artist.name} />
       ) : (
@@ -28,6 +30,6 @@ export function ArtistCard({ artist }: ArtistCardProps) {
         {artist.song_count} {artist.song_count === 1 ? "song" : "songs"}
       </div>
       {artist.description && <p className="artist-card-desc">{artist.description}</p>}
-    </div>
+    </Link>
   );
 }

@@ -29,8 +29,56 @@ INSERT IGNORE INTO tags (id, name) VALUES
 -- Artists
 INSERT IGNORE INTO artists (id, name, description) VALUES
 (UNHEX('01000000000000000000000000000011'), 'artist_a', 'Description for artist_a.'),
-(UNHEX('01000000000000000000000000000012'), 'artist_b', 'Description for artist_b.'),
-(UNHEX('01000000000000000000000000000013'), 'artist_c', NULL);
+(
+    UNHEX('01000000000000000000000000000012'),
+    'artist_b',
+    'Lorem ipsum dolor sit amet, consectetur adipiscing elit. '
+    'Nullam dictum, dolor sed feugiat vulputate, mi ligula congue justo, at faucibus diam massa et ex. '
+    'Nam commodo, mi quis consectetur porttitor, mi massa suscipit purus, ac hendrerit sapien ex a ex. '
+    'Praesent imperdiet auctor urna vitae maximus. Suspendisse potenti. '
+    'Curabitur faucibus efficitur mauris eget aliquam. Sed laoreet tincidunt ornare. '
+    'Pellentesque a interdum lorem, in porta enim. '
+    'Aenean cursus ullamcorper ante, et varius augue tristique eu. '
+    'Duis pharetra nibh commodo, tempor dolor id, auctor eros. '
+    'Nulla non libero bibendum, luctus justo eget, iaculis enim. '
+    'Mauris id mi libero. Etiam suscipit vitae elit sed pellentesque. '
+    'In elit tellus, eleifend at vulputate ut, rhoncus nec mauris.\n\n'
+    'Nam mi justo, semper nec mi in, rhoncus malesuada sem. '
+    'Aenean in magna tempor, porta ante nec, bibendum erat. '
+    'Proin porta odio vitae vehicula venenatis. Phasellus iaculis maximus mauris id tempus. '
+    'Maecenas finibus mi in dui vestibulum viverra. Pellentesque in suscipit magna. Nulla facilisi. '
+    'Fusce ultricies mollis mi a tincidunt. Sed at justo sit amet eros cursus gravida a ut nisi. '
+    'Proin in aliquam dui. Maecenas sit amet urna auctor ante iaculis blandit. '
+    'Nulla facilisis mi iaculis urna elementum aliquam. '
+    'Donec varius erat lorem, et vehicula leo ultricies vitae. '
+    'Pellentesque sagittis facilisis euismod. Vivamus finibus quam sed elit volutpat auctor. '
+    'Nunc non purus sed velit maximus scelerisque imperdiet at sapien.\n\n'
+    'Donec mauris erat, dictum sit amet aliquam ac, pulvinar at odio. Vivamus vel venenatis nisl. '
+    'Quisque vel bibendum felis. Curabitur vitae ante ut lectus rutrum condimentum. '
+    'Vivamus blandit vitae ex in vehicula. Donec bibendum malesuada iaculis. '
+    'Quisque finibus enim vel est lacinia, ut dignissim eros lacinia. '
+    'Nulla laoreet, felis eu placerat tristique, sapien lorem bibendum lorem, a fermentum ipsum ante eu nibh. '
+    'Duis aliquam turpis id volutpat molestie. '
+    'Donec pharetra massa a dui scelerisque, ut bibendum nunc venenatis. '
+    'In in convallis est, vel condimentum est. Integer vehicula in metus quis euismod.\n\n'
+    'Aenean ultrices eu leo et suscipit. Donec accumsan lobortis tellus, at volutpat ex. '
+    'Duis vel sodales nibh, non tempor nisi. Nullam eu urna tortor. Morbi euismod sodales sem ut luctus. '
+    'Mauris id mattis nisl, non lobortis augue. '
+    'Vivamus bibendum sodales metus, cursus rutrum enim volutpat non. '
+    'Integer ante leo, finibus ut molestie sit amet, sollicitudin et ante. '
+    'Ut dictum ac purus vitae suscipit. Cras elementum odio arcu, ac auctor purus dapibus in. '
+    'In vel pretium massa, eget interdum nisl. Etiam tincidunt semper orci in condimentum.\n\n'
+    'Vivamus facilisis justo sed posuere pharetra. '
+    'Pellentesque non libero ac risus hendrerit ullamcorper quis a massa. '
+    'Fusce at nisi ac neque euismod imperdiet. '
+    'Aliquam purus eros, dapibus at eros quis, feugiat dapibus augue. '
+    'Integer vel sapien lacus. Curabitur mattis hendrerit eros. Donec semper in metus ut dictum. '
+    'Duis quis vulputate velit. '
+    'In mollis, mi sed varius rutrum, ipsum orci accumsan odio, ac tempor velit massa et metus. '
+    'Donec tortor lorem, molestie in erat eget, dapibus efficitur erat.'
+),
+(UNHEX('01000000000000000000000000000013'), 'artist_c', NULL),
+(UNHEX('01000000000000000000000000000014'), 'artist_d', 'Description for artist_d, who has no performances.');
 
 -- Songs
 INSERT IGNORE INTO songs (id, title, created_by) VALUES

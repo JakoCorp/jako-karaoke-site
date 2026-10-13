@@ -1,1 +1,2 @@
-export { ArtistsPage } from "./page";
+export { ArtistDetailPage } from "./pages/detail";
+export { ArtistsPage } from "./pages/list";
