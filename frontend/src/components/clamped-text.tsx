@@ -2,13 +2,15 @@ import { useEffect, useRef, useState } from "react";
 
 interface Props {
   text: string;
+  className?: string;
 }
 
 /**
- * Artist description clamped to a few lines. A toggle expands the full text
- * and is only shown when the text is actually cut off.
+ * Multi line text clamped to a few lines.
+ *
+ * A toggle expands the full text and is only shown when the text is actually cut off.
  */
-export function ArtistDescription({ text }: Props) {
+export function ClampedText({ text, className }: Props) {
   const textRef = useRef<HTMLParagraphElement>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isCutOff, setIsCutOff] = useState(false);
@@ -25,14 +27,14 @@ export function ArtistDescription({ text }: Props) {
   }, [isExpanded]);
 
   return (
-    <div>
-      <p ref={textRef} className="artist-detail-desc" data-expanded={isExpanded}>
+    <div className={className}>
+      <p ref={textRef} className="clamped-text" data-expanded={isExpanded}>
         {text}
       </p>
       {(isCutOff || isExpanded) && (
         <button
           type="button"
-          className="artist-detail-desc-toggle"
+          className="clamped-text-toggle"
           aria-expanded={isExpanded}
           onClick={() => {
             setIsExpanded((expanded) => !expanded);

@@ -1,8 +1,7 @@
 import type { ArtistResponse } from "@/api/artists";
+import { ClampedText } from "@/components/clamped-text";
 import { FilteredPerformanceList } from "@/features/performances";
 import { resolveAssetUrl } from "@/lib/asset-url";
-
-import { ArtistDescription } from "./description";
 
 interface Props {
   artist: ArtistResponse;
@@ -37,7 +36,9 @@ export function ArtistDetailView({ artist }: Props) {
             {pluralize(artist.song_count, "song")} ·{" "}
             {pluralize(artist.performance_count, "performance")}
           </div>
-          {artist.description && <ArtistDescription key={artist.id} text={artist.description} />}
+          {artist.description && (
+            <ClampedText key={artist.id} text={artist.description} className="mt-2" />
+          )}
         </div>
       </div>
 

@@ -10,11 +10,13 @@ import {
   type ArtistLinkKind,
   type ArtistSummary,
 } from "@/api/artists";
+import { ClampedText } from "@/components/clamped-text";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { artistKeys, useArtist } from "@/hooks/api/artists";
 import { failureMessage } from "@/lib/error-message";
 import { applyAll } from "@/lib/staging";
 
+import { ExpandingTextarea } from "../components/expanding-textarea";
 import { ImageEditSection, type StagingImageItem } from "../components/image-edit-section";
 import { ImageList } from "../components/image-list";
 
@@ -262,14 +264,13 @@ export function ArtistDetailPanel({
             <label className="form-label" htmlFor="artist-edit-description">
               Description (optional)
             </label>
-            <textarea
+            <ExpandingTextarea
               id="artist-edit-description"
               className="form-input admin-textarea"
               value={editDescription}
               onChange={(event) => {
                 setEditDescription(event.target.value);
               }}
-              rows={3}
             />
           </div>
           <div className="form-field">
@@ -402,7 +403,7 @@ export function ArtistDetailPanel({
           {artistDetail.description && (
             <div className="admin-detail-section">
               <span className="admin-detail-label">Description</span>
-              <p className="admin-empty">{artistDetail.description}</p>
+              <ClampedText text={artistDetail.description} />
             </div>
           )}
           {artistDetail.links.length > 0 && (

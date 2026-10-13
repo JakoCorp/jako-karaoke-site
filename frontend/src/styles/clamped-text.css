@@ -1,0 +1,32 @@
+@utility clamped-text {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--color-fg);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+
+  &[data-expanded="true"] {
+    display: block;
+    overflow: visible;
+  }
+}
+
+@utility clamped-text-toggle {
+  margin-top: 0.25rem;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-fg-muted);
+  cursor: pointer;
+
+  &:hover {
+    color: var(--color-fg);
+  }
+}
