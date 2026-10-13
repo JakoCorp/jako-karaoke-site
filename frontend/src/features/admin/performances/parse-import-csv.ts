@@ -1,5 +1,7 @@
 import { parseStreamTime } from "@/lib/format";
 
+import { parseStreamPosition } from "./stream-position";
+
 type PerformanceTagKind = "instrument" | "modifier" | "misc";
 
 const PERFORMANCE_TAG_KINDS: ReadonlyArray<PerformanceTagKind> = ["instrument", "modifier", "misc"];
@@ -22,8 +24,8 @@ const EXPECTED_HEADERS = [
 
 export interface ParsedPerformanceImportRow {
   performance_date: string;
-  stream_number: number;
-  performance_number: number;
+  stream_number: number | null;
+  performance_number: number | null;
   stream_time: number | null;
   duration: number | null;
   title: string | null;
@@ -88,9 +90,17 @@ function isValidDate(s: string): boolean {
  * Parses a performance import CSV into structured rows.
  *
  * Expected columns: performance_date, stream_number, performance_number, stream_time,
- * duration, title, songs, singers, tags. Fields with multiple values (songs, singers, tags) are
- * delimited by pipes. Tags use `name:kind` format. Row errors are collected rather than thrown,
- * so all failures across the file are returned together in `errors`.
+ * duration, title, songs, singers, tags.
+ *
+ * Fields with multiple values (songs, singers, tags) are delimited by pipes.
+ *
+ * Tags use `name:kind` format.
+ *
+ * Leave stream_number and performance_number both blank for performances that did not
+ * happen on a stream.
+ *
+ * Row errors are collected rather than thrown, so all failures across the file are
+ * returned together in `errors`.
  */
 export function parseImportCsv(text: string): ParseImportCsvResult {
   const lines = text
@@ -140,14 +150,9 @@ export function parseImportCsv(text: string): ParseImportCsvResult {
       );
     }
 
-    const streamNumber = parseInt(streamNumStr, 10);
-    if (isNaN(streamNumber) || streamNumber < 1) {
-      rowErrors.push(`Row ${String(rowNum)}: stream_number must be an integer ≥ 1.`);
-    }
-
-    const perfNumber = parseInt(perfNumStr, 10);
-    if (isNaN(perfNumber) || perfNumber < 1) {
-      rowErrors.push(`Row ${String(rowNum)}: performance_number must be an integer ≥ 1.`);
+    const position = parseStreamPosition(streamNumStr, perfNumStr);
+    if (!position.ok) {
+      rowErrors.push(`Row ${String(rowNum)}: ${position.message}`);
     }
 
     let streamTimeSecs: number | null = null;
@@ -195,22 +200,25 @@ export function parseImportCsv(text: string): ParseImportCsvResult {
       }
     }
 
-    if (rowErrors.length > 0) {
+    if (rowErrors.length > 0 || !position.ok) {
       errors.push(...rowErrors);
       continue;
     }
 
-    const tripletKey = `${dateStr}|${String(streamNumber)}|${String(perfNumber)}`;
-    if (seenTriplets.has(tripletKey)) {
+    const tripletKey =
+      position.stream_number === null
+        ? null
+        : `${dateStr}|${String(position.stream_number)}|${String(position.performance_number)}`;
+    if (tripletKey !== null && seenTriplets.has(tripletKey)) {
       errors.push(
-        `Row ${String(rowNum)}: duplicate (${dateStr}, stream ${String(streamNumber)}, perf ${String(perfNumber)}) — already appears earlier in this file.`,
+        `Row ${String(rowNum)}: duplicate (${dateStr}, stream ${String(position.stream_number)}, perf ${String(position.performance_number)}) — already appears earlier in this file.`,
       );
     } else {
-      seenTriplets.add(tripletKey);
+      if (tripletKey !== null) seenTriplets.add(tripletKey);
       rows.push({
         performance_date: dateStr,
-        stream_number: streamNumber,
-        performance_number: perfNumber,
+        stream_number: position.stream_number,
+        performance_number: position.performance_number,
         stream_time: streamTimeSecs,
         duration: durationSecs,
         title: titleStr || null,
