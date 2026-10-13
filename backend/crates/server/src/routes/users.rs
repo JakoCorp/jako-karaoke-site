@@ -4,7 +4,7 @@ use axum::{
     Json, Router,
     extract::{Path, Query, State},
     http::StatusCode,
-    routing::get,
+    routing::{get, patch},
 };
 use serde::Deserialize;
 use uuid::Uuid;
@@ -14,19 +14,24 @@ use api_types::{
     pagination::PagedResponse,
     performances::PerformanceSummary,
     playlists::{PlaylistEntry, PlaylistKind, PlaylistResponse},
-    users::{GrantCapabilityRequest, UserSummary},
+    users::{GrantCapabilityRequest, UpdateUserRequest, UserSummary},
 };
-use db::queries;
+use db::{error::DbError, queries};
 
 use crate::{
-    auth::middleware::AuthUser, capabilities, convert, error::ApiError, pagination,
-    routes::playlists::PlaylistListParams, state::AppState,
+    auth::{middleware::AuthUser, validate_username},
+    capabilities, convert,
+    error::ApiError,
+    pagination,
+    routes::playlists::PlaylistListParams,
+    state::AppState,
 };
 
 #[derive(utoipa::OpenApi)]
 #[openapi(
     paths(
         search_users,
+        update_user,
         list_user_playlists,
         get_user_playlists_containing_performance,
         get_user_favorites,
@@ -36,6 +41,7 @@ use crate::{
     ),
     components(schemas(
         UserSummary,
+        UpdateUserRequest,
         GrantCapabilityRequest,
         PlaylistResponse,
         PlaylistEntry,
@@ -50,6 +56,7 @@ pub(crate) struct UsersApi;
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/", get(search_users))
+        .route("/{id}", patch(update_user))
         .route("/{id}/playlists", get(list_user_playlists))
         .route(
             "/{id}/playlists/containing/{performance_id}",
@@ -114,6 +121,61 @@ pub(crate) async fn search_users(
             })
             .collect(),
     ))
+}
+
+#[utoipa::path(
+    patch,
+    path = "/api/users/{id}",
+    params(("id" = Uuid, Path, description = "User ID")),
+    request_body = UpdateUserRequest,
+    responses(
+        (status = 200, description = "Updated user", body = UserSummary),
+        (status = 400, description = "Invalid username", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden", body = ErrorResponse),
+        (status = 404, description = "User not found", body = ErrorResponse),
+        (status = 409, description = "Username already taken", body = ErrorResponse),
+    ),
+    tag = "users",
+    security(("session" = []))
+)]
+pub(crate) async fn update_user(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Path(id): Path<Uuid>,
+    Json(req): Json<UpdateUserRequest>,
+) -> Result<Json<UserSummary>, ApiError> {
+    if !auth
+        .capabilities
+        .contains(capabilities::CAPABILITIES_MANAGE)
+    {
+        return Err(ApiError::Forbidden);
+    }
+    validate_username(&req.username)?;
+
+    let user = queries::users::get_by_id(&state.pool, id)
+        .await?
+        .ok_or(ApiError::NotFound)?;
+
+    if user.username == req.username {
+        return Ok(Json(UserSummary {
+            id: user.id,
+            username: user.username,
+        }));
+    }
+
+    let mut conn = state.pool.acquire().await.map_err(DbError::Sqlx)?;
+    let updated = queries::users::update_username(&mut conn, id, &req.username)
+        .await
+        .map_err(|e| match e {
+            DbError::Conflict => ApiError::Conflict("username already taken".into()),
+            other => ApiError::from(other),
+        })?;
+
+    Ok(Json(UserSummary {
+        id: updated.id,
+        username: updated.username,
+    }))
 }
 
 #[utoipa::path(

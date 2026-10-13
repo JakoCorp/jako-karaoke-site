@@ -13,6 +13,13 @@ pub struct UserSummary {
     pub username: String,
 }
 
+/// Request body for `PATCH /api/users/{id}`.
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct UpdateUserRequest {
+    /// New username. Alphanumeric with `_` and `.` allowed, max 64 chars, case insensitive unique.
+    pub username: String,
+}
+
 /// Request body for `POST /api/admin/users/{id}/capabilities`.
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct GrantCapabilityRequest {
