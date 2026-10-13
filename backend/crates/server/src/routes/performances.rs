@@ -116,8 +116,9 @@ impl PerformanceListParams {
 
     fn order_by_clause(&self) -> String {
         let dir = self.sort_dir_str();
-        let id_tiebreak =
-            format!("performance_date {dir}, stream_number {dir}, performance_number {dir}");
+        let id_tiebreak = format!(
+            "performance_date {dir}, stream_number {dir}, performance_number {dir}, id {dir}"
+        );
         match &self.sort {
             Some(PerformanceSort::PlayCount) => format!("play_count {dir}, {id_tiebreak}"),
             Some(PerformanceSort::Duration) => format!("duration {dir}, {id_tiebreak}"),
@@ -315,6 +316,19 @@ fn tag_pairs(assignments: &[PerformanceTagAssignment]) -> Vec<(Uuid, &str)> {
         .collect()
 }
 
+/// Rejects a stream number without a performance number, or the reverse.
+fn validate_stream_position(
+    stream_number: Option<u8>,
+    performance_number: Option<u16>,
+) -> Result<(), ApiError> {
+    if stream_number.is_some() == performance_number.is_some() {
+        return Ok(());
+    }
+    Err(ApiError::BadRequest(
+        "stream_number and performance_number must be provided together".to_string(),
+    ))
+}
+
 #[utoipa::path(
     get,
     path = "/api/performances",
@@ -373,6 +387,7 @@ pub(crate) async fn get_performance(
     request_body = CreatePerformanceRequest,
     responses(
         (status = 201, description = "Created performance", body = PerformanceResponse),
+        (status = 400, description = "Invalid stream position", body = ErrorResponse),
         (status = 401, description = "Unauthorized", body = ErrorResponse),
         (status = 403, description = "Forbidden", body = ErrorResponse),
     ),
@@ -390,6 +405,7 @@ pub(crate) async fn create_performance(
     {
         return Err(ApiError::Forbidden);
     }
+    validate_stream_position(req.stream_number, req.performance_number)?;
     let mut tx = state.pool.begin().await.map_err(DbError::Sqlx)?;
 
     let lyrics_id = match req.lyrics {
@@ -432,6 +448,7 @@ pub(crate) async fn create_performance(
     request_body = UpdatePerformanceRequest,
     responses(
         (status = 200, description = "Updated performance", body = PerformanceResponse),
+        (status = 400, description = "Invalid stream position", body = ErrorResponse),
         (status = 401, description = "Unauthorized", body = ErrorResponse),
         (status = 403, description = "Forbidden", body = ErrorResponse),
         (status = 404, description = "Not found", body = ErrorResponse),
@@ -451,6 +468,7 @@ pub(crate) async fn update_performance(
     {
         return Err(ApiError::Forbidden);
     }
+    validate_stream_position(req.stream_number, req.performance_number)?;
     let mut tx = state.pool.begin().await.map_err(DbError::Sqlx)?;
 
     let perf = queries::performances::update(
