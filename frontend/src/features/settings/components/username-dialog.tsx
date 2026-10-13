@@ -7,9 +7,8 @@ import { authApi, toAuthUser } from "@/api/auth";
 import type { AuthUser } from "@/api/auth";
 import { formatDate } from "@/lib/format";
 import { toast } from "@/lib/toast";
+import { USERNAME_PATTERN, USERNAME_RULES_MESSAGE } from "@/lib/username";
 import { useAuthStore } from "@/store/auth";
-
-const USERNAME_PATTERN = /^[A-Za-z0-9_.]{1,64}$/;
 
 interface Props {
   user: AuthUser;
@@ -52,7 +51,7 @@ function UsernameForm({ user, onDone }: { user: AuthUser; onDone: () => void }) 
 
   function handleSubmit() {
     if (!USERNAME_PATTERN.test(username)) {
-      setError("Usernames are 1 to 64 characters: letters, numbers, underscores and periods.");
+      setError(USERNAME_RULES_MESSAGE);
       return;
     }
     setError(null);
@@ -84,7 +83,7 @@ function UsernameForm({ user, onDone }: { user: AuthUser; onDone: () => void }) 
           }}
         />
       </div>
-      <p className="settings-hint">
+      <p className="form-hint">
         {locked
           ? `You can change your username again on ${formatDate(changeableAt)}.`
           : "You can change your username once every 30 days."}

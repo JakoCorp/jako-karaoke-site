@@ -8,6 +8,13 @@ export const usersApi = {
   /** Searches users by optional username substring. */
   search: (q?: string) => api.GET("/api/users", { params: { query: { q } } }),
 
+  /** Changes a user's username, bypassing the cooldown. Requires `capabilities:manage`. */
+  updateUsername: (userId: string, username: string) =>
+    api.PATCH("/api/users/{id}", {
+      params: { path: { id: userId } },
+      body: { username } satisfies components["schemas"]["UpdateUserRequest"],
+    }),
+
   /** Returns capabilities assigned to a user. */
   listCapabilities: (userId: string) =>
     api.GET("/api/users/{id}/capabilities", { params: { path: { id: userId } } }),
