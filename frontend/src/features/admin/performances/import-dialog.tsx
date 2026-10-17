@@ -6,6 +6,7 @@ import { artistsApi } from "@/api/artists";
 import { performancesApi, type PerformanceTagKind } from "@/api/performances";
 import { songsApi } from "@/api/songs";
 import { tagsApi } from "@/api/tags";
+import { filterCatalogKeys } from "@/hooks/api/filter-catalog";
 import { performanceKeys } from "@/hooks/api/performances";
 
 import { parseImportCsv, type ParsedPerformanceImportRow } from "./parse-import-csv";
@@ -182,6 +183,7 @@ export function ImportPerformancesDialog({
     }
 
     void queryClient.invalidateQueries({ queryKey: performanceKeys.all() });
+    void queryClient.invalidateQueries({ queryKey: filterCatalogKeys.all() });
     setState({ phase: "success", count: resolved.length });
     onSuccess();
   }

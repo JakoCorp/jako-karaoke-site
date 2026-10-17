@@ -5,6 +5,7 @@ pub mod config;
 pub(crate) mod convert;
 pub mod docs;
 pub(crate) mod error;
+pub mod filters;
 pub(crate) mod media;
 pub(crate) mod pagination;
 pub mod routes;

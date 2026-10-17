@@ -14,6 +14,7 @@ import {
 import { tagsApi } from "@/api/tags";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { useArtists } from "@/hooks/api/artists";
+import { filterCatalogKeys } from "@/hooks/api/filter-catalog";
 import { performanceKeys, usePerformance } from "@/hooks/api/performances";
 import { useSongs } from "@/hooks/api/songs";
 import { tagKeys, useTags } from "@/hooks/api/tags";
@@ -111,6 +112,7 @@ export function PerformanceDetailPanel({
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: performanceKeys.all() });
       void queryClient.invalidateQueries({ queryKey: tagKeys.all() });
+      void queryClient.invalidateQueries({ queryKey: filterCatalogKeys.all() });
       onClose();
     },
     onError: (error) => {
@@ -173,6 +175,7 @@ export function PerformanceDetailPanel({
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: performanceKeys.all() });
       void queryClient.invalidateQueries({ queryKey: tagKeys.all() });
+      void queryClient.invalidateQueries({ queryKey: filterCatalogKeys.all() });
       setStagingAddAudio([]);
       setStagingAddVideo([]);
       setPendingRemoveAudioIds(new Set());
@@ -195,6 +198,7 @@ export function PerformanceDetailPanel({
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: performanceKeys.all() });
+      void queryClient.invalidateQueries({ queryKey: filterCatalogKeys.all() });
       onClose();
     },
   });

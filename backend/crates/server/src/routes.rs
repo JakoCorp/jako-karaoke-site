@@ -3,6 +3,7 @@
 pub(crate) mod artists;
 pub(crate) mod capabilities;
 pub(crate) mod common;
+pub(crate) mod filters;
 pub(crate) mod performances;
 pub(crate) mod playlists;
 pub(crate) mod songs;
@@ -39,6 +40,7 @@ pub fn build_router(state: AppState) -> Router {
     Router::new()
         .nest("/api/artists", artists::router())
         .nest("/api/capabilities", capabilities::router())
+        .nest("/api/filters", filters::router())
         .nest("/api/performances", performances::router())
         .nest("/api/playlists", playlists::router())
         .nest("/api/songs", songs::router())
