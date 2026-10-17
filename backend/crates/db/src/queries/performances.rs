@@ -5,10 +5,12 @@
 
 use std::collections::HashMap;
 
+use chrono::NaiveDate;
 use sqlx::{Executor, MySql, MySqlConnection, QueryBuilder};
 use uuid::Uuid;
 
 use crate::error::DbError;
+use crate::filter::{Clause, Subject, WhereClause, push_clauses};
 use crate::models::artist::Artist;
 use crate::models::performance::{NewPerformance, Performance, UpdatePerformance};
 use crate::models::song::Song;
@@ -38,20 +40,22 @@ pub struct PerformanceFilter<'a> {
     /// Case insensitive substring matched against the performance title, any linked song title
     /// and any linked singer name.
     pub q: Option<&'a str>,
-    /// Only performances that include this song.
-    pub song_id: Option<Uuid>,
-    /// Only performances this artist sang in.
-    pub artist_id: Option<Uuid>,
+    /// Relation conditions, all of which must hold.
+    pub clauses: &'a [Clause],
+    /// Only performances on or after this date.
+    pub date_from: Option<NaiveDate>,
+    /// Only performances on or before this date.
+    pub date_to: Option<NaiveDate>,
 }
 
 /// Appends the `WHERE` clause for `filter`, binding its values. Appends nothing for an empty filter.
 fn push_filters(builder: &mut QueryBuilder<MySql>, filter: PerformanceFilter<'_>) {
-    let mut keyword = " WHERE ";
+    let mut conditions = WhereClause::new(builder);
 
     if let Some(q) = filter.q {
         let pattern = format!("%{q}%");
-        builder
-            .push(keyword)
+        conditions
+            .condition()
             .push("id IN (SELECT id FROM performances WHERE title LIKE ")
             .push_bind(pattern.clone())
             .push(
@@ -65,24 +69,22 @@ fn push_filters(builder: &mut QueryBuilder<MySql>, filter: PerformanceFilter<'_>
             )
             .push_bind(pattern)
             .push(")");
-        keyword = " AND ";
     }
 
-    if let Some(song_id) = filter.song_id {
-        builder
-            .push(keyword)
-            .push("id IN (SELECT performance_id FROM performance_songs WHERE song_id = ")
-            .push_bind(song_id)
-            .push(")");
-        keyword = " AND ";
+    push_clauses(&mut conditions, Subject::Performance, "id", filter.clauses);
+
+    if let Some(date_from) = filter.date_from {
+        conditions
+            .condition()
+            .push("performance_date >= ")
+            .push_bind(date_from);
     }
 
-    if let Some(artist_id) = filter.artist_id {
-        builder
-            .push(keyword)
-            .push("id IN (SELECT performance_id FROM performance_singers WHERE artist_id = ")
-            .push_bind(artist_id)
-            .push(")");
+    if let Some(date_to) = filter.date_to {
+        conditions
+            .condition()
+            .push("performance_date <= ")
+            .push_bind(date_to);
     }
 }
 
@@ -131,6 +133,18 @@ pub async fn search_count(
         .await
         .map(|n| n as u64)
         .map_err(DbError::from)
+}
+
+/// Returns every year that has at least one performance, newest first.
+pub async fn years(executor: impl Executor<'_, Database = MySql>) -> Result<Vec<i32>> {
+    sqlx::query_scalar::<_, i64>(
+        "SELECT DISTINCT CAST(YEAR(performance_date) AS SIGNED) AS year \
+         FROM performances ORDER BY year DESC",
+    )
+    .fetch_all(executor)
+    .await
+    .map(|years| years.into_iter().map(|year| year as i32).collect())
+    .map_err(DbError::from)
 }
 
 /// Returns songs for multiple performances, keyed by performance ID.

@@ -5,10 +5,11 @@ pub(crate) mod lyrics;
 
 use axum::{
     Json, Router,
-    extract::{DefaultBodyLimit, Path, Query, State},
+    extract::{DefaultBodyLimit, Path, State},
     http::StatusCode,
     routing::{get, patch, post},
 };
+use axum_extra::extract::Query;
 use uuid::Uuid;
 
 use api_types::{
@@ -25,13 +26,14 @@ use api_types::{
 use db::{
     MySqlPool,
     error::DbError,
+    filter::Subject,
     models::{NewLyrics, NewSong, UpdateSong},
-    queries,
+    queries::{self, songs::SongFilter},
 };
 
 use crate::{
-    auth::middleware::AuthUser, capabilities, convert, error::ApiError, pagination,
-    routes::common::SortDir, state::AppState,
+    auth::middleware::AuthUser, capabilities, convert, error::ApiError, filters::parse_filters,
+    pagination, routes::common::SortDir, state::AppState,
 };
 
 #[derive(utoipa::OpenApi)]
@@ -94,6 +96,10 @@ pub(crate) struct SongListParams {
     pub per_page: u32,
     /// Text search by title or original artist name.
     pub q: Option<String>,
+    /// Filter expressions like `original_artist:<id>,<id>` or `-genre:<id>`, repeated for each
+    /// condition. All expressions must hold, values within one are alternatives.
+    #[serde(default)]
+    pub filter: Vec<String>,
     /// Field to sort by. Defaults to `performance_count`.
     pub sort: Option<SongSort>,
     /// Sort direction. Defaults to `desc`.
@@ -192,12 +198,16 @@ pub(crate) async fn list_songs(
     Query(params): Query<SongListParams>,
 ) -> Result<Json<PagedResponse<SongSummary>>, ApiError> {
     let (limit, offset) = pagination::limit_offset(params.page, params.per_page);
-    let q = params.q.as_deref().filter(|s| !s.is_empty());
+    let parsed = parse_filters(&params.filter, Subject::Song)?;
+    let filter = SongFilter {
+        q: params.q.as_deref().filter(|s| !s.is_empty()),
+        clauses: &parsed.clauses,
+    };
     let order_by = params.order_by_clause();
 
     let (total, songs) = tokio::try_join!(
-        queries::songs::search_count(&state.pool, q),
-        queries::songs::search(&state.pool, q, &order_by, limit, offset),
+        queries::songs::search_count(&state.pool, filter),
+        queries::songs::search(&state.pool, filter, &order_by, limit, offset),
     )?;
 
     let song_ids: Vec<Uuid> = songs.iter().map(|s| s.id).collect();
