@@ -1,7 +1,9 @@
 use chrono::NaiveDate;
 use db::error::DbError;
+use db::models::artist::NewArtist;
 use db::models::performance::{NewPerformance, UpdatePerformance};
-use db::queries::performances;
+use db::queries::artists;
+use db::queries::performances::{self, PerformanceFilter};
 use sqlx::MySqlPool;
 
 const ORDER_BY: &str =
@@ -122,7 +124,7 @@ async fn search_sorts_without_stream_position_last_within_date(pool: MySqlPool) 
         .await
         .unwrap();
 
-    let results = performances::search(&pool, None, None, ORDER_BY, 10, 0)
+    let results = performances::search(&pool, PerformanceFilter::default(), ORDER_BY, 10, 0)
         .await
         .unwrap();
     let ids: Vec<_> = results.iter().map(|performance| performance.id).collect();
@@ -137,4 +139,62 @@ async fn search_sorts_without_stream_position_last_within_date(pool: MySqlPool) 
             upload_a.id
         ]
     );
+}
+
+#[sqlx::test(migrator = "db::MIGRATOR")]
+async fn search_filters_by_artist(pool: MySqlPool) {
+    let sung_by_a = create_performance(&pool, date(1), Some(1), Some(1))
+        .await
+        .unwrap();
+    let sung_by_b = create_performance(&pool, date(1), Some(1), Some(2))
+        .await
+        .unwrap();
+    create_performance(&pool, date(1), Some(1), Some(3))
+        .await
+        .unwrap();
+
+    let mut conn = pool.acquire().await.unwrap();
+    let artist_a = artists::create(
+        &mut conn,
+        &NewArtist {
+            name: "artist_a".to_string(),
+            description: None,
+        },
+    )
+    .await
+    .unwrap();
+    let artist_b = artists::create(
+        &mut conn,
+        &NewArtist {
+            name: "artist_b".to_string(),
+            description: None,
+        },
+    )
+    .await
+    .unwrap();
+    performances::set_singers(&mut conn, sung_by_a.id, &[artist_a.id])
+        .await
+        .unwrap();
+    performances::set_singers(&mut conn, sung_by_b.id, &[artist_a.id, artist_b.id])
+        .await
+        .unwrap();
+
+    let filter = PerformanceFilter {
+        artist_id: Some(artist_b.id),
+        ..PerformanceFilter::default()
+    };
+    let results = performances::search(&pool, filter, ORDER_BY, 10, 0)
+        .await
+        .unwrap();
+    let total = performances::search_count(&pool, filter).await.unwrap();
+
+    assert_eq!(total, 1);
+    assert_eq!(results.len(), 1);
+    assert_eq!(results[0].id, sung_by_b.id);
+
+    let filter = PerformanceFilter {
+        artist_id: Some(artist_a.id),
+        ..PerformanceFilter::default()
+    };
+    assert_eq!(performances::search_count(&pool, filter).await.unwrap(), 2);
 }

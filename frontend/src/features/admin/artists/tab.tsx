@@ -63,7 +63,9 @@ export function ArtistsAdminTab() {
                 }}
               >
                 <div className="admin-item-title">{artist.name}</div>
-                {artist.description && <div className="admin-item-sub">{artist.description}</div>}
+                {artist.description && (
+                  <div className="admin-item-sub admin-item-sub--clamped">{artist.description}</div>
+                )}
               </button>
             </li>
           ))}

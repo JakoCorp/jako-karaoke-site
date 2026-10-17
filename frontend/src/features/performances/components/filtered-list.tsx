@@ -9,7 +9,7 @@ import { PerformanceRow } from "./row";
 import { SortHeader } from "./sort-header";
 
 interface FilteredPerformanceListProps {
-  filter: { song_id?: string };
+  filter: { song_id?: string; artist_id?: string };
 }
 
 export function FilteredPerformanceList({ filter }: FilteredPerformanceListProps) {

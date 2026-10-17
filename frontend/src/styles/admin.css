@@ -213,6 +213,15 @@
   margin-top: 0.125rem;
 }
 
+@utility admin-item-sub--clamped {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
 @utility admin-tag-list {
   flex: 1;
   overflow-y: auto;
