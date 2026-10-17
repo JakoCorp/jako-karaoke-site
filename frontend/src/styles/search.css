@@ -6,20 +6,6 @@
   padding: 1.5rem 1.5rem 0;
 }
 
-@utility search-input-wrapper {
-  position: relative;
-  flex: 1;
-}
-
-@utility search-input-icon {
-  position: absolute;
-  left: 0.75rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--color-fg-muted);
-  pointer-events: none;
-}
-
 @utility search-input {
   width: 100%;
   padding-left: 2.25rem;

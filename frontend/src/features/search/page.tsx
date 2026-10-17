@@ -1,25 +1,39 @@
-import { MagnifyingGlassIcon } from "@phosphor-icons/react";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 
 import type { PerformanceSortDir, PerformanceSortField } from "@/api/performances";
 import type { SongSortDir } from "@/api/songs";
+import { FilterInput } from "@/components/filter-input/filter-input";
 import { PerformanceRow, SortHeader } from "@/features/performances";
+import { useFilterCatalog } from "@/hooks/api/filter-catalog";
 import { usePerformances } from "@/hooks/api/performances";
 import { useSongs } from "@/hooks/api/songs";
 import { useDebounced } from "@/hooks/use-debounced";
+import { PERFORMANCE_FILTER_FIELDS, SONG_FILTER_FIELDS } from "@/lib/filter-fields";
+import {
+  chipExpressions,
+  plainSearchText,
+  validateChips,
+  type FilterChip,
+} from "@/lib/filter-query";
 import { createStateCodec } from "@/lib/url-state";
 
 import { SongRow } from "./song-row";
 
 type SearchMode = "performances" | "songs";
 
-/**
- * All active search and filter parameters, stored as a single ?query= URL param.
- * Extend this interface as new filter dimensions (tags, artists, date range) are added.
- */
+function filterFieldsFor(mode: SearchMode) {
+  return mode === "songs" ? SONG_FILTER_FIELDS : PERFORMANCE_FILTER_FIELDS;
+}
+
+function filterFieldKeys(mode: SearchMode): string[] {
+  return filterFieldsFor(mode).map((field) => field.key);
+}
+
+/** All active search and filter parameters, stored as a single ?query= URL param. */
 interface SearchState {
   q?: string;
+  filters?: FilterChip[];
   mode?: "songs";
   sort?: PerformanceSortField;
   perf_sort_dir?: PerformanceSortDir;
@@ -32,6 +46,7 @@ const searchStateCodec = createStateCodec<SearchState>({
   compact: (state) => {
     const compact: SearchState = {};
     if (state.q) compact.q = state.q;
+    if (state.filters && state.filters.length > 0) compact.filters = state.filters;
     if (state.mode === "songs") compact.mode = state.mode;
     if (state.sort && state.sort !== "performance_date") compact.sort = state.sort;
     if (state.perf_sort_dir && state.perf_sort_dir !== "desc")
@@ -46,6 +61,8 @@ const searchStateCodec = createStateCodec<SearchState>({
     const state: SearchState = {};
     if (typeof parsed.q === "string" && parsed.q) state.q = parsed.q;
     if (parsed.mode === "songs") state.mode = parsed.mode;
+    const filters = validateChips(parsed.filters, filterFieldKeys(state.mode ?? "performances"));
+    if (filters.length > 0) state.filters = filters;
     if (
       parsed.sort === "performance_date" ||
       parsed.sort === "play_count" ||
@@ -67,7 +84,10 @@ export function SearchPage() {
   const searchState = searchStateCodec.decode(searchParams.get("query") ?? "");
 
   const q = searchState.q ?? "";
+  const filters = searchState.filters ?? [];
   const mode: SearchMode = searchState.mode ?? "performances";
+  const filterFields = filterFieldsFor(mode);
+  const filterParams = filters.length > 0 ? chipExpressions(filters) : undefined;
   const sort = searchState.sort ?? "performance_date";
   const perfSortDir: PerformanceSortDir = searchState.perf_sort_dir ?? "desc";
   const songSortDir: SongSortDir = searchState.song_sort_dir ?? "desc";
@@ -75,25 +95,26 @@ export function SearchPage() {
   const perPage = searchState.per_page ?? 20;
 
   const [inputValue, setInputValue] = useState(q);
-  const [prevQ, setPrevQ] = useState(q);
   const debouncedInput = useDebounced(inputValue);
-  const lastSyncedQ = useRef(q.trim());
-
-  if (q !== prevQ) {
-    setPrevQ(q);
-    setInputValue(q);
-  }
+  const lastSyncedQ = useRef(q);
 
   useEffect(() => {
-    const trimmed = debouncedInput.trim();
-    if (trimmed === lastSyncedQ.current) return;
-    lastSyncedQ.current = trimmed;
+    if (q === lastSyncedQ.current) return;
+    lastSyncedQ.current = q;
+    setInputValue(q);
+  }, [q, lastSyncedQ]);
+
+  const debouncedQ = plainSearchText(debouncedInput, filterFieldKeys(mode)).trim();
+
+  useEffect(() => {
+    if (debouncedQ === lastSyncedQ.current) return;
+    lastSyncedQ.current = debouncedQ;
     setSearchParams(
       (prev) => {
         const current = searchStateCodec.decode(prev.get("query") ?? "");
         const next = searchStateCodec.toParam({
           ...current,
-          q: trimmed || undefined,
+          q: debouncedQ || undefined,
           page: undefined,
         });
         const params = new URLSearchParams(prev);
@@ -106,7 +127,7 @@ export function SearchPage() {
       },
       { replace: true },
     );
-  }, [debouncedInput, setSearchParams]);
+  }, [debouncedQ, setSearchParams, lastSyncedQ]);
 
   function updateSearch(partial: Partial<SearchState>) {
     setSearchParams((prev) => {
@@ -122,25 +143,40 @@ export function SearchPage() {
     });
   }
 
+  const { data: catalog = [] } = useFilterCatalog(mode);
+
   const { data: perfData, isLoading: perfLoading } = usePerformances(
-    { q: q || undefined, page, per_page: perPage, sort, sort_dir: perfSortDir },
+    {
+      q: q || undefined,
+      filter: filterParams,
+      page,
+      per_page: perPage,
+      sort,
+      sort_dir: perfSortDir,
+    },
     mode === "performances",
   );
 
   const { data: songData, isLoading: songLoading } = useSongs(
-    { q: q || undefined, page, per_page: perPage, sort_dir: songSortDir },
+    { q: q || undefined, filter: filterParams, page, per_page: perPage, sort_dir: songSortDir },
     mode === "songs",
   );
 
   const isLoading = mode === "performances" ? perfLoading : songLoading;
 
   function handleModeChange(next: SearchMode) {
+    const nextKeys = filterFieldKeys(next);
     updateSearch({
       mode: next === "songs" ? "songs" : undefined,
+      filters: filters.filter((chip) => nextKeys.includes(chip.field)),
       sort: undefined,
       perf_sort_dir: undefined,
       page: undefined,
     });
+  }
+
+  function handleFiltersChange(next: FilterChip[]) {
+    updateSearch({ filters: next, page: undefined });
   }
 
   function handleSortChange(field: PerformanceSortField) {
@@ -161,21 +197,18 @@ export function SearchPage() {
   return (
     <div>
       <div className="search-header">
-        <div className="search-input-wrapper">
-          <MagnifyingGlassIcon size={16} className="search-input-icon" />
-          <input
-            type="search"
-            className="form-input search-input"
-            placeholder={
-              mode === "songs" ? "Search by title or artist…" : "Search by title, song, or artist…"
-            }
-            value={inputValue}
-            onChange={(event) => {
-              setInputValue(event.target.value);
-            }}
-            aria-label={mode === "songs" ? "Search songs" : "Search performances"}
-          />
-        </div>
+        <FilterInput
+          fields={filterFields}
+          chips={filters}
+          onChipsChange={handleFiltersChange}
+          text={inputValue}
+          onTextChange={setInputValue}
+          catalog={catalog}
+          placeholder={
+            mode === "songs" ? "Search by title or artist…" : "Search by title, song, or artist…"
+          }
+          ariaLabel={mode === "songs" ? "Search songs" : "Search performances"}
+        />
         <div className="search-mode-toggle">
           <button
             className={

@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { tagsApi } from "@/api/tags";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { filterCatalogKeys } from "@/hooks/api/filter-catalog";
 import { tagKeys, useTags } from "@/hooks/api/tags";
 import { failureMessage } from "@/lib/error-message";
 
@@ -25,6 +26,7 @@ export function TagsAdminTab() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: tagKeys.all() });
+      void queryClient.invalidateQueries({ queryKey: filterCatalogKeys.all() });
       setCreateOpen(false);
       setNewTagName("");
       setCreateError(null);
@@ -41,6 +43,7 @@ export function TagsAdminTab() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: tagKeys.all() });
+      void queryClient.invalidateQueries({ queryKey: filterCatalogKeys.all() });
       setConfirmDeleteId(null);
     },
   });
