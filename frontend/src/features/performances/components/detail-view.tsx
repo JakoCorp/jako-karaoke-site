@@ -5,7 +5,7 @@ import { Link } from "react-router";
 
 import type { PerformanceResponse } from "@/api/performances";
 import { resolveAssetUrl } from "@/lib/asset-url";
-import { formatDate, formatDuration, formatStreamTime } from "@/lib/format";
+import { formatDate, formatDuration, formatStreamTime, hasStreamPosition } from "@/lib/format";
 import { extractYouTubeVideoId, getVideoEmbedInfo } from "@/lib/video-embed";
 import { selectCurrent, usePlayerStore } from "@/store/player";
 
@@ -89,8 +89,9 @@ export function PerformanceDetailView({ performance, lyricsContent }: Props) {
             </div>
           )}
           <div className="perf-detail-meta">
-            {formatDate(performance.performance_date)} · Stream {performance.stream_number} -
-            Performance #{performance.performance_number}
+            {formatDate(performance.performance_date)}
+            {hasStreamPosition(performance) &&
+              ` · Stream ${String(performance.stream_number)} - Performance #${String(performance.performance_number)}`}
           </div>
           {performance.stream_time != null && (
             <div className="perf-detail-meta">

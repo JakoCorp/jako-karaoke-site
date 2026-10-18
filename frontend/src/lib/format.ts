@@ -59,6 +59,13 @@ export function parseStreamTime(input: string): number | null {
   return null;
 }
 
+/** Returns whether a performance has a stream number and a performance number. */
+export function hasStreamPosition<
+  T extends { stream_number?: number | null; performance_number?: number | null },
+>(performance: T): performance is T & { stream_number: number; performance_number: number } {
+  return performance.stream_number != null && performance.performance_number != null;
+}
+
 /** Formats a byte count with a binary unit. */
 export function formatBytes(bytes: number): string {
   const units = ["B", "KB", "MB", "GB", "TB"];

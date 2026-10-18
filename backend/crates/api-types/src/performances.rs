@@ -135,10 +135,11 @@ pub struct CreatePerformanceRequest {
     pub title: Option<String>,
     /// Calendar date of the stream in which this performance occurred.
     pub performance_date: NaiveDate,
-    /// Stream index within `performance_date`, 1-based.
-    pub stream_number: u8,
-    /// Performance index within `performance_date` + `stream_number`, 1-based.
-    pub performance_number: u16,
+    /// Stream index within `performance_date`, 1-based. Absent when not performed on a stream.
+    pub stream_number: Option<u8>,
+    /// Performance index within `performance_date` + `stream_number`, 1-based. Absent when not
+    /// performed on a stream.
+    pub performance_number: Option<u16>,
     /// Duration in seconds.
     pub duration: Option<u32>,
     /// Offset in seconds from the start of the stream.
@@ -162,10 +163,11 @@ pub struct UpdatePerformanceRequest {
     pub title: Option<String>,
     /// Calendar date of the stream in which this performance occurred.
     pub performance_date: NaiveDate,
-    /// Stream index within `performance_date`, 1-based.
-    pub stream_number: u8,
-    /// Performance index within `performance_date` + `stream_number`, 1-based.
-    pub performance_number: u16,
+    /// Stream index within `performance_date`, 1-based. Absent when not performed on a stream.
+    pub stream_number: Option<u8>,
+    /// Performance index within `performance_date` + `stream_number`, 1-based. Absent when not
+    /// performed on a stream.
+    pub performance_number: Option<u16>,
     /// Duration in seconds.
     pub duration: Option<u32>,
     /// Offset in seconds from the start of the stream.
@@ -193,10 +195,11 @@ pub struct PerformanceSummary {
     pub duration: Option<u32>,
     /// Calendar date of the stream.
     pub performance_date: NaiveDate,
-    /// Stream index within `performance_date`, 1-based.
-    pub stream_number: u8,
-    /// Performance index within `performance_date` + `stream_number`, 1-based.
-    pub performance_number: u16,
+    /// Stream index within `performance_date`, 1-based. Absent when not performed on a stream.
+    pub stream_number: Option<u8>,
+    /// Performance index within `performance_date` + `stream_number`, 1-based. Absent when not
+    /// performed on a stream.
+    pub performance_number: Option<u16>,
     /// Artists who sang in this performance.
     pub singers: Vec<ArtistInfo>,
     /// Songs featured in this performance.
@@ -220,10 +223,11 @@ pub struct PerformanceResponse {
     pub stream_time: Option<u32>,
     /// Calendar date of the stream.
     pub performance_date: NaiveDate,
-    /// Stream index within `performance_date`, 1-based.
-    pub stream_number: u8,
-    /// Performance index within `performance_date` + `stream_number`, 1-based.
-    pub performance_number: u16,
+    /// Stream index within `performance_date`, 1-based. Absent when not performed on a stream.
+    pub stream_number: Option<u8>,
+    /// Performance index within `performance_date` + `stream_number`, 1-based. Absent when not
+    /// performed on a stream.
+    pub performance_number: Option<u16>,
     /// Songs featured in this performance.
     pub songs: Vec<SongSummary>,
     /// Artists who sang in this performance.

@@ -3,7 +3,7 @@ import { useState } from "react";
 import { type PerformanceSummary } from "@/api/performances";
 import { usePerformances } from "@/hooks/api/performances";
 import { useDebounced } from "@/hooks/use-debounced";
-import { formatDate } from "@/lib/format";
+import { formatDate, hasStreamPosition } from "@/lib/format";
 
 import { PerformanceDetailPanel } from "./detail";
 import { ImportPerformancesDialog } from "./import-dialog";
@@ -79,7 +79,9 @@ export function PerformancesAdminTab() {
               >
                 <div className="admin-item-title">
                   {performance.title ??
-                    `${formatDate(performance.performance_date)} · S${String(performance.stream_number)} #${String(performance.performance_number)}`}
+                    (hasStreamPosition(performance)
+                      ? `${formatDate(performance.performance_date)} · S${String(performance.stream_number)} #${String(performance.performance_number)}`
+                      : formatDate(performance.performance_date))}
                 </div>
                 {performance.singers.length > 0 && (
                   <div className="admin-item-sub">

@@ -18,13 +18,14 @@ import { performanceKeys, usePerformance } from "@/hooks/api/performances";
 import { useSongs } from "@/hooks/api/songs";
 import { tagKeys, useTags } from "@/hooks/api/tags";
 import { failureMessage } from "@/lib/error-message";
-import { formatDate, formatStreamTime, parseStreamTime } from "@/lib/format";
+import { formatDate, formatStreamTime, hasStreamPosition, parseStreamTime } from "@/lib/format";
 import { applyAll } from "@/lib/staging";
 
 import { MediaEditSection, type StagingMediaItem } from "../components/media-edit-section";
 import { MediaList } from "../components/media-list";
 import { ItemPicker, TagPicker, type TagAssignment } from "../components/pickers";
 import { resolveTagAssignments } from "../components/tag-utils";
+import { parseStreamPosition } from "./stream-position";
 
 export function PerformanceDetailPanel({
   performance,
@@ -38,8 +39,8 @@ export function PerformanceDetailPanel({
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editDate, setEditDate] = useState("");
-  const [editStreamNumber, setEditStreamNumber] = useState(1);
-  const [editPerformanceNumber, setEditPerformanceNumber] = useState(1);
+  const [editStreamNumber, setEditStreamNumber] = useState("");
+  const [editPerformanceNumber, setEditPerformanceNumber] = useState("");
   const [editStreamTimeInput, setEditStreamTimeInput] = useState("");
   const [editSongIds, setEditSongIds] = useState<string[]>([]);
   const [editSingerIds, setEditSingerIds] = useState<string[]>([]);
@@ -59,6 +60,7 @@ export function PerformanceDetailPanel({
 
   const queryClient = useQueryClient();
   const isFormOpen = isCreating || isEditing;
+  const streamPosition = parseStreamPosition(editStreamNumber, editPerformanceNumber);
 
   const { data: performanceDetail } = usePerformance(performance?.id ?? "", !isCreating);
   const { data: allSongs } = useSongs({ per_page: 200 }, isFormOpen);
@@ -67,6 +69,7 @@ export function PerformanceDetailPanel({
 
   const createMutation = useMutation({
     mutationFn: async () => {
+      if (!streamPosition.ok) throw new Error(streamPosition.message);
       const resolvedTags = await resolveTagAssignments(editTags, async (name) => {
         const { data, error: tagError } = await tagsApi.create({ name });
         if (tagError) throw tagError;
@@ -75,8 +78,8 @@ export function PerformanceDetailPanel({
       });
       const { data, error: apiError } = await performancesApi.create({
         performance_date: editDate,
-        stream_number: editStreamNumber,
-        performance_number: editPerformanceNumber,
+        stream_number: streamPosition.stream_number,
+        performance_number: streamPosition.performance_number,
         stream_time: parseStreamTime(editStreamTimeInput) ?? undefined,
         song_ids: editSongIds,
         singer_ids: editSingerIds,
@@ -118,6 +121,7 @@ export function PerformanceDetailPanel({
   const updateMutation = useMutation({
     mutationFn: async () => {
       if (!performance) return;
+      if (!streamPosition.ok) throw new Error(streamPosition.message);
       const resolvedTags = await resolveTagAssignments(editTags, async (name) => {
         const { data, error: tagError } = await tagsApi.create({ name });
         if (tagError) throw tagError;
@@ -126,8 +130,8 @@ export function PerformanceDetailPanel({
       });
       const { error: apiError } = await performancesApi.update(performance.id, {
         performance_date: editDate,
-        stream_number: editStreamNumber,
-        performance_number: editPerformanceNumber,
+        stream_number: streamPosition.stream_number,
+        performance_number: streamPosition.performance_number,
         stream_time: parseStreamTime(editStreamTimeInput) ?? undefined,
         song_ids: editSongIds,
         singer_ids: editSingerIds,
@@ -199,8 +203,14 @@ export function PerformanceDetailPanel({
     if (!performanceDetail) return;
     setEditTitle(performanceDetail.title ?? "");
     setEditDate(performanceDetail.performance_date);
-    setEditStreamNumber(performanceDetail.stream_number);
-    setEditPerformanceNumber(performanceDetail.performance_number);
+    setEditStreamNumber(
+      performanceDetail.stream_number != null ? String(performanceDetail.stream_number) : "",
+    );
+    setEditPerformanceNumber(
+      performanceDetail.performance_number != null
+        ? String(performanceDetail.performance_number)
+        : "",
+    );
     setEditStreamTimeInput(
       performanceDetail.stream_time != null ? formatStreamTime(performanceDetail.stream_time) : "",
     );
@@ -329,9 +339,7 @@ export function PerformanceDetailPanel({
             <button
               className="btn btn-primary"
               type="button"
-              disabled={
-                isPending || editDate === "" || editStreamNumber < 1 || editPerformanceNumber < 1
-              }
+              disabled={isPending || editDate === "" || !streamPosition.ok}
               onClick={() => {
                 if (isCreating) {
                   createMutation.mutate();
@@ -362,7 +370,7 @@ export function PerformanceDetailPanel({
           </div>
           <div className="form-field">
             <label className="form-label" htmlFor="perf-edit-stream">
-              Stream number
+              Stream number (blank if not streamed)
             </label>
             <input
               id="perf-edit-stream"
@@ -371,13 +379,13 @@ export function PerformanceDetailPanel({
               min={1}
               value={editStreamNumber}
               onChange={(event) => {
-                setEditStreamNumber(Number(event.target.value));
+                setEditStreamNumber(event.target.value);
               }}
             />
           </div>
           <div className="form-field">
             <label className="form-label" htmlFor="perf-edit-number">
-              Performance number
+              Performance number (blank if not streamed)
             </label>
             <input
               id="perf-edit-number"
@@ -386,9 +394,10 @@ export function PerformanceDetailPanel({
               min={1}
               value={editPerformanceNumber}
               onChange={(event) => {
-                setEditPerformanceNumber(Number(event.target.value));
+                setEditPerformanceNumber(event.target.value);
               }}
             />
+            {!streamPosition.ok && <p className="form-error">{streamPosition.message}</p>}
           </div>
           <div className="form-field">
             <label className="form-label" htmlFor="perf-edit-stream-time">
@@ -588,14 +597,16 @@ export function PerformanceDetailPanel({
             <span className="admin-detail-label">Date</span>
             <span className="admin-empty">{formatDate(performanceDetail.performance_date)}</span>
           </div>
-          <div className="admin-detail-section">
-            <span className="admin-detail-label">Stream</span>
-            <span className="admin-empty">
-              S{performanceDetail.stream_number} #{performanceDetail.performance_number}
-              {performanceDetail.stream_time != null &&
-                ` · ${formatStreamTime(performanceDetail.stream_time)}`}
-            </span>
-          </div>
+          {hasStreamPosition(performanceDetail) && (
+            <div className="admin-detail-section">
+              <span className="admin-detail-label">Stream</span>
+              <span className="admin-empty">
+                S{performanceDetail.stream_number} #{performanceDetail.performance_number}
+                {performanceDetail.stream_time != null &&
+                  ` · ${formatStreamTime(performanceDetail.stream_time)}`}
+              </span>
+            </div>
+          )}
           {performanceDetail.songs.length > 0 && (
             <div className="admin-detail-section">
               <span className="admin-detail-label">Songs</span>

@@ -8,6 +8,7 @@ use utoipa::ToSchema;
 pub struct DownloadSettings {
     /// Filename template without extension. Recognized tokens are `{title}`, `{singer}`,
     /// `{original_artist}`, `{song}`, `{date}`, `{stream_number}` and `{performance_number}`.
+    /// `{stream_number}` and `{performance_number}` are empty when not performed on a stream.
     pub filename_template: String,
     /// Embed the song cover art in the file tags when one is hosted.
     pub include_cover_art: bool,
