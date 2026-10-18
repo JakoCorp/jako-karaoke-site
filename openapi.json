@@ -997,6 +997,16 @@
             }
           },
           {
+            "name": "artist_id",
+            "in": "query",
+            "description": "Filter by singer artist ID. Returns only performances this artist sang in.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
             "name": "sort",
             "in": "query",
             "description": "Field to sort by. Defaults to `performance_date`.",

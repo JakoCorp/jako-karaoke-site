@@ -29,7 +29,7 @@ use db::{
     MySqlPool,
     error::DbError,
     models::{NewLyrics, NewPerformance, UpdatePerformance, performance::Performance},
-    queries,
+    queries::{self, performances::PerformanceFilter},
 };
 
 use crate::{
@@ -103,6 +103,8 @@ pub(crate) struct PerformanceListParams {
     pub q: Option<String>,
     /// Filter by song ID. Returns only performances that include this song.
     pub song_id: Option<Uuid>,
+    /// Filter by singer artist ID. Returns only performances this artist sang in.
+    pub artist_id: Option<Uuid>,
     /// Field to sort by. Defaults to `performance_date`.
     pub sort: Option<PerformanceSort>,
     /// Sort direction. Defaults to `desc`.
@@ -343,12 +345,16 @@ pub(crate) async fn list_performances(
     Query(params): Query<PerformanceListParams>,
 ) -> Result<Json<PagedResponse<PerformanceSummary>>, ApiError> {
     let (limit, offset) = pagination::limit_offset(params.page, params.per_page);
-    let q = params.q.as_deref().filter(|s| !s.is_empty());
+    let filter = PerformanceFilter {
+        q: params.q.as_deref().filter(|s| !s.is_empty()),
+        song_id: params.song_id,
+        artist_id: params.artist_id,
+    };
 
     let order_by = params.order_by_clause();
     let (total, perfs) = tokio::try_join!(
-        queries::performances::search_count(&state.pool, q, params.song_id),
-        queries::performances::search(&state.pool, q, params.song_id, &order_by, limit, offset),
+        queries::performances::search_count(&state.pool, filter),
+        queries::performances::search(&state.pool, filter, &order_by, limit, offset),
     )?;
 
     let items = build_performance_summaries(&state.pool, perfs).await?;

@@ -19,6 +19,7 @@ export type PerformanceListParams = SearchPaginationParams & {
   sort?: PerformanceSortField;
   sort_dir?: PerformanceSortDir;
   song_id?: string;
+  artist_id?: string;
 };
 
 export const PERFORMANCE_TAG_KINDS = [

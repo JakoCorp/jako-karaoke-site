@@ -5,7 +5,7 @@
 
 use std::collections::HashMap;
 
-use sqlx::{Executor, MySql, MySqlConnection};
+use sqlx::{Executor, MySql, MySqlConnection, QueryBuilder};
 use uuid::Uuid;
 
 use crate::error::DbError;
@@ -32,133 +32,105 @@ pub async fn get_by_id(
     .map_err(DbError::from)
 }
 
-/// Returns the total number of performances.
-async fn count(executor: impl Executor<'_, Database = MySql>) -> Result<u64> {
-    sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM performances")
-        .fetch_one(executor)
-        .await
-        .map(|n| n as u64)
-        .map_err(DbError::from)
+/// Filters applied by [`search`] and [`search_count`]. Every set field must match.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct PerformanceFilter<'a> {
+    /// Case insensitive substring matched against the performance title, any linked song title
+    /// and any linked singer name.
+    pub q: Option<&'a str>,
+    /// Only performances that include this song.
+    pub song_id: Option<Uuid>,
+    /// Only performances this artist sang in.
+    pub artist_id: Option<Uuid>,
+}
+
+/// Appends the `WHERE` clause for `filter`, binding its values. Appends nothing for an empty filter.
+fn push_filters(builder: &mut QueryBuilder<MySql>, filter: PerformanceFilter<'_>) {
+    let mut keyword = " WHERE ";
+
+    if let Some(q) = filter.q {
+        let pattern = format!("%{q}%");
+        builder
+            .push(keyword)
+            .push("id IN (SELECT id FROM performances WHERE title LIKE ")
+            .push_bind(pattern.clone())
+            .push(
+                " UNION SELECT ps.performance_id FROM performance_songs ps \
+                 JOIN songs s ON s.id = ps.song_id WHERE s.title LIKE ",
+            )
+            .push_bind(pattern.clone())
+            .push(
+                " UNION SELECT ps.performance_id FROM performance_singers ps \
+                 JOIN artists a ON a.id = ps.artist_id WHERE a.name LIKE ",
+            )
+            .push_bind(pattern)
+            .push(")");
+        keyword = " AND ";
+    }
+
+    if let Some(song_id) = filter.song_id {
+        builder
+            .push(keyword)
+            .push("id IN (SELECT performance_id FROM performance_songs WHERE song_id = ")
+            .push_bind(song_id)
+            .push(")");
+        keyword = " AND ";
+    }
+
+    if let Some(artist_id) = filter.artist_id {
+        builder
+            .push(keyword)
+            .push("id IN (SELECT performance_id FROM performance_singers WHERE artist_id = ")
+            .push_bind(artist_id)
+            .push(")");
+    }
 }
 
 /// Returns a filtered, sorted page of performances.
 ///
-/// When `q` is `Some`, results are filtered by a case-insensitive substring match
-/// against the performance title, any linked song title, or any linked singer name.
-/// When `song_id` is `Some`, only performances linked to that song are returned.
 /// `order_by` must be derived from validated enums to prevent injection.
 pub async fn search(
     executor: impl Executor<'_, Database = MySql>,
-    q: Option<&str>,
-    song_id: Option<Uuid>,
+    filter: PerformanceFilter<'_>,
     order_by: &str,
     limit: u32,
     offset: u32,
 ) -> Result<Vec<Performance>> {
-    let q_filter = "id IN (\
-        SELECT id FROM performances WHERE title LIKE ? \
-        UNION \
-        SELECT ps.performance_id FROM performance_songs ps \
-        JOIN songs s ON s.id = ps.song_id WHERE s.title LIKE ? \
-        UNION \
-        SELECT ps.performance_id FROM performance_singers ps \
-        JOIN artists a ON a.id = ps.artist_id WHERE a.name LIKE ?\
-    )";
-    let song_filter = "id IN (SELECT performance_id FROM performance_songs WHERE song_id = ?)";
-
-    let mut where_parts: Vec<&str> = Vec::new();
-    if q.is_some() {
-        where_parts.push(q_filter);
-    }
-    if song_id.is_some() {
-        where_parts.push(song_filter);
-    }
-
-    let where_clause = if where_parts.is_empty() {
-        String::new()
-    } else {
-        format!("WHERE {}", where_parts.join(" AND "))
-    };
-
-    let sql = format!(
+    let mut builder = QueryBuilder::new(
         "SELECT id, created_by, title, lyrics_id, play_count, duration, stream_time, \
          performance_date, stream_number, performance_number \
-         FROM performances {where_clause} ORDER BY {order_by} LIMIT ? OFFSET ?"
+         FROM performances",
     );
+    push_filters(&mut builder, filter);
+    builder
+        .push(" ORDER BY ")
+        .push(order_by)
+        .push(" LIMIT ")
+        .push_bind(limit)
+        .push(" OFFSET ")
+        .push_bind(offset);
 
-    let query = sqlx::query_as::<_, Performance>(sqlx::AssertSqlSafe(sql.as_str()));
-    let query = if let Some(pattern) = q.map(|q| format!("%{q}%")) {
-        query
-            .bind(pattern.clone())
-            .bind(pattern.clone())
-            .bind(pattern)
-    } else {
-        query
-    };
-    let query = if let Some(sid) = song_id {
-        query.bind(sid)
-    } else {
-        query
-    };
-
-    query
-        .bind(limit)
-        .bind(offset)
+    builder
+        .build_query_as::<Performance>()
         .fetch_all(executor)
         .await
         .map_err(DbError::from)
 }
 
-/// Returns the total number of performances matching the optional text query and song filter.
+/// Returns the total number of performances matching `filter`.
 pub async fn search_count(
     executor: impl Executor<'_, Database = MySql>,
-    q: Option<&str>,
-    song_id: Option<Uuid>,
+    filter: PerformanceFilter<'_>,
 ) -> Result<u64> {
-    match (q, song_id) {
-        (None, None) => count(executor).await,
-        (None, Some(sid)) => {
-            sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM performance_songs WHERE song_id = ?")
-                .bind(sid)
-                .fetch_one(executor)
-                .await
-                .map(|n| n as u64)
-                .map_err(DbError::from)
-        }
-        (Some(q), song_id) => {
-            let pattern = format!("%{q}%");
-            let song_filter = if song_id.is_some() {
-                " WHERE id IN (SELECT performance_id FROM performance_songs WHERE song_id = ?)"
-            } else {
-                ""
-            };
-            let sql = format!(
-                "SELECT COUNT(*) FROM (\
-                   SELECT id FROM performances WHERE title LIKE ? \
-                   UNION \
-                   SELECT ps.performance_id FROM performance_songs ps \
-                   JOIN songs s ON s.id = ps.song_id WHERE s.title LIKE ? \
-                   UNION \
-                   SELECT ps.performance_id FROM performance_singers ps \
-                   JOIN artists a ON a.id = ps.artist_id WHERE a.name LIKE ? \
-                 ) AS matched{song_filter}"
-            );
-            let query = sqlx::query_scalar::<_, i64>(sqlx::AssertSqlSafe(sql.as_str()))
-                .bind(&pattern)
-                .bind(&pattern)
-                .bind(&pattern);
-            let query = if let Some(sid) = song_id {
-                query.bind(sid)
-            } else {
-                query
-            };
-            query
-                .fetch_one(executor)
-                .await
-                .map(|n| n as u64)
-                .map_err(DbError::from)
-        }
-    }
+    let mut builder = QueryBuilder::new("SELECT COUNT(*) FROM performances");
+    push_filters(&mut builder, filter);
+
+    builder
+        .build_query_scalar::<i64>()
+        .fetch_one(executor)
+        .await
+        .map(|n| n as u64)
+        .map_err(DbError::from)
 }
 
 /// Returns songs for multiple performances, keyed by performance ID.
