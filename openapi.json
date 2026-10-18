@@ -948,6 +948,37 @@
         ]
       }
     },
+    "/api/filters/catalog": {
+      "get": {
+        "tags": [
+          "filters"
+        ],
+        "operationId": "get_filter_catalog",
+        "parameters": [
+          {
+            "name": "subject",
+            "in": "query",
+            "description": "Kind of result the values are for. Defaults to `performances`.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/FilterSubject"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Values that can be used as filters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/performances": {
       "get": {
         "tags": [
@@ -987,23 +1018,15 @@
             }
           },
           {
-            "name": "song_id",
+            "name": "filter",
             "in": "query",
-            "description": "Filter by song ID. Returns only performances that include this song.",
+            "description": "Filter expressions like `singer:<id>,<id>` or `-genre:<id>`, repeated for each condition.\nAll expressions must hold, values within one are alternatives.",
             "required": false,
             "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "artist_id",
-            "in": "query",
-            "description": "Filter by singer artist ID. Returns only performances this artist sang in.",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             }
           },
           {
@@ -2601,6 +2624,18 @@
             "required": false,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "filter",
+            "in": "query",
+            "description": "Filter expressions like `original_artist:<id>,<id>` or `-genre:<id>`, repeated for each\ncondition. All expressions must hold, values within one are alternatives.",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             }
           },
           {
@@ -5084,6 +5119,60 @@
           }
         }
       },
+      "CatalogGroup": {
+        "type": "object",
+        "description": "The values available for one filter field.",
+        "required": [
+          "field",
+          "values"
+        ],
+        "properties": {
+          "field": {
+            "$ref": "#/components/schemas/FilterField"
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogValue"
+            },
+            "description": "Values that at least one result uses, most used first."
+          }
+        }
+      },
+      "CatalogResponse": {
+        "type": "object",
+        "description": "Response body for `GET /api/filters/catalog`.",
+        "required": [
+          "groups"
+        ],
+        "properties": {
+          "groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogGroup"
+            },
+            "description": "One group per field that has values."
+          }
+        }
+      },
+      "CatalogValue": {
+        "type": "object",
+        "description": "A selectable filter value.",
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Value to send back in a filter expression. An ID, or a year for the date field."
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name."
+          }
+        }
+      },
       "ClaimRequest": {
         "type": "object",
         "description": "Request body for `POST /auth/claim`.\n\nCompletes a new OAuth signup by finalizing the username. Requires an active\n`oauth_pending` cookie set during the OAuth callback.",
@@ -5336,6 +5425,30 @@
             "description": "Human readable description of the error."
           }
         }
+      },
+      "FilterField": {
+        "type": "string",
+        "description": "A property list results can be filtered by.",
+        "enum": [
+          "singer",
+          "original_artist",
+          "song",
+          "genre",
+          "source",
+          "language",
+          "modifier",
+          "instrument",
+          "misc",
+          "date"
+        ]
+      },
+      "FilterSubject": {
+        "type": "string",
+        "description": "The kind of result a filter catalog is for.",
+        "enum": [
+          "performances",
+          "songs"
+        ]
       },
       "GrantCapabilityRequest": {
         "type": "object",

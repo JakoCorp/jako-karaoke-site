@@ -7,6 +7,7 @@ pub mod artists;
 pub mod assets;
 pub mod auth;
 pub mod common;
+pub mod filters;
 pub mod lyrics;
 pub mod pagination;
 pub mod performances;

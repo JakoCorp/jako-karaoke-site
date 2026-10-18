@@ -6,10 +6,11 @@ pub(crate) mod video;
 
 use axum::{
     Json, Router,
-    extract::{DefaultBodyLimit, Path, Query, State},
+    extract::{DefaultBodyLimit, Path, State},
     http::StatusCode,
     routing::{get, patch, post},
 };
+use axum_extra::extract::Query;
 use uuid::Uuid;
 
 use api_types::{
@@ -28,13 +29,14 @@ use api_types::{
 use db::{
     MySqlPool,
     error::DbError,
+    filter::Subject,
     models::{NewLyrics, NewPerformance, UpdatePerformance, performance::Performance},
     queries::{self, performances::PerformanceFilter},
 };
 
 use crate::{
-    auth::middleware::AuthUser, capabilities, convert, error::ApiError, pagination,
-    routes::common::SortDir, state::AppState,
+    auth::middleware::AuthUser, capabilities, convert, error::ApiError, filters::parse_filters,
+    pagination, routes::common::SortDir, state::AppState,
 };
 
 #[derive(utoipa::OpenApi)]
@@ -101,10 +103,10 @@ pub(crate) struct PerformanceListParams {
     pub per_page: u32,
     /// Text search across performance title, song title, and singer names.
     pub q: Option<String>,
-    /// Filter by song ID. Returns only performances that include this song.
-    pub song_id: Option<Uuid>,
-    /// Filter by singer artist ID. Returns only performances this artist sang in.
-    pub artist_id: Option<Uuid>,
+    /// Filter expressions like `singer:<id>,<id>` or `-genre:<id>`, repeated for each condition.
+    /// All expressions must hold, values within one are alternatives.
+    #[serde(default)]
+    pub filter: Vec<String>,
     /// Field to sort by. Defaults to `performance_date`.
     pub sort: Option<PerformanceSort>,
     /// Sort direction. Defaults to `desc`.
@@ -345,10 +347,12 @@ pub(crate) async fn list_performances(
     Query(params): Query<PerformanceListParams>,
 ) -> Result<Json<PagedResponse<PerformanceSummary>>, ApiError> {
     let (limit, offset) = pagination::limit_offset(params.page, params.per_page);
+    let parsed = parse_filters(&params.filter, Subject::Performance)?;
     let filter = PerformanceFilter {
         q: params.q.as_deref().filter(|s| !s.is_empty()),
-        song_id: params.song_id,
-        artist_id: params.artist_id,
+        clauses: &parsed.clauses,
+        date_from: parsed.date_from,
+        date_to: parsed.date_to,
     };
 
     let order_by = params.order_by_clause();

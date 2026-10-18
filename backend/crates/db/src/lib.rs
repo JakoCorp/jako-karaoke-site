@@ -1,6 +1,7 @@
 //! Database access layer: connection pooling, models, and query functions.
 
 pub mod error;
+pub mod filter;
 pub mod models;
 pub mod queries;
 

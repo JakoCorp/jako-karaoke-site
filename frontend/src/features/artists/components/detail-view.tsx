@@ -43,7 +43,7 @@ export function ArtistDetailView({ artist }: Props) {
       </div>
 
       {artist.performance_count > 0 && (
-        <FilteredPerformanceList filter={{ artist_id: artist.id }} />
+        <FilteredPerformanceList scope={{ field: "singer", id: artist.id }} />
       )}
 
       {artist.links.length > 0 && (

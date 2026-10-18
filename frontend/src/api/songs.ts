@@ -16,6 +16,7 @@ export type SongSortDir = components["schemas"]["SortDir"];
 export type SongListParams = SearchPaginationParams & {
   sort?: SongSort;
   sort_dir?: SongSortDir;
+  filter?: string[];
 };
 
 export const SONG_IMAGE_KINDS = [

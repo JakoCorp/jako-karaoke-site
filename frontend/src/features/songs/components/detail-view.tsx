@@ -42,7 +42,7 @@ export function SongDetailView({ song, lyricsContent }: Props) {
         </div>
       </div>
 
-      <FilteredPerformanceList filter={{ song_id: song.id }} />
+      <FilteredPerformanceList scope={{ field: "song", id: song.id }} />
 
       <div className="perf-detail-layout">
         <div className="perf-detail-main">

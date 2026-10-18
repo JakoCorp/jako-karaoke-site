@@ -10,7 +10,7 @@ license = "AGPL-3.0-only"
 [workspace.dependencies]
 api-types = { path = "crates/api-types" }
 axum = { version = "0.8", features = ["macros", "multipart"] }
-axum-extra = { version = "0.12", features = ["cookie"] }
+axum-extra = { version = "0.12", features = ["cookie", "query"] }
 chrono = { version = "0.4", features = ["serde"] }
 cookie = "0.18"
 db = { path = "crates/db" }

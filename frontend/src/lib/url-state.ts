@@ -3,7 +3,9 @@
  * the result can appear in a query string without percent-encoding.
  */
 function encodeRaw(obj: unknown): string {
-  return btoa(JSON.stringify(obj)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const bytes = new TextEncoder().encode(JSON.stringify(obj));
+  const binary = Array.from(bytes, (byte) => String.fromCharCode(byte)).join("");
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
 /**
@@ -16,7 +18,8 @@ function decodeRaw(encoded: string): unknown {
     const padded = encoded.replace(/-/g, "+").replace(/_/g, "/");
     const remainder = padded.length % 4;
     const normalized = remainder > 0 ? padded + "=".repeat(4 - remainder) : padded;
-    return JSON.parse(atob(normalized));
+    const bytes = Uint8Array.from(atob(normalized), (char) => char.charCodeAt(0));
+    return JSON.parse(new TextDecoder().decode(bytes));
   } catch {
     return {};
   }
