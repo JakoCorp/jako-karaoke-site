@@ -108,11 +108,11 @@ function DownloadSettingsForm({ initial }: { initial: DownloadSettings }) {
       </div>
 
       <div className="flex flex-col gap-1">
-        <p className="settings-hint">
+        <p className="form-hint">
           Singer and original artist are combined into the artist tag as &quot;singer - original
           artist&quot;.
         </p>
-        <p className="settings-hint">
+        <p className="form-hint">
           Tags are written to MP3, M4A and AAC files, other formats download unchanged.
         </p>
       </div>

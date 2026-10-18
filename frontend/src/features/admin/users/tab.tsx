@@ -9,10 +9,13 @@ import { useDebounced } from "@/hooks/use-debounced";
 import { errorMessage } from "@/lib/error-message";
 import { toast } from "@/lib/toast";
 
+import { RenameDialog } from "./rename-dialog";
+
 export function UsersAdminTab() {
   const [searchInput, setSearchInput] = useState("");
   const [selectedUser, setSelectedUser] = useState<UserSummary | null>(null);
   const [isGrantingAll, setIsGrantingAll] = useState(false);
+  const [isRenaming, setIsRenaming] = useState(false);
 
   const debouncedQuery = useDebounced(searchInput.trim());
 
@@ -123,6 +126,14 @@ export function UsersAdminTab() {
               <button
                 className="btn btn-secondary"
                 onClick={() => {
+                  setIsRenaming(true);
+                }}
+              >
+                Rename
+              </button>
+              <button
+                className="btn btn-secondary"
+                onClick={() => {
                   void handleGrantAll();
                 }}
                 disabled={isMutating || capsLoading}
@@ -130,6 +141,12 @@ export function UsersAdminTab() {
                 Grant All
               </button>
             </div>
+            <RenameDialog
+              user={selectedUser}
+              open={isRenaming}
+              onOpenChange={setIsRenaming}
+              onRenamed={setSelectedUser}
+            />
             {capsLoading ? (
               <p className="admin-empty">Loading…</p>
             ) : (

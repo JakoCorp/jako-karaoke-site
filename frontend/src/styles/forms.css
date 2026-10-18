@@ -48,3 +48,8 @@
   font-size: 0.875rem;
   color: var(--color-error-fg);
 }
+
+@utility form-hint {
+  font-size: 0.8125rem;
+  color: var(--color-fg-muted);
+}
