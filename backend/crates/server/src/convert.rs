@@ -7,6 +7,7 @@ use api_types::{
     assets::AssetInfo,
     performances::{AudioInfo, VideoInfo},
     playlists::{PlaylistEntry, PlaylistKind, PlaylistResponse},
+    plays::UserPlayEntry,
     songs::SongImageInfo,
     tags::TagResponse,
 };
@@ -51,6 +52,19 @@ pub(crate) fn playlist_entry(
     PlaylistEntry {
         performance,
         added_at,
+    }
+}
+
+/// Wraps a [`PerformanceSummary`] with one user's play metadata.
+pub(crate) fn user_play_entry(
+    performance: api_types::performances::PerformanceSummary,
+    user_play_count: u64,
+    last_played_at: DateTime<Utc>,
+) -> UserPlayEntry {
+    UserPlayEntry {
+        performance,
+        user_play_count,
+        last_played_at,
     }
 }
 

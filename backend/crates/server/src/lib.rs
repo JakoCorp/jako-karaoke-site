@@ -8,6 +8,7 @@ pub(crate) mod error;
 pub mod filters;
 pub(crate) mod media;
 pub(crate) mod pagination;
+pub(crate) mod plays;
 pub mod routes;
 pub mod state;
 pub mod storage;

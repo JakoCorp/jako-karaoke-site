@@ -18,8 +18,6 @@ pub struct Performance {
     pub title: Option<String>,
     /// Performance specific lyrics override. Falls back to linked song lyrics when `None`.
     pub lyrics_id: Option<Uuid>,
-    /// Number of times this performance has been played.
-    pub play_count: i32,
     /// Duration in seconds.
     pub duration: Option<u32>,
     /// Offset in seconds from the start of the stream.

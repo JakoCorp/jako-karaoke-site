@@ -1,5 +1,7 @@
 //! User endpoints and the `UsersApi` OpenAPI spec struct.
 
+pub(crate) mod plays;
+
 use axum::{
     Json, Router,
     extract::{Path, Query, State},
@@ -14,6 +16,7 @@ use api_types::{
     pagination::PagedResponse,
     performances::PerformanceSummary,
     playlists::{PlaylistEntry, PlaylistKind, PlaylistResponse},
+    plays::UserPlayEntry,
     users::{GrantCapabilityRequest, UpdateUserRequest, UserSummary},
 };
 use db::{error::DbError, queries};
@@ -38,8 +41,13 @@ use crate::{
         list_user_capabilities,
         grant_capability,
         revoke_capability,
+        plays::list_user_plays,
+        plays::delete_user_plays,
+        plays::delete_user_performance_plays,
     ),
     components(schemas(
+        UserPlayEntry,
+        PagedResponse<UserPlayEntry>,
         UserSummary,
         UpdateUserRequest,
         GrantCapabilityRequest,
@@ -70,6 +78,14 @@ pub fn router() -> Router<AppState> {
         .route(
             "/{id}/capabilities/{capability}",
             axum::routing::delete(revoke_capability),
+        )
+        .route(
+            "/{id}/plays",
+            get(plays::list_user_plays).delete(plays::delete_user_plays),
+        )
+        .route(
+            "/{id}/plays/{performance_id}",
+            axum::routing::delete(plays::delete_user_performance_plays),
         )
 }
 

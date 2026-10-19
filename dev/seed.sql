@@ -17,7 +17,8 @@ INSERT IGNORE INTO user_capabilities (user_id, capability) VALUES
 (UNHEX('01000000000000000000000000000001'), 'playlists:view_private'),
 (UNHEX('01000000000000000000000000000001'), 'playlists:create_official'),
 (UNHEX('01000000000000000000000000000001'), 'playlists:create_favorites'),
-(UNHEX('01000000000000000000000000000001'), 'playlists:manage_any');
+(UNHEX('01000000000000000000000000000001'), 'playlists:manage_any'),
+(UNHEX('01000000000000000000000000000001'), 'plays:manage_any');
 
 -- Tags
 INSERT IGNORE INTO tags (id, name) VALUES
