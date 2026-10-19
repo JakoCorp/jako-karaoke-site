@@ -5,6 +5,7 @@ import { selectCurrent, selectHasNext, usePlayerStore } from "@/store/player";
 
 import { AdaptiveAudioEngine } from "./adaptive-audio-engine";
 import type { AudioEngine } from "./audio-engine";
+import { usePlayTracker } from "./use-play-tracker";
 
 const PLAYBACK_ERROR_TOAST_ID = "playback-error";
 
@@ -18,6 +19,7 @@ export interface PlaybackProgress {
 export function useAudioPlayback(): PlaybackProgress {
   const engineRef = useRef<AudioEngine | null>(null);
   const prevAudioUrlRef = useRef<string | null>(null);
+  const playTracker = usePlayTracker();
 
   if (engineRef.current === null) {
     engineRef.current = new AdaptiveAudioEngine();
@@ -45,8 +47,9 @@ export function useAudioPlayback(): PlaybackProgress {
     engine.onTimeUpdate((time, dur) => {
       setCurrentTime(time);
       setDuration(Number.isFinite(dur) ? dur : 0);
+      playTracker.tick(time);
     });
-  }, []);
+  }, [playTracker]);
 
   useEffect(() => {
     const engine = engineRef.current;
@@ -60,6 +63,7 @@ export function useAudioPlayback(): PlaybackProgress {
     if (engine === null) return;
 
     engine.onEnded(() => {
+      playTracker.reset();
       if (sleepTimerTrackEnd) {
         clearSleepTimer();
         pause();
@@ -86,7 +90,7 @@ export function useAudioPlayback(): PlaybackProgress {
         pause();
       }
     });
-  }, [hasNext, next, pause, repeatMode, sleepTimerTrackEnd, clearSleepTimer]);
+  }, [hasNext, next, pause, repeatMode, sleepTimerTrackEnd, clearSleepTimer, playTracker]);
 
   useEffect(() => {
     const engine = engineRef.current;
@@ -94,12 +98,14 @@ export function useAudioPlayback(): PlaybackProgress {
 
     if (currentAudioUrl === null) {
       prevAudioUrlRef.current = null;
+      playTracker.reset();
       engine.stop();
       return;
     }
 
     if (currentAudioUrl !== prevAudioUrlRef.current) {
       prevAudioUrlRef.current = currentAudioUrl;
+      playTracker.reset();
       if (isPlaying) {
         engine.play(currentAudioUrl);
       }
@@ -108,7 +114,7 @@ export function useAudioPlayback(): PlaybackProgress {
     } else {
       engine.pause();
     }
-  }, [currentAudioUrl, isPlaying]);
+  }, [currentAudioUrl, isPlaying, playTracker]);
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;

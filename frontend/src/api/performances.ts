@@ -11,6 +11,8 @@ export type AudioInfo = components["schemas"]["AudioInfo"];
 export type AudioKind = components["schemas"]["AudioKind"];
 export type VideoInfo = components["schemas"]["VideoInfo"];
 export type VideoKind = components["schemas"]["VideoKind"];
+export type StartPlayResponse = components["schemas"]["StartPlayResponse"];
+export type PerformancePlayer = components["schemas"]["PerformancePlayer"];
 export type PerformanceSortField = components["schemas"]["PerformanceSort"];
 export type PerformanceSortDir = components["schemas"]["SortDir"];
 
@@ -107,4 +109,19 @@ export const performancesApi = {
   /** Links an external video URL to a performance. */
   addVideoLink: (id: string, body: components["schemas"]["AddVideoLinkRequest"]) =>
     api.POST("/api/performances/{id}/video/link", { params: { path: { id } }, body }),
+
+  /** Returns a paginated list of the users who played a performance, most plays first. */
+  listPlayers: (id: string, page: number, perPage: number) =>
+    api.GET("/api/performances/{id}/plays", {
+      params: { path: { id }, query: { page, per_page: perPage } },
+    }),
+
+  /** Opens a play session for the signed in user. */
+  startPlay: (id: string) => api.POST("/api/performances/{id}/plays", { params: { path: { id } } }),
+
+  /** Completes a play session once enough of the performance was listened to. */
+  completePlay: (id: string, playId: string) =>
+    api.POST("/api/performances/{id}/plays/{play_id}/complete", {
+      params: { path: { id, play_id: playId } },
+    }),
 };
