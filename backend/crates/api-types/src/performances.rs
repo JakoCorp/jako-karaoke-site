@@ -140,8 +140,6 @@ pub struct CreatePerformanceRequest {
     /// Performance index within `performance_date` + `stream_number`, 1-based. Absent when not
     /// performed on a stream.
     pub performance_number: Option<u16>,
-    /// Duration in seconds.
-    pub duration: Option<u32>,
     /// Offset in seconds from the start of the stream.
     pub stream_time: Option<u32>,
     /// IDs of songs featured in this performance.
@@ -168,8 +166,6 @@ pub struct UpdatePerformanceRequest {
     /// Performance index within `performance_date` + `stream_number`, 1-based. Absent when not
     /// performed on a stream.
     pub performance_number: Option<u16>,
-    /// Duration in seconds.
-    pub duration: Option<u32>,
     /// Offset in seconds from the start of the stream.
     pub stream_time: Option<u32>,
     /// IDs of songs featured in this performance.
@@ -191,7 +187,7 @@ pub struct PerformanceSummary {
     pub title: Option<String>,
     /// Number of times this performance has been played.
     pub play_count: u64,
-    /// Duration in seconds.
+    /// Duration in seconds, taken from the primary audio.
     pub duration: Option<u32>,
     /// Calendar date of the stream.
     pub performance_date: NaiveDate,
@@ -217,7 +213,7 @@ pub struct PerformanceResponse {
     pub title: Option<String>,
     /// Number of times this performance has been played.
     pub play_count: u64,
-    /// Duration in seconds.
+    /// Duration in seconds, taken from the primary audio.
     pub duration: Option<u32>,
     /// Offset in seconds from the start of the stream.
     pub stream_time: Option<u32>,

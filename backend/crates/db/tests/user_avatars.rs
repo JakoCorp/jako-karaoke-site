@@ -30,6 +30,7 @@ async fn create_asset(pool: &MySqlPool, hash_char: &str) -> Uuid {
             hash: hash_char.repeat(64),
             storage_url: format!("https://cdn.example.com/{hash_char}.png"),
             internal_path: None,
+            length: None,
         },
     )
     .await

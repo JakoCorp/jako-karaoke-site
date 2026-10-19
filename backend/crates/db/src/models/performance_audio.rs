@@ -23,4 +23,5 @@ pub struct PerformanceAudioRow {
     pub internal_path: Option<String>,
     pub external_url: Option<String>,
     pub hash: Option<String>,
+    pub length: Option<u32>,
 }

@@ -103,9 +103,10 @@ pub(crate) async fn start_play(
     auth: AuthUser,
     Path(id): Path<Uuid>,
 ) -> Result<(StatusCode, Json<StartPlayResponse>), ApiError> {
-    let performance = queries::performances::get_by_id(&state.pool, id)
+    queries::performances::get_by_id(&state.pool, id)
         .await?
         .ok_or(ApiError::NotFound)?;
+    let length = queries::performance_audios::primary_length(&state.pool, id).await?;
 
     let mut tx = state.pool.begin().await.map_err(DbError::Sqlx)?;
     queries::performance_plays::delete_pending_for_user(&mut *tx, auth.user_id).await?;
@@ -116,7 +117,7 @@ pub(crate) async fn start_play(
         StatusCode::CREATED,
         Json(StartPlayResponse {
             play_id: play.id,
-            required_seconds: plays::required_seconds(performance.duration),
+            required_seconds: plays::required_seconds(length),
         }),
     ))
 }
@@ -153,11 +154,9 @@ pub(crate) async fn complete_play(
         return Ok(Json(CompletePlayResponse { counted: true }));
     }
 
-    let performance = queries::performances::get_by_id(&mut *tx, id)
-        .await?
-        .ok_or(ApiError::NotFound)?;
+    let length = queries::performance_audios::primary_length(&mut *tx, id).await?;
 
-    if progress.elapsed_seconds < i64::from(plays::required_seconds(performance.duration)) {
+    if progress.elapsed_seconds < i64::from(plays::required_seconds(length)) {
         return Err(ApiError::Conflict("not enough listening time".to_string()));
     }
     if progress.elapsed_seconds > plays::MAX_SESSION_AGE_SECONDS {
@@ -167,7 +166,7 @@ pub(crate) async fn complete_play(
     let since_last_counted =
         queries::performance_plays::seconds_since_last_counted(&mut *tx, auth.user_id, id).await?;
     let cooling_down = since_last_counted
-        .is_some_and(|seconds| seconds < i64::from(plays::cooldown_seconds(performance.duration)));
+        .is_some_and(|seconds| seconds < i64::from(plays::cooldown_seconds(length)));
     if cooling_down {
         queries::performance_plays::delete(&mut *tx, play_id).await?;
     } else {

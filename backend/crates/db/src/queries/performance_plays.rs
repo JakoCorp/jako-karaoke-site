@@ -204,7 +204,7 @@ pub async fn list_for_user(
     offset: u32,
 ) -> Result<Vec<UserPlayRow>> {
     sqlx::query_as::<_, UserPlayRow>(
-        "SELECT p.id, p.created_by, p.title, p.lyrics_id, p.duration, p.stream_time, \
+        "SELECT p.id, p.created_by, p.title, p.lyrics_id, p.stream_time, \
          p.performance_date, p.stream_number, p.performance_number, \
          CAST(COUNT(*) AS UNSIGNED) AS user_play_count, MAX(pp.counted_at) AS last_played_at \
          FROM performance_plays pp \

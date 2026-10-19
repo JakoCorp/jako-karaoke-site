@@ -59,7 +59,6 @@ async fn create_performance(
             created_by: None,
             title: None,
             lyrics_id: None,
-            duration: None,
             stream_time: None,
             performance_date,
             stream_number,
@@ -124,7 +123,6 @@ async fn update_clears_stream_position(pool: MySqlPool) {
         created.id,
         &UpdatePerformance {
             title: None,
-            duration: None,
             stream_time: None,
             performance_date: date(1),
             stream_number: None,
@@ -448,7 +446,6 @@ async fn years_lists_each_year_once_newest_first(pool: MySqlPool) {
                 created_by: None,
                 title: None,
                 lyrics_id: None,
-                duration: None,
                 stream_time: None,
                 performance_date: NaiveDate::from_ymd_opt(year, 1, day).unwrap(),
                 stream_number: None,

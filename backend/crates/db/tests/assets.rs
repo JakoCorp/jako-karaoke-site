@@ -13,6 +13,7 @@ async fn create_internal_and_get_by_id(pool: MySqlPool) {
         hash: "a".repeat(64),
         storage_url: "https://cdn.example.com/cover.png".to_string(),
         internal_path: Some("/files/cover.png".to_string()),
+        length: None,
     };
     let created = assets::create_internal(&mut conn, &new).await.unwrap();
 
@@ -64,6 +65,7 @@ async fn get_by_hash_returns_existing(pool: MySqlPool) {
             hash: hash.clone(),
             storage_url: "https://cdn.example.com/file.png".to_string(),
             internal_path: None,
+            length: None,
         },
     )
     .await
@@ -91,6 +93,7 @@ async fn reference_count_sums_all_join_tables(pool: MySqlPool) {
             hash: "d".repeat(64),
             storage_url: "https://cdn.example.com/img.png".to_string(),
             internal_path: None,
+            length: None,
         },
     )
     .await
@@ -131,6 +134,7 @@ async fn delete_removes_asset(pool: MySqlPool) {
             hash: "e".repeat(64),
             storage_url: "https://cdn.example.com/del.png".to_string(),
             internal_path: None,
+            length: None,
         },
     )
     .await

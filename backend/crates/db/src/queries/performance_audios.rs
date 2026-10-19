@@ -1,12 +1,68 @@
 //! Query functions for the `performance_audios` join table.
 
-use sqlx::{Executor, MySql, MySqlConnection};
+use std::collections::HashMap;
+
+use sqlx::{Executor, MySql, MySqlConnection, QueryBuilder};
 use uuid::Uuid;
 
 use crate::error::DbError;
 use crate::models::performance_audio::{NewPerformanceAudio, PerformanceAudioRow};
 
 type Result<T> = std::result::Result<T, DbError>;
+
+/// SQL expression for the primary audio length of the row in an unaliased `performances` table.
+///
+/// Meant for `ORDER BY` in queries on `performances`.
+pub const PRIMARY_LENGTH_EXPR: &str = "(SELECT a.length FROM performance_audios pa \
+     JOIN assets a ON a.id = pa.asset_id \
+     WHERE pa.performance_id = performances.id AND pa.kind = 'primary')";
+
+/// Returns the length in seconds of a performance's primary audio, if it has one with a known length.
+pub async fn primary_length(
+    executor: impl Executor<'_, Database = MySql>,
+    performance_id: Uuid,
+) -> Result<Option<u32>> {
+    sqlx::query_scalar::<_, Option<u32>>(
+        "SELECT a.length FROM performance_audios pa \
+         JOIN assets a ON a.id = pa.asset_id \
+         WHERE pa.performance_id = ? AND pa.kind = 'primary'",
+    )
+    .bind(performance_id)
+    .fetch_optional(executor)
+    .await
+    .map(Option::flatten)
+    .map_err(DbError::from)
+}
+
+/// Returns primary audio lengths for multiple performances, keyed by performance ID.
+///
+/// Performances without a primary audio of known length are absent from the returned map.
+pub async fn primary_lengths_batch(
+    executor: impl Executor<'_, Database = MySql>,
+    performance_ids: &[Uuid],
+) -> Result<HashMap<Uuid, u32>> {
+    if performance_ids.is_empty() {
+        return Ok(HashMap::new());
+    }
+
+    let mut builder = QueryBuilder::new(
+        "SELECT pa.performance_id, a.length FROM performance_audios pa \
+         JOIN assets a ON a.id = pa.asset_id \
+         WHERE pa.kind = 'primary' AND a.length IS NOT NULL AND pa.performance_id IN (",
+    );
+    let mut separated = builder.separated(", ");
+    for performance_id in performance_ids {
+        separated.push_bind(performance_id);
+    }
+    builder.push(")");
+
+    let rows: Vec<(Uuid, u32)> = builder
+        .build_query_as()
+        .fetch_all(executor)
+        .await
+        .map_err(DbError::from)?;
+    Ok(rows.into_iter().collect())
+}
 
 /// Returns all audio rows for a given performance, joined with asset fields.
 pub async fn list_for_performance(
@@ -15,7 +71,8 @@ pub async fn list_for_performance(
 ) -> Result<Vec<PerformanceAudioRow>> {
     sqlx::query_as::<_, PerformanceAudioRow>(
         "SELECT pa.performance_id, pa.asset_id, pa.kind, \
-         a.title, a.credits, a.source_url, a.storage_url, a.internal_path, a.external_url, a.hash \
+         a.title, a.credits, a.source_url, a.storage_url, a.internal_path, a.external_url, a.hash, \
+         a.length \
          FROM performance_audios pa \
          JOIN assets a ON a.id = pa.asset_id \
          WHERE pa.performance_id = ?",
@@ -42,7 +99,8 @@ pub async fn link(
 
     sqlx::query_as::<_, PerformanceAudioRow>(
         "SELECT pa.performance_id, pa.asset_id, pa.kind, \
-         a.title, a.credits, a.source_url, a.storage_url, a.internal_path, a.external_url, a.hash \
+         a.title, a.credits, a.source_url, a.storage_url, a.internal_path, a.external_url, a.hash, \
+         a.length \
          FROM performance_audios pa \
          JOIN assets a ON a.id = pa.asset_id \
          WHERE pa.performance_id = ? AND pa.asset_id = ?",

@@ -181,6 +181,7 @@ pub(crate) async fn upload_artist_image(
                 hash,
                 storage_url: saved.storage_url,
                 internal_path: Some(saved.internal_path),
+                length: None,
             },
         )
         .await?
