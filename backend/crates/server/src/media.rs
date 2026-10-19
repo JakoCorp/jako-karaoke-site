@@ -1,5 +1,9 @@
 //! Media type resolution for uploaded audio, video, and image files.
 
+use std::io::Cursor;
+
+use lofty::{config::ParseOptions, file::AudioFile, probe::Probe};
+
 use crate::error::ApiError;
 
 /// The kind of media being uploaded.
@@ -12,6 +16,19 @@ pub enum MediaKind {
 const AUDIO_EXTS: &[&str] = &["mp3", "ogg", "wav", "flac", "aac", "m4a"];
 const VIDEO_EXTS: &[&str] = &["mp4", "webm", "ogv", "mov", "mkv"];
 const IMAGE_EXTS: &[&str] = &["jpg", "jpeg", "png", "webp", "avif", "gif"];
+
+/// Returns the playback length in whole seconds of an audio file.
+///
+/// Returns `None` when the format is not recognised or the length is zero.
+pub fn audio_length(data: &[u8]) -> Option<u32> {
+    let probe = Probe::new(Cursor::new(data)).guess_file_type().ok()?;
+    let file = probe
+        .options(ParseOptions::new().read_tags(false))
+        .read()
+        .ok()?;
+    let seconds = file.properties().duration().as_secs_f64().round() as u32;
+    (seconds > 0).then_some(seconds)
+}
 
 /// Resolves the stored file extension for a media upload.
 ///

@@ -18,8 +18,6 @@ pub struct Performance {
     pub title: Option<String>,
     /// Performance specific lyrics override. Falls back to linked song lyrics when `None`.
     pub lyrics_id: Option<Uuid>,
-    /// Duration in seconds.
-    pub duration: Option<u32>,
     /// Offset in seconds from the start of the stream.
     pub stream_time: Option<u32>,
     /// Calendar date of the stream.
@@ -40,8 +38,6 @@ pub struct NewPerformance {
     pub title: Option<String>,
     /// Optional performance-specific lyrics row. Falls back to the song lyrics when absent.
     pub lyrics_id: Option<Uuid>,
-    /// Duration in seconds.
-    pub duration: Option<u32>,
     /// Offset in seconds from the start of the stream.
     pub stream_time: Option<u32>,
     /// Calendar date of the stream.
@@ -61,8 +57,6 @@ pub struct NewPerformance {
 pub struct UpdatePerformance {
     /// Optional display title.
     pub title: Option<String>,
-    /// Duration in seconds.
-    pub duration: Option<u32>,
     /// Offset in seconds from the start of the stream.
     pub stream_time: Option<u32>,
     /// Calendar date of the stream.

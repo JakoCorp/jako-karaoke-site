@@ -186,6 +186,7 @@ pub(crate) async fn upload_audio(
                 hash,
                 storage_url: saved.storage_url,
                 internal_path: Some(saved.internal_path),
+                length: media::audio_length(&fields.data),
             },
         )
         .await?

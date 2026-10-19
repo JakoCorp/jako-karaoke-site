@@ -14,8 +14,8 @@ pub async fn get_by_id(
     id: Uuid,
 ) -> Result<Option<Asset>> {
     sqlx::query_as::<_, Asset>(
-        "SELECT id, title, credits, source_url, hash, storage_url, internal_path, external_url \
-         FROM assets WHERE id = ?",
+        "SELECT id, title, credits, source_url, hash, storage_url, internal_path, external_url, \
+         length FROM assets WHERE id = ?",
     )
     .bind(id)
     .fetch_optional(executor)
@@ -29,8 +29,8 @@ pub async fn get_by_hash(
     hash: &str,
 ) -> Result<Option<Asset>> {
     sqlx::query_as::<_, Asset>(
-        "SELECT id, title, credits, source_url, hash, storage_url, internal_path, external_url \
-         FROM assets WHERE hash = ?",
+        "SELECT id, title, credits, source_url, hash, storage_url, internal_path, external_url, \
+         length FROM assets WHERE hash = ?",
     )
     .bind(hash)
     .fetch_optional(executor)
@@ -66,9 +66,10 @@ pub async fn reference_count(
 /// Inserts a new internal asset record and returns the created row.
 pub async fn create_internal(conn: &mut MySqlConnection, new: &NewInternalAsset) -> Result<Asset> {
     sqlx::query_as::<_, Asset>(
-        "INSERT INTO assets (title, credits, source_url, hash, storage_url, internal_path) \
-         VALUES (?, ?, ?, ?, ?, ?) \
-         RETURNING id, title, credits, source_url, hash, storage_url, internal_path, external_url",
+        "INSERT INTO assets (title, credits, source_url, hash, storage_url, internal_path, length) \
+         VALUES (?, ?, ?, ?, ?, ?, ?) \
+         RETURNING id, title, credits, source_url, hash, storage_url, internal_path, external_url, \
+         length",
     )
     .bind(&new.title)
     .bind(&new.credits)
@@ -76,6 +77,7 @@ pub async fn create_internal(conn: &mut MySqlConnection, new: &NewInternalAsset)
     .bind(&new.hash)
     .bind(&new.storage_url)
     .bind(&new.internal_path)
+    .bind(new.length)
     .fetch_one(conn)
     .await
     .map_err(DbError::from)
@@ -86,7 +88,8 @@ pub async fn create_external(conn: &mut MySqlConnection, new: &NewExternalAsset)
     sqlx::query_as::<_, Asset>(
         "INSERT INTO assets (title, credits, source_url, external_url) \
          VALUES (?, ?, ?, ?) \
-         RETURNING id, title, credits, source_url, hash, storage_url, internal_path, external_url",
+         RETURNING id, title, credits, source_url, hash, storage_url, internal_path, external_url, \
+         length",
     )
     .bind(&new.title)
     .bind(&new.credits)

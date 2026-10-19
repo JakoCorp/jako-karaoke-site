@@ -165,7 +165,6 @@ export function ImportPerformancesDialog({
         stream_number: row.stream_number,
         performance_number: row.performance_number,
         title: row.title,
-        duration: row.duration,
         stream_time: row.stream_time,
         song_ids,
         singer_ids,

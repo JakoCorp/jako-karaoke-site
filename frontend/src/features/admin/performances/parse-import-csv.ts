@@ -15,7 +15,6 @@ const EXPECTED_HEADERS = [
   "stream_number",
   "performance_number",
   "stream_time",
-  "duration",
   "title",
   "songs",
   "singers",
@@ -27,7 +26,6 @@ export interface ParsedPerformanceImportRow {
   stream_number: number | null;
   performance_number: number | null;
   stream_time: number | null;
-  duration: number | null;
   title: string | null;
   song_titles: string[];
   singer_names: string[];
@@ -90,7 +88,7 @@ function isValidDate(s: string): boolean {
  * Parses a performance import CSV into structured rows.
  *
  * Expected columns: performance_date, stream_number, performance_number, stream_time,
- * duration, title, songs, singers, tags.
+ * title, songs, singers, tags.
  *
  * Fields with multiple values (songs, singers, tags) are delimited by pipes.
  *
@@ -136,11 +134,10 @@ export function parseImportCsv(text: string): ParseImportCsvResult {
     const streamNumStr = get(1);
     const perfNumStr = get(2);
     const streamTimeStr = get(3);
-    const durationStr = get(4);
-    const titleStr = get(5);
-    const songsStr = get(6);
-    const singersStr = get(7);
-    const tagsStr = get(8);
+    const titleStr = get(4);
+    const songsStr = get(5);
+    const singersStr = get(6);
+    const tagsStr = get(7);
 
     const rowErrors: string[] = [];
 
@@ -160,14 +157,6 @@ export function parseImportCsv(text: string): ParseImportCsvResult {
       streamTimeSecs = parseStreamTime(streamTimeStr);
       if (streamTimeSecs === null) {
         rowErrors.push(`Row ${String(rowNum)}: invalid stream_time "${streamTimeStr}".`);
-      }
-    }
-
-    let durationSecs: number | null = null;
-    if (durationStr !== "") {
-      durationSecs = parseStreamTime(durationStr);
-      if (durationSecs === null) {
-        rowErrors.push(`Row ${String(rowNum)}: invalid duration "${durationStr}".`);
       }
     }
 
@@ -220,7 +209,6 @@ export function parseImportCsv(text: string): ParseImportCsvResult {
         stream_number: position.stream_number,
         performance_number: position.performance_number,
         stream_time: streamTimeSecs,
-        duration: durationSecs,
         title: titleStr || null,
         song_titles: songTitles,
         singer_names: singerNames,

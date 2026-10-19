@@ -24,7 +24,7 @@ pub async fn get_by_id(
     id: Uuid,
 ) -> Result<Option<Performance>> {
     sqlx::query_as::<_, Performance>(
-        "SELECT id, created_by, title, lyrics_id, duration, stream_time, \
+        "SELECT id, created_by, title, lyrics_id, stream_time, \
          performance_date, stream_number, performance_number \
          FROM performances WHERE id = ?",
     )
@@ -99,7 +99,7 @@ pub async fn search(
     offset: u32,
 ) -> Result<Vec<Performance>> {
     let mut builder = QueryBuilder::new(
-        "SELECT id, created_by, title, lyrics_id, duration, stream_time, \
+        "SELECT id, created_by, title, lyrics_id, stream_time, \
          performance_date, stream_number, performance_number \
          FROM performances",
     );
@@ -198,15 +198,14 @@ pub async fn get_songs_batch(
 pub async fn create(conn: &mut MySqlConnection, new: &NewPerformance) -> Result<Performance> {
     sqlx::query_as::<_, Performance>(
         "INSERT INTO performances \
-         (created_by, title, lyrics_id, duration, stream_time, performance_date, stream_number, performance_number) \
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?) \
-         RETURNING id, created_by, title, lyrics_id, duration, stream_time, \
+         (created_by, title, lyrics_id, stream_time, performance_date, stream_number, performance_number) \
+         VALUES (?, ?, ?, ?, ?, ?, ?) \
+         RETURNING id, created_by, title, lyrics_id, stream_time, \
          performance_date, stream_number, performance_number",
     )
     .bind(new.created_by)
     .bind(&new.title)
     .bind(new.lyrics_id)
-    .bind(new.duration)
     .bind(new.stream_time)
     .bind(new.performance_date)
     .bind(new.stream_number)
@@ -224,12 +223,11 @@ pub async fn update(
 ) -> Result<Option<Performance>> {
     sqlx::query(
         "UPDATE performances \
-         SET title = ?, duration = ?, stream_time = ?, performance_date = ?, \
+         SET title = ?, stream_time = ?, performance_date = ?, \
          stream_number = ?, performance_number = ? \
          WHERE id = ?",
     )
     .bind(&upd.title)
-    .bind(upd.duration)
     .bind(upd.stream_time)
     .bind(upd.performance_date)
     .bind(upd.stream_number)

@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS assets (
     storage_url VARCHAR(512) NULL,
     internal_path VARCHAR(512) NULL,
     external_url VARCHAR(1024) NULL,
+    length INT UNSIGNED NULL,
     PRIMARY KEY (id),
     UNIQUE INDEX (hash),
     CONSTRAINT chk_asset_source CHECK (
@@ -193,7 +194,6 @@ CREATE TABLE IF NOT EXISTS performances (
     title VARCHAR(256) NULL,
     created_by BINARY(16) NULL REFERENCES users (id) ON DELETE SET NULL,
     lyrics_id BINARY(16) NULL REFERENCES lyrics (id) ON DELETE SET NULL,
-    duration INT UNSIGNED NULL,
     stream_time INT UNSIGNED NULL,
     performance_date DATE NOT NULL,
     stream_number TINYINT UNSIGNED NULL,

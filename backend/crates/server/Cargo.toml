@@ -27,6 +27,7 @@ cookie = { workspace = true }
 db = { workspace = true }
 getrandom = { workspace = true }
 hex = { workspace = true }
+lofty = { workspace = true }
 mime_guess = { workspace = true }
 oauth2 = { workspace = true }
 reqwest = { workspace = true }

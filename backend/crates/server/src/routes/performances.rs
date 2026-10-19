@@ -137,7 +137,10 @@ impl PerformanceListParams {
                 "{} {dir}, {id_tiebreak}",
                 queries::performance_plays::PLAY_COUNT_EXPR
             ),
-            Some(PerformanceSort::Duration) => format!("duration {dir}, {id_tiebreak}"),
+            Some(PerformanceSort::Duration) => format!(
+                "{} {dir}, {id_tiebreak}",
+                queries::performance_audios::PRIMARY_LENGTH_EXPR
+            ),
             _ => id_tiebreak,
         }
     }
@@ -159,10 +162,11 @@ pub(crate) async fn build_performance_summaries(
 ) -> Result<Vec<PerformanceSummary>, ApiError> {
     let perf_ids: Vec<Uuid> = performances.iter().map(|p| p.id).collect();
 
-    let (mut singers_by_perf, mut songs_by_perf, play_counts) = tokio::try_join!(
+    let (mut singers_by_perf, mut songs_by_perf, play_counts, durations) = tokio::try_join!(
         queries::performances::get_singers_batch(pool, &perf_ids),
         queries::performances::get_songs_batch(pool, &perf_ids),
         queries::performance_plays::counts_batch(pool, &perf_ids),
+        queries::performance_audios::primary_lengths_batch(pool, &perf_ids),
     )?;
 
     let items = performances
@@ -190,7 +194,7 @@ pub(crate) async fn build_performance_summaries(
                 id: p.id,
                 title: p.title,
                 play_count: play_counts.get(&p.id).copied().unwrap_or(0),
-                duration: p.duration,
+                duration: durations.get(&p.id).copied(),
                 performance_date: p.performance_date,
                 stream_number: p.stream_number,
                 performance_number: p.performance_number,
@@ -255,6 +259,10 @@ async fn hydrate(
         queries::performance_videos::list_for_performance(pool, perf.id),
         queries::performance_plays::count_for_performance(pool, perf.id),
     )?;
+    let duration = audio_rows
+        .iter()
+        .find(|row| row.kind == AudioKind::Primary.as_str())
+        .and_then(|row| row.length);
 
     let has_lyrics = perf.lyrics_id.is_some() || songs.iter().any(|s| s.lyrics_id.is_some());
 
@@ -318,7 +326,7 @@ async fn hydrate(
         id: perf.id,
         title: perf.title,
         play_count,
-        duration: perf.duration,
+        duration,
         stream_time: perf.stream_time,
         performance_date: perf.performance_date,
         stream_number: perf.stream_number,
@@ -451,7 +459,6 @@ pub(crate) async fn create_performance(
             created_by: None,
             title: req.title,
             lyrics_id,
-            duration: req.duration,
             stream_time: req.stream_time,
             performance_date: req.performance_date,
             stream_number: req.stream_number,
@@ -505,7 +512,6 @@ pub(crate) async fn update_performance(
         id,
         &UpdatePerformance {
             title: req.title,
-            duration: req.duration,
             stream_time: req.stream_time,
             performance_date: req.performance_date,
             stream_number: req.stream_number,

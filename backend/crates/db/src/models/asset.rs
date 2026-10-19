@@ -24,6 +24,8 @@ pub struct Asset {
     pub internal_path: Option<String>,
     /// Referenced URL. Non-null for external assets only.
     pub external_url: Option<String>,
+    /// Playback length in seconds. `None` when unknown or not audio.
+    pub length: Option<u32>,
 }
 
 /// Input for creating an internally hosted asset from an uploaded file.
@@ -38,6 +40,8 @@ pub struct NewInternalAsset {
     pub storage_url: String,
     /// Absolute filesystem path for the stored file.
     pub internal_path: Option<String>,
+    /// Playback length in seconds, when the file is audio of a known length.
+    pub length: Option<u32>,
 }
 
 /// Input for creating an externally referenced asset.

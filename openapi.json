@@ -5667,15 +5667,6 @@
           "tags"
         ],
         "properties": {
-          "duration": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int32",
-            "description": "Duration in seconds.",
-            "minimum": 0
-          },
           "lyrics": {
             "type": [
               "string",
@@ -6172,7 +6163,7 @@
                     "null"
                   ],
                   "format": "int32",
-                  "description": "Duration in seconds.",
+                  "description": "Duration in seconds, taken from the primary audio.",
                   "minimum": 0
                 },
                 "id": {
@@ -6535,7 +6526,7 @@
               "null"
             ],
             "format": "int32",
-            "description": "Duration in seconds.",
+            "description": "Duration in seconds, taken from the primary audio.",
             "minimum": 0
           },
           "has_lyrics": {
@@ -6648,7 +6639,7 @@
               "null"
             ],
             "format": "int32",
-            "description": "Duration in seconds.",
+            "description": "Duration in seconds, taken from the primary audio.",
             "minimum": 0
           },
           "id": {
@@ -7193,15 +7184,6 @@
           "tags"
         ],
         "properties": {
-          "duration": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int32",
-            "description": "Duration in seconds.",
-            "minimum": 0
-          },
           "performance_date": {
             "type": "string",
             "format": "date",
