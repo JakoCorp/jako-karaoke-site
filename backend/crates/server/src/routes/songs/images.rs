@@ -240,6 +240,7 @@ pub(crate) async fn link_song_image(
             credits: body.credits,
             source_url: body.source_url,
             external_url: body.external_url,
+            length: None,
         },
     )
     .await?;

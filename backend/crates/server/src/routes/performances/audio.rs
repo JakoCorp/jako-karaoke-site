@@ -21,7 +21,7 @@ use db::{
 
 use crate::{
     assets, auth::middleware::AuthUser, capabilities, convert, error::ApiError, media,
-    state::AppState,
+    state::AppState, youtube,
 };
 
 /// Placeholder schema for audio multipart upload bodies.
@@ -240,6 +240,7 @@ pub(crate) async fn add_audio_link(
         .ok_or(ApiError::NotFound)?;
 
     let kind = validate_audio_kind(&body.kind)?;
+    let length = youtube::video_length(&state, &body.external_url).await;
     let mut conn = state.pool.acquire().await.map_err(DbError::Sqlx)?;
     let asset = queries::assets::create_external(
         &mut conn,
@@ -248,6 +249,7 @@ pub(crate) async fn add_audio_link(
             credits: body.credits,
             source_url: body.source_url,
             external_url: body.external_url,
+            length,
         },
     )
     .await?;

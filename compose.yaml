@@ -32,6 +32,8 @@ services:
       - DISCORD_CLIENT_ID=${DISCORD_CLIENT_ID}
       - DISCORD_CLIENT_SECRET=${DISCORD_CLIENT_SECRET}
 
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+
       - BASE_URL=${BACKEND_URL:-https://${API_DOMAIN:-api.localhost}}
       - FRONTEND_URL=${FRONTEND_URL:-https://${SITE_DOMAIN:-localhost}}
       - RUST_LOG=${BACKEND_RUST_LOG}

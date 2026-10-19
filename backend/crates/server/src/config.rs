@@ -23,6 +23,10 @@ pub struct Config {
     pub discord_client_id: String,
     /// Discord OAuth application client secret.
     pub discord_client_secret: String,
+    /// Google Cloud API key shared by Google API integrations.
+    ///
+    /// Integrations that need it are skipped when unset.
+    pub google_api_key: Option<String>,
     /// Public base URL of this server (e.g. `http://localhost:3000`).
     /// Used to build OAuth callback URIs.
     pub base_url: String,
@@ -57,7 +61,9 @@ impl std::error::Error for ConfigError {}
 impl Config {
     /// Reads all required environment variables and returns a [`Config`].
     ///
-    /// `PORT` defaults to `3000` if unset. `FRONTEND_URL` defaults to `/`.
+    /// `PORT` defaults to `3000` if unset.
+    /// `FRONTEND_URL` defaults to `/`.
+    /// `GOOGLE_API_KEY` is optional.
     ///
     /// # Errors
     ///
@@ -85,6 +91,9 @@ impl Config {
                 .map_err(|_| ConfigError::Missing("DISCORD_CLIENT_ID"))?,
             discord_client_secret: env::var("DISCORD_CLIENT_SECRET")
                 .map_err(|_| ConfigError::Missing("DISCORD_CLIENT_SECRET"))?,
+            google_api_key: env::var("GOOGLE_API_KEY")
+                .ok()
+                .filter(|key| !key.is_empty()),
             base_url: env::var("BASE_URL").map_err(|_| ConfigError::Missing("BASE_URL"))?,
             frontend_url: env::var("FRONTEND_URL").unwrap_or_else(|_| "/".into()),
             dev_auth: env::var("DEV_AUTH")

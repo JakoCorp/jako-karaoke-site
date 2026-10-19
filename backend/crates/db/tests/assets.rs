@@ -38,6 +38,7 @@ async fn create_external_and_get_by_id(pool: MySqlPool) {
         credits: None,
         source_url: None,
         external_url: "https://youtube.com/watch?v=abc".to_string(),
+        length: Some(212),
     };
     let created = assets::create_external(&mut conn, &new).await.unwrap();
 
@@ -47,6 +48,7 @@ async fn create_external_and_get_by_id(pool: MySqlPool) {
         created.external_url.as_deref(),
         Some("https://youtube.com/watch?v=abc")
     );
+    assert_eq!(created.length, Some(212));
 
     let fetched = assets::get_by_id(&pool, created.id).await.unwrap().unwrap();
     assert_eq!(fetched.id, created.id);

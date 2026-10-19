@@ -86,8 +86,8 @@ pub async fn create_internal(conn: &mut MySqlConnection, new: &NewInternalAsset)
 /// Inserts a new external asset record and returns the created row.
 pub async fn create_external(conn: &mut MySqlConnection, new: &NewExternalAsset) -> Result<Asset> {
     sqlx::query_as::<_, Asset>(
-        "INSERT INTO assets (title, credits, source_url, external_url) \
-         VALUES (?, ?, ?, ?) \
+        "INSERT INTO assets (title, credits, source_url, external_url, length) \
+         VALUES (?, ?, ?, ?, ?) \
          RETURNING id, title, credits, source_url, hash, storage_url, internal_path, external_url, \
          length",
     )
@@ -95,6 +95,7 @@ pub async fn create_external(conn: &mut MySqlConnection, new: &NewExternalAsset)
     .bind(&new.credits)
     .bind(&new.source_url)
     .bind(&new.external_url)
+    .bind(new.length)
     .fetch_one(conn)
     .await
     .map_err(DbError::from)
