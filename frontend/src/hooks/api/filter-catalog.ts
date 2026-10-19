@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
+import { unwrap } from "@/api/client";
 import { filtersApi } from "@/api/filters";
 import type { FilterSubject } from "@/api/filters";
 
@@ -14,11 +15,7 @@ export const filterCatalogKeys = {
 export function useFilterCatalog(subject: FilterSubject) {
   return useQuery({
     queryKey: filterCatalogKeys.subject(subject),
-    queryFn: async () => {
-      const { data, error } = await filtersApi.catalog(subject);
-      if (error) throw error;
-      return data.groups;
-    },
+    queryFn: async () => unwrap(await filtersApi.catalog(subject)).groups,
     staleTime: CATALOG_STALE_MS,
   });
 }

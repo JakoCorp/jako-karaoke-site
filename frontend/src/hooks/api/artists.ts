@@ -2,6 +2,7 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 
 import { artistsApi } from "@/api/artists";
 import type { ArtistListParams } from "@/api/artists";
+import { unwrap } from "@/api/client";
 
 export const artistKeys = {
   all: () => ["artists"] as const,
@@ -12,11 +13,7 @@ export const artistKeys = {
 export function useArtists(params?: ArtistListParams, enabled = true) {
   return useQuery({
     queryKey: artistKeys.list(params),
-    queryFn: async () => {
-      const { data, error } = await artistsApi.list(params);
-      if (error) throw error;
-      return data;
-    },
+    queryFn: async () => unwrap(await artistsApi.list(params)),
     enabled,
   });
 }
@@ -27,15 +24,8 @@ export function useInfiniteArtists(params?: Omit<ArtistListParams, "page" | "per
 
   return useInfiniteQuery({
     queryKey: ["artists", "infinite", params],
-    queryFn: async ({ pageParam }) => {
-      const { data, error } = await artistsApi.list({
-        ...params,
-        page: pageParam,
-        per_page: ARTISTS_PER_PAGE,
-      });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: async ({ pageParam }) =>
+      unwrap(await artistsApi.list({ ...params, page: pageParam, per_page: ARTISTS_PER_PAGE })),
     initialPageParam: 1,
     getNextPageParam: (lastPage, allPages) => {
       const fetched = allPages.length * ARTISTS_PER_PAGE;
@@ -47,11 +37,7 @@ export function useInfiniteArtists(params?: Omit<ArtistListParams, "page" | "per
 export function useArtist(id: string, enabled = true) {
   return useQuery({
     queryKey: artistKeys.detail(id),
-    queryFn: async () => {
-      const { data, error } = await artistsApi.get(id);
-      if (error) throw error;
-      return data;
-    },
+    queryFn: async () => unwrap(await artistsApi.get(id)),
     enabled,
   });
 }

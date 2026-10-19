@@ -18,11 +18,7 @@ export const playlistKeys = {
 export function usePlaylist(id: string) {
   return useQuery({
     queryKey: playlistKeys.detail(id),
-    queryFn: async () => {
-      const { data, error } = await playlists.get(id);
-      if (error) throw error;
-      return data ?? null;
-    },
+    queryFn: async () => unwrap(await playlists.get(id)),
   });
 }
 
@@ -30,15 +26,8 @@ export function usePlaylist(id: string) {
 export function useInfinitePublicPlaylists(q?: string) {
   return useInfiniteQuery({
     queryKey: ["playlists", "infinite", "public", { q }],
-    queryFn: async ({ pageParam }) => {
-      const { data, error } = await playlists.list({
-        page: pageParam,
-        per_page: PLAYLISTS_PER_PAGE,
-        q,
-      });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: async ({ pageParam }) =>
+      unwrap(await playlists.list({ page: pageParam, per_page: PLAYLISTS_PER_PAGE, q })),
     initialPageParam: 1,
     getNextPageParam: (lastPage, allPages) => {
       const fetched = allPages.length * PLAYLISTS_PER_PAGE;
@@ -51,15 +40,10 @@ export function useInfinitePublicPlaylists(q?: string) {
 export function useInfiniteUserPlaylists(userId: string | null, q?: string) {
   return useInfiniteQuery({
     queryKey: ["playlists", "infinite", "user", userId, { q }],
-    queryFn: async ({ pageParam }) => {
-      const { data, error } = await playlists.listByUser(userId!, {
-        page: pageParam,
-        per_page: PLAYLISTS_PER_PAGE,
-        q,
-      });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: async ({ pageParam }) =>
+      unwrap(
+        await playlists.listByUser(userId!, { page: pageParam, per_page: PLAYLISTS_PER_PAGE, q }),
+      ),
     initialPageParam: 1,
     getNextPageParam: (lastPage, allPages) => {
       const fetched = allPages.length * PLAYLISTS_PER_PAGE;
@@ -72,22 +56,14 @@ export function useInfiniteUserPlaylists(userId: string | null, q?: string) {
 export function usePlaylistEntries(playlistId: string) {
   return useQuery({
     queryKey: playlistKeys.performances(playlistId),
-    queryFn: async () => {
-      const { data, error } = await playlists.getPerformances(playlistId);
-      if (error) throw error;
-      return data ?? [];
-    },
+    queryFn: async () => unwrap(await playlists.getPerformances(playlistId)),
   });
 }
 
 export function useUserFavorites(userId: string | null) {
   return useQuery({
     queryKey: playlistKeys.favorites(userId ?? ""),
-    queryFn: async () => {
-      const { data, error } = await playlists.getFavorites(userId!);
-      if (error) throw error;
-      return data ?? [];
-    },
+    queryFn: async () => unwrap(await playlists.getFavorites(userId!)),
     enabled: !!userId,
   });
 }
@@ -97,9 +73,8 @@ export function usePlaylistsContaining(userId: string | null, performanceId: str
   return useQuery({
     queryKey: ["playlists", "containing", userId, performanceId],
     queryFn: async () => {
-      const { data, error } = await playlists.getPlaylistsContaining(userId!, performanceId);
-      if (error) throw error;
-      return new Set<string>((data ?? []).map(String));
+      const playlistIds = unwrap(await playlists.getPlaylistsContaining(userId!, performanceId));
+      return new Set<string>(playlistIds.map(String));
     },
     enabled: !!userId && !!performanceId,
   });
@@ -110,9 +85,7 @@ export function useUserPlaylistsForPicker(userId: string | null) {
   return useQuery({
     queryKey: ["playlists", "picker", userId],
     queryFn: async () => {
-      const { data, error } = await playlists.listByUser(userId!, { per_page: 200 });
-      if (error) throw error;
-      const items = data?.items ?? [];
+      const { items } = unwrap(await playlists.listByUser(userId!, { per_page: 200 }));
       return [
         ...items.filter((p) => p.kind === "favorites"),
         ...items.filter((p) => p.kind !== "favorites"),
