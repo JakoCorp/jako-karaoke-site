@@ -18,6 +18,7 @@ Configuration is read from environment variables at startup. For local developme
 | `TWITCH_CLIENT_SECRET` | Twitch OAuth application client secret |
 | `DISCORD_CLIENT_ID` | Discord OAuth application client ID |
 | `DISCORD_CLIENT_SECRET` | Discord OAuth application client secret |
+| `GOOGLE_API_KEY` | Optional Google Cloud API key. |
 | `RUST_LOG` | Log filter (e.g. `server=debug,tower_http=debug`) |
 | `DEV_AUTH` | Set to `true` or `1` to enable `GET /auth/dev-login`. Must never be set in production. |
 
@@ -46,6 +47,22 @@ Create a Discord OAuth2 app at `https://discord.com/developers/applications` (co
 - Under `OAuth2` tab, copy the `Client ID` and generate + copy a `Client Secret`
 
 For further information or if it has changed, [see their documentation](https://docs.discord.com/developers/topics/oauth2).
+
+## Google Cloud
+
+An optional Google Cloud API key is used for Google API integrations.
+
+Used with [YouTube Data API v3](https://developers.google.com/youtube/v3), which provides the length of audio linked from YouTube. Without a key, linked YouTube audio will have no length recorded.
+
+1. Open the [Google Cloud console](https://console.cloud.google.com/) and create a project from the project picker (e.g. `jako-karaoke`).
+2. Under `APIs & Services` > `Library`, search for `YouTube Data API v3` and click `Enable`.
+3. Under `APIs & Services` > `Credentials`, choose `Create credentials` > `API key`.
+4. Edit the new key and restrict it:
+   - Under `API restrictions`, choose `YouTube Data API v3`.
+   - Under `Application restrictions`, select `IP addresses` and add the server's outbound IP. The key is only used server side, so do not use HTTP referrer restrictions. This can be skipped for local development.
+5. Copy the key into `GOOGLE_API_KEY`.
+
+For further information or if it has changed, [see their documentation](https://developers.google.com/youtube/v3/getting-started).
 
 ## Crates
 
