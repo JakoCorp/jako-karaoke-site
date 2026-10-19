@@ -21,11 +21,13 @@ import { tagKeys, useTags } from "@/hooks/api/tags";
 import { failureMessage } from "@/lib/error-message";
 import { formatDate, formatStreamTime, hasStreamPosition, parseStreamTime } from "@/lib/format";
 import { applyAll } from "@/lib/staging";
+import { useAuthStore } from "@/store/auth";
 
 import { MediaEditSection, type StagingMediaItem } from "../components/media-edit-section";
 import { MediaList } from "../components/media-list";
 import { ItemPicker, TagPicker, type TagAssignment } from "../components/pickers";
 import { resolveTagAssignments } from "../components/tag-utils";
+import { PlayersDialog } from "./players-dialog";
 import { parseStreamPosition } from "./stream-position";
 
 export function PerformanceDetailPanel({
@@ -38,6 +40,8 @@ export function PerformanceDetailPanel({
   const isCreating = performance === null;
   const [isEditing, setIsEditing] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [playersOpen, setPlayersOpen] = useState(false);
+  const canManagePlays = useAuthStore((state) => state.hasCapability("plays:manage_any"));
   const [editTitle, setEditTitle] = useState("");
   const [editDate, setEditDate] = useState("");
   const [editStreamNumber, setEditStreamNumber] = useState("");
@@ -567,6 +571,16 @@ export function PerformanceDetailPanel({
           >
             Edit
           </button>
+          {canManagePlays && (
+            <button
+              className="btn btn-secondary"
+              onClick={() => {
+                setPlayersOpen(true);
+              }}
+            >
+              Plays
+            </button>
+          )}
           <button
             className="btn btn-secondary"
             onClick={() => {
@@ -577,6 +591,9 @@ export function PerformanceDetailPanel({
           </button>
         </div>
       </div>
+      {canManagePlays && (
+        <PlayersDialog performance={performance} open={playersOpen} onOpenChange={setPlayersOpen} />
+      )}
       <ConfirmDialog
         open={deleteOpen}
         onOpenChange={(nextOpen) => {

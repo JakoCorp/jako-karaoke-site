@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { authApi, toAuthUser } from "@/api/auth";
-import { unwrap } from "@/api/client";
+import { ensureOk, unwrap } from "@/api/client";
 import { usersApi } from "@/api/users";
+import { errorMessage } from "@/lib/error-message";
 import { toast } from "@/lib/toast";
 import { useAuthStore } from "@/store/auth";
 
@@ -10,7 +11,11 @@ export const userKeys = {
   all: () => ["users"] as const,
   list: (q?: string) => ["users", "list", q] as const,
   capabilities: (id: string) => ["users", "capabilities", id] as const,
+  plays: (id: string, page: number) => ["users", "plays", id, page] as const,
+  allPlays: (id: string) => ["users", "plays", id] as const,
 };
+
+const PLAYS_PER_PAGE = 20;
 
 export function useUsers(q?: string) {
   return useQuery({
@@ -32,6 +37,50 @@ export function useUserCapabilities(userId: string | undefined) {
       return data ?? [];
     },
     enabled: !!userId,
+  });
+}
+
+export function useUserPlays(userId: string | undefined, page: number) {
+  return useQuery({
+    queryKey: userKeys.plays(userId ?? "", page),
+    queryFn: async () => {
+      const { data, error } = await usersApi.listPlays(userId!, page, PLAYS_PER_PAGE);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!userId,
+  });
+}
+
+/** Removes a user's counted plays on one performance, or all of them when `performanceId` is null. */
+export function useRemoveUserPlays() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      userId,
+      performanceId,
+    }: {
+      userId: string;
+      performanceId: string | null;
+    }) => {
+      const result =
+        performanceId === null
+          ? await usersApi.deletePlays(userId)
+          : await usersApi.deletePerformancePlays(userId, performanceId);
+      ensureOk(result);
+    },
+    onSuccess: async (_data, { userId }) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: userKeys.allPlays(userId) }),
+        queryClient.invalidateQueries({ queryKey: ["performances"] }),
+      ]);
+      toast.success("Plays removed");
+    },
+    onError: (error) => {
+      toast.error("Could not remove plays", {
+        description: errorMessage(error, "Something went wrong."),
+      });
+    },
   });
 }
 
