@@ -1817,6 +1817,227 @@
         ]
       }
     },
+    "/api/performances/{id}/plays": {
+      "get": {
+        "tags": [
+          "performances"
+        ],
+        "operationId": "list_performance_plays",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Performance ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number, 1-indexed. Defaults to 1.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "description": "Items per page. Defaults to 20. The server enforces a maximum.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Users who played this performance, most plays first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResponse_PerformancePlayer"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Performance not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "performances"
+        ],
+        "operationId": "start_play",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Performance ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Play session opened",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StartPlayResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Performance not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
+    "/api/performances/{id}/plays/{play_id}/complete": {
+      "post": {
+        "tags": [
+          "performances"
+        ],
+        "operationId": "complete_play",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Performance ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "play_id",
+            "in": "path",
+            "description": "Play session ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Play session completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompletePlayResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Play session not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Not enough listening time, or the session expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
     "/api/performances/{id}/video": {
       "post": {
         "tags": [
@@ -4164,6 +4385,223 @@
         ]
       }
     },
+    "/api/users/{id}/plays": {
+      "get": {
+        "tags": [
+          "users"
+        ],
+        "operationId": "list_user_plays",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "User ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number, 1-indexed. Defaults to 1.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "description": "Items per page. Defaults to 20. The server enforces a maximum.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Performances this user has counted plays on, most recent first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResponse_UserPlayEntry"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "users"
+        ],
+        "operationId": "delete_user_plays",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "User ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "All counted plays of this user removed"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
+    "/api/users/{id}/plays/{performance_id}": {
+      "delete": {
+        "tags": [
+          "users"
+        ],
+        "operationId": "delete_user_performance_plays",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "User ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "performance_id",
+            "in": "path",
+            "description": "Performance ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Counted plays of this user on the performance removed"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
     "/auth/claim": {
       "post": {
         "tags": [
@@ -5186,6 +5624,19 @@
           }
         }
       },
+      "CompletePlayResponse": {
+        "type": "object",
+        "description": "Response body for `POST /api/performances/{id}/plays/{play_id}/complete`.",
+        "required": [
+          "counted"
+        ],
+        "properties": {
+          "counted": {
+            "type": "boolean",
+            "description": "False when the play was valid but fell inside the cooldown of an earlier play."
+          }
+        }
+      },
       "CreateArtistRequest": {
         "type": "object",
         "description": "Request body for `POST /api/artists`.",
@@ -5629,6 +6080,69 @@
           }
         }
       },
+      "PagedResponse_PerformancePlayer": {
+        "type": "object",
+        "description": "Generic envelope returned by all paginated list endpoints.",
+        "required": [
+          "items",
+          "total",
+          "page",
+          "per_page"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/UserSummary",
+                  "description": "The user who played the performance."
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "play_count",
+                    "last_played_at"
+                  ],
+                  "properties": {
+                    "last_played_at": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "Timestamp of the user's most recent counted play."
+                    },
+                    "play_count": {
+                      "type": "integer",
+                      "format": "int64",
+                      "description": "Number of counted plays by the user on this performance.",
+                      "minimum": 0
+                    }
+                  }
+                }
+              ],
+              "description": "A user with their plays on one performance."
+            },
+            "description": "Items on the current page."
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The page that was returned, 1-indexed.",
+            "minimum": 0
+          },
+          "per_page": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Items per page as applied by the server (may be less than requested if capped).",
+            "minimum": 0
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Total number of matching items across all pages.",
+            "minimum": 0
+          }
+        }
+      },
       "PagedResponse_PerformanceSummary": {
         "type": "object",
         "description": "Generic envelope returned by all paginated list endpoints.",
@@ -5682,8 +6196,9 @@
                 },
                 "play_count": {
                   "type": "integer",
-                  "format": "int32",
-                  "description": "Number of times this performance has been played."
+                  "format": "int64",
+                  "description": "Number of times this performance has been played.",
+                  "minimum": 0
                 },
                 "singers": {
                   "type": "array",
@@ -5900,6 +6415,98 @@
           }
         }
       },
+      "PagedResponse_UserPlayEntry": {
+        "type": "object",
+        "description": "Generic envelope returned by all paginated list endpoints.",
+        "required": [
+          "items",
+          "total",
+          "page",
+          "per_page"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/PerformanceSummary",
+                  "description": "The performance that was played."
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "user_play_count",
+                    "last_played_at"
+                  ],
+                  "properties": {
+                    "last_played_at": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "Timestamp of the user's most recent counted play."
+                    },
+                    "user_play_count": {
+                      "type": "integer",
+                      "format": "int64",
+                      "description": "Number of counted plays by the user on this performance.",
+                      "minimum": 0
+                    }
+                  }
+                }
+              ],
+              "description": "A performance with the plays one user has on it."
+            },
+            "description": "Items on the current page."
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The page that was returned, 1-indexed.",
+            "minimum": 0
+          },
+          "per_page": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Items per page as applied by the server (may be less than requested if capped).",
+            "minimum": 0
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Total number of matching items across all pages.",
+            "minimum": 0
+          }
+        }
+      },
+      "PerformancePlayer": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/UserSummary",
+            "description": "The user who played the performance."
+          },
+          {
+            "type": "object",
+            "required": [
+              "play_count",
+              "last_played_at"
+            ],
+            "properties": {
+              "last_played_at": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Timestamp of the user's most recent counted play."
+              },
+              "play_count": {
+                "type": "integer",
+                "format": "int64",
+                "description": "Number of counted plays by the user on this performance.",
+                "minimum": 0
+              }
+            }
+          }
+        ],
+        "description": "A user with their plays on one performance."
+      },
       "PerformanceResponse": {
         "type": "object",
         "description": "Full performance metadata returned by detail endpoints.\n\nExcludes lyrics, fetch those via `GET /api/performances/{id}/lyrics` on demand.",
@@ -5956,8 +6563,9 @@
           },
           "play_count": {
             "type": "integer",
-            "format": "int32",
-            "description": "Number of times this performance has been played."
+            "format": "int64",
+            "description": "Number of times this performance has been played.",
+            "minimum": 0
           },
           "singers": {
             "type": "array",
@@ -6064,8 +6672,9 @@
           },
           "play_count": {
             "type": "integer",
-            "format": "int32",
-            "description": "Number of times this performance has been played."
+            "format": "int64",
+            "description": "Number of times this performance has been played.",
+            "minimum": 0
           },
           "singers": {
             "type": "array",
@@ -6415,6 +7024,27 @@
           "desc"
         ]
       },
+      "StartPlayResponse": {
+        "type": "object",
+        "description": "Response body for `POST /api/performances/{id}/plays`.",
+        "required": [
+          "play_id",
+          "required_seconds"
+        ],
+        "properties": {
+          "play_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Identifier of the opened play session."
+          },
+          "required_seconds": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Seconds of listening required before the play can be completed.",
+            "minimum": 0
+          }
+        }
+      },
       "TagInfo": {
         "type": "object",
         "description": "A tag embedded in song responses.",
@@ -6747,6 +7377,35 @@
             "description": "Serialized [`VideoKind`] value to assign."
           }
         }
+      },
+      "UserPlayEntry": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PerformanceSummary",
+            "description": "The performance that was played."
+          },
+          {
+            "type": "object",
+            "required": [
+              "user_play_count",
+              "last_played_at"
+            ],
+            "properties": {
+              "last_played_at": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Timestamp of the user's most recent counted play."
+              },
+              "user_play_count": {
+                "type": "integer",
+                "format": "int64",
+                "description": "Number of counted plays by the user on this performance.",
+                "minimum": 0
+              }
+            }
+          }
+        ],
+        "description": "A performance with the plays one user has on it."
       },
       "UserSettingsResponse": {
         "type": "object",

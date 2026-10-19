@@ -2,6 +2,7 @@
 
 pub(crate) mod audio;
 pub(crate) mod lyrics;
+pub(crate) mod plays;
 pub(crate) mod video;
 
 use axum::{
@@ -23,6 +24,7 @@ use api_types::{
         PerformanceResponse, PerformanceSummary, PerformanceTagAssignment, UpdateAudioKindRequest,
         UpdatePerformanceRequest, UpdateVideoKindRequest, VideoInfo, VideoKind,
     },
+    plays::{CompletePlayResponse, PerformancePlayer, StartPlayResponse},
     songs::{SongRef, SongSummary},
     tags::PerformanceTagKind,
 };
@@ -58,6 +60,9 @@ use crate::{
         lyrics::get_performance_lyrics,
         lyrics::put_performance_lyrics,
         lyrics::delete_performance_lyrics,
+        plays::list_performance_plays,
+        plays::start_play,
+        plays::complete_play,
     ),
     components(schemas(
         PerformanceSummary,
@@ -85,6 +90,10 @@ use crate::{
         UpdateVideoKindRequest,
         LyricsResponse,
         UpdateLyricsRequest,
+        StartPlayResponse,
+        CompletePlayResponse,
+        PerformancePlayer,
+        PagedResponse<PerformancePlayer>,
         ErrorResponse,
         PagedResponse<PerformanceSummary>,
     ))
@@ -124,7 +133,10 @@ impl PerformanceListParams {
             "performance_date {dir}, stream_number {dir}, performance_number {dir}, id {dir}"
         );
         match &self.sort {
-            Some(PerformanceSort::PlayCount) => format!("play_count {dir}, {id_tiebreak}"),
+            Some(PerformanceSort::PlayCount) => format!(
+                "{} {dir}, {id_tiebreak}",
+                queries::performance_plays::PLAY_COUNT_EXPR
+            ),
             Some(PerformanceSort::Duration) => format!("duration {dir}, {id_tiebreak}"),
             _ => id_tiebreak,
         }
@@ -147,9 +159,10 @@ pub(crate) async fn build_performance_summaries(
 ) -> Result<Vec<PerformanceSummary>, ApiError> {
     let perf_ids: Vec<Uuid> = performances.iter().map(|p| p.id).collect();
 
-    let (mut singers_by_perf, mut songs_by_perf) = tokio::try_join!(
+    let (mut singers_by_perf, mut songs_by_perf, play_counts) = tokio::try_join!(
         queries::performances::get_singers_batch(pool, &perf_ids),
         queries::performances::get_songs_batch(pool, &perf_ids),
+        queries::performance_plays::counts_batch(pool, &perf_ids),
     )?;
 
     let items = performances
@@ -176,7 +189,7 @@ pub(crate) async fn build_performance_summaries(
             PerformanceSummary {
                 id: p.id,
                 title: p.title,
-                play_count: p.play_count,
+                play_count: play_counts.get(&p.id).copied().unwrap_or(0),
                 duration: p.duration,
                 performance_date: p.performance_date,
                 stream_number: p.stream_number,
@@ -223,18 +236,24 @@ pub fn router() -> Router<AppState> {
                 .put(lyrics::put_performance_lyrics)
                 .delete(lyrics::delete_performance_lyrics),
         )
+        .route(
+            "/{id}/plays",
+            get(plays::list_performance_plays).post(plays::start_play),
+        )
+        .route("/{id}/plays/{play_id}/complete", post(plays::complete_play))
 }
 
 async fn hydrate(
     pool: &MySqlPool,
     perf: db::models::Performance,
 ) -> Result<PerformanceResponse, ApiError> {
-    let (songs, singers, tags, audio_rows, video_rows) = tokio::try_join!(
+    let (songs, singers, tags, audio_rows, video_rows, play_count) = tokio::try_join!(
         queries::performances::get_songs(pool, perf.id),
         queries::performances::get_singers(pool, perf.id),
         queries::performances::get_tags(pool, perf.id),
         queries::performance_audios::list_for_performance(pool, perf.id),
         queries::performance_videos::list_for_performance(pool, perf.id),
+        queries::performance_plays::count_for_performance(pool, perf.id),
     )?;
 
     let has_lyrics = perf.lyrics_id.is_some() || songs.iter().any(|s| s.lyrics_id.is_some());
@@ -298,7 +317,7 @@ async fn hydrate(
     Ok(PerformanceResponse {
         id: perf.id,
         title: perf.title,
-        play_count: perf.play_count,
+        play_count,
         duration: perf.duration,
         stream_time: perf.stream_time,
         performance_date: perf.performance_date,

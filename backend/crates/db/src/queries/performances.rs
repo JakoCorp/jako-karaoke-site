@@ -24,7 +24,7 @@ pub async fn get_by_id(
     id: Uuid,
 ) -> Result<Option<Performance>> {
     sqlx::query_as::<_, Performance>(
-        "SELECT id, created_by, title, lyrics_id, play_count, duration, stream_time, \
+        "SELECT id, created_by, title, lyrics_id, duration, stream_time, \
          performance_date, stream_number, performance_number \
          FROM performances WHERE id = ?",
     )
@@ -99,7 +99,7 @@ pub async fn search(
     offset: u32,
 ) -> Result<Vec<Performance>> {
     let mut builder = QueryBuilder::new(
-        "SELECT id, created_by, title, lyrics_id, play_count, duration, stream_time, \
+        "SELECT id, created_by, title, lyrics_id, duration, stream_time, \
          performance_date, stream_number, performance_number \
          FROM performances",
     );
@@ -200,7 +200,7 @@ pub async fn create(conn: &mut MySqlConnection, new: &NewPerformance) -> Result<
         "INSERT INTO performances \
          (created_by, title, lyrics_id, duration, stream_time, performance_date, stream_number, performance_number) \
          VALUES (?, ?, ?, ?, ?, ?, ?, ?) \
-         RETURNING id, created_by, title, lyrics_id, play_count, duration, stream_time, \
+         RETURNING id, created_by, title, lyrics_id, duration, stream_time, \
          performance_date, stream_number, performance_number",
     )
     .bind(new.created_by)

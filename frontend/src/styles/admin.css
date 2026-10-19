@@ -182,6 +182,49 @@
   }
 }
 
+@utility admin-play-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 20rem;
+  overflow-y: auto;
+}
+
+@utility admin-play-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+
+  &:hover {
+    background-color: var(--color-subtle);
+  }
+}
+
+@utility admin-play-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+@utility admin-play-title {
+  font-size: 0.875rem;
+  color: var(--color-fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@utility admin-play-meta {
+  font-size: 0.75rem;
+  color: var(--color-fg-muted);
+}
+
 @utility admin-empty {
   font-size: 0.875rem;
   color: var(--color-fg-muted);

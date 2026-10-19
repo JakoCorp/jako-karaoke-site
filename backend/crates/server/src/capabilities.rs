@@ -33,6 +33,9 @@ pub const PLAYLISTS_CREATE_FAVORITES: &str = "playlists:create_favorites";
 /// Required to update or delete playlists owned by other users.
 pub const PLAYLISTS_MANAGE_ANY: &str = "playlists:manage_any";
 
+/// Required to list or remove the plays of any user.
+pub const PLAYS_MANAGE_ANY: &str = "plays:manage_any";
+
 /// Every capability string recognised by this server.
 pub const ALL_CAPABILITIES: &[&str] = &[
     CAPABILITIES_MANAGE,
@@ -44,6 +47,7 @@ pub const ALL_CAPABILITIES: &[&str] = &[
     PLAYLISTS_CREATE_OFFICIAL,
     PLAYLISTS_CREATE_FAVORITES,
     PLAYLISTS_MANAGE_ANY,
+    PLAYS_MANAGE_ANY,
 ];
 
 /// Returns the capability required to create a playlist of the given kind, or

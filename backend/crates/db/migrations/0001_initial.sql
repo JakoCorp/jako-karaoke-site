@@ -193,7 +193,6 @@ CREATE TABLE IF NOT EXISTS performances (
     title VARCHAR(256) NULL,
     created_by BINARY(16) NULL REFERENCES users (id) ON DELETE SET NULL,
     lyrics_id BINARY(16) NULL REFERENCES lyrics (id) ON DELETE SET NULL,
-    play_count INT NOT NULL DEFAULT 0,
     duration INT UNSIGNED NULL,
     stream_time INT UNSIGNED NULL,
     performance_date DATE NOT NULL,
@@ -246,6 +245,20 @@ CREATE TABLE IF NOT EXISTS performance_videos (
     kind VARCHAR(32) NOT NULL,
     PRIMARY KEY (performance_id, asset_id),
     INDEX (performance_id)
+) ENGINE = InnoDB;
+
+-- Performance plays
+-- One row per listening session of a user, counted once counted_at is set.
+-- A performance's play count is the number of its counted rows.
+CREATE TABLE IF NOT EXISTS performance_plays (
+    id BINARY(16) NOT NULL DEFAULT (UNHEX(REPLACE(UUID_V7(), '-', ''))),
+    performance_id BINARY(16) NOT NULL REFERENCES performances (id) ON DELETE CASCADE,
+    user_id BINARY(16) NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    started_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    counted_at TIMESTAMP NULL,
+    PRIMARY KEY (id),
+    INDEX (performance_id, counted_at),
+    INDEX (user_id, performance_id, counted_at)
 ) ENGINE = InnoDB;
 
 -- Playlist <-> Performance (M2M, ordered)

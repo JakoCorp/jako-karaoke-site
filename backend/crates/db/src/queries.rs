@@ -6,6 +6,7 @@ pub mod capabilities;
 pub mod lyrics;
 pub mod pending_oauth;
 pub mod performance_audios;
+pub mod performance_plays;
 pub mod performance_videos;
 pub mod performances;
 pub mod playlists;

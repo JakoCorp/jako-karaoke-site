@@ -7,7 +7,10 @@ export const performanceKeys = {
   all: () => ["performances"] as const,
   list: (params?: PerformanceListParams) => ["performances", "list", params] as const,
   detail: (id: string) => ["performances", "detail", id] as const,
+  players: (id: string, page: number) => ["performances", "players", id, page] as const,
 };
+
+const PLAYERS_PER_PAGE = 20;
 
 export function usePerformances(params?: PerformanceListParams, enabled = true) {
   return useQuery({
@@ -27,6 +30,18 @@ export function usePerformance(id: string, enabled = true) {
     queryKey: performanceKeys.detail(id),
     queryFn: async () => {
       const { data, error } = await performancesApi.get(id);
+      if (error) throw error;
+      return data;
+    },
+    enabled,
+  });
+}
+
+export function usePerformancePlayers(id: string, page: number, enabled = true) {
+  return useQuery({
+    queryKey: performanceKeys.players(id, page),
+    queryFn: async () => {
+      const { data, error } = await performancesApi.listPlayers(id, page, PLAYERS_PER_PAGE);
       if (error) throw error;
       return data;
     },

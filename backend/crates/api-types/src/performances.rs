@@ -190,7 +190,7 @@ pub struct PerformanceSummary {
     /// Optional display title. Absent when no explicit title has been set.
     pub title: Option<String>,
     /// Number of times this performance has been played.
-    pub play_count: i32,
+    pub play_count: u64,
     /// Duration in seconds.
     pub duration: Option<u32>,
     /// Calendar date of the stream.
@@ -216,7 +216,7 @@ pub struct PerformanceResponse {
     /// Optional display title. Absent when no explicit title has been set.
     pub title: Option<String>,
     /// Number of times this performance has been played.
-    pub play_count: i32,
+    pub play_count: u64,
     /// Duration in seconds.
     pub duration: Option<u32>,
     /// Offset in seconds from the start of the stream.

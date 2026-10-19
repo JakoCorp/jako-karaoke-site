@@ -8,7 +8,9 @@ import { useUserCapabilities, userKeys, useUsers } from "@/hooks/api/users";
 import { useDebounced } from "@/hooks/use-debounced";
 import { errorMessage } from "@/lib/error-message";
 import { toast } from "@/lib/toast";
+import { useAuthStore } from "@/store/auth";
 
+import { PlaysDialog } from "./plays-dialog";
 import { RenameDialog } from "./rename-dialog";
 
 export function UsersAdminTab() {
@@ -16,6 +18,8 @@ export function UsersAdminTab() {
   const [selectedUser, setSelectedUser] = useState<UserSummary | null>(null);
   const [isGrantingAll, setIsGrantingAll] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
+  const [isViewingPlays, setIsViewingPlays] = useState(false);
+  const canManagePlays = useAuthStore((state) => state.hasCapability("plays:manage_any"));
 
   const debouncedQuery = useDebounced(searchInput.trim());
 
@@ -131,6 +135,16 @@ export function UsersAdminTab() {
               >
                 Rename
               </button>
+              {canManagePlays && (
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    setIsViewingPlays(true);
+                  }}
+                >
+                  Plays
+                </button>
+              )}
               <button
                 className="btn btn-secondary"
                 onClick={() => {
@@ -147,6 +161,13 @@ export function UsersAdminTab() {
               onOpenChange={setIsRenaming}
               onRenamed={setSelectedUser}
             />
+            {canManagePlays && (
+              <PlaysDialog
+                user={selectedUser}
+                open={isViewingPlays}
+                onOpenChange={setIsViewingPlays}
+              />
+            )}
             {capsLoading ? (
               <p className="admin-empty">Loading…</p>
             ) : (
