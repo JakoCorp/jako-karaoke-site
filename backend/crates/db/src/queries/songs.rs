@@ -48,7 +48,8 @@ pub async fn get_by_id(
 /// Filters applied by [`search`] and [`search_count`]. Every set field must match.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct SongFilter<'a> {
-    /// Case insensitive substring matched against the song title or any original artist name.
+    /// Case insensitive substring matched against the song title or any original artist name,
+    /// or the song id matched exactly.
     pub q: Option<&'a str>,
     /// Relation conditions, all of which must hold.
     pub clauses: &'a [Clause],
@@ -64,6 +65,8 @@ fn push_filters(builder: &mut QueryBuilder<MySql>, filter: SongFilter<'_>) {
             .condition()
             .push("s.id IN (SELECT id FROM songs WHERE title LIKE ")
             .push_bind(pattern.clone())
+            .push(" OR id = ")
+            .push_bind(Uuid::parse_str(q).ok())
             .push(
                 " UNION SELECT soa.song_id FROM song_original_artists soa \
                  JOIN artists a ON a.id = soa.artist_id WHERE a.name LIKE ",

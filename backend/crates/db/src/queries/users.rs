@@ -92,22 +92,20 @@ pub async fn get_by_username(
     .map_err(DbError::from)
 }
 
-/// Searches users by optional username substring. Returns all users when `q` is `None`.
+/// Searches users by optional username substring or exact id. Returns all users when `q` is `None`.
 pub async fn search(
     executor: impl Executor<'_, Database = MySql>,
     q: Option<&str>,
 ) -> Result<Vec<UserSummary>> {
     match q {
-        Some(term) => {
-            let pattern = format!("%{term}%");
-            sqlx::query_as::<_, UserSummary>(
-                "SELECT id, username FROM users WHERE username LIKE ? ORDER BY username",
-            )
-            .bind(pattern)
-            .fetch_all(executor)
-            .await
-            .map_err(DbError::from)
-        }
+        Some(term) => sqlx::query_as::<_, UserSummary>(
+            "SELECT id, username FROM users WHERE (username LIKE ? OR id = ?) ORDER BY username",
+        )
+        .bind(format!("%{term}%"))
+        .bind(Uuid::parse_str(term).ok())
+        .fetch_all(executor)
+        .await
+        .map_err(DbError::from),
         None => {
             sqlx::query_as::<_, UserSummary>("SELECT id, username FROM users ORDER BY username")
                 .fetch_all(executor)

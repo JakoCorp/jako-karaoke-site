@@ -94,6 +94,18 @@ async fn search_with_filter(pool: MySqlPool) {
 }
 
 #[sqlx::test(migrator = "db::MIGRATOR")]
+async fn search_matches_exact_id(pool: MySqlPool) {
+    let alpha = create_user(&pool, "user_alpha").await;
+    create_user(&pool, "user_beta").await;
+
+    let results = users::search(&pool, Some(&alpha.id.to_string()))
+        .await
+        .unwrap();
+    assert_eq!(results.len(), 1);
+    assert_eq!(results[0].id, alpha.id);
+}
+
+#[sqlx::test(migrator = "db::MIGRATOR")]
 async fn search_no_matches(pool: MySqlPool) {
     create_user(&pool, "user_alpha").await;
     create_user(&pool, "user_beta").await;

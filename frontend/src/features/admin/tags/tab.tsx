@@ -47,8 +47,8 @@ export function TagsAdminTab() {
     },
   });
 
-  const filtered = (allTags ?? []).filter((tag) =>
-    tag.name.toLowerCase().includes(search.toLowerCase()),
+  const filtered = (allTags ?? []).filter(
+    (tag) => tag.name.toLowerCase().includes(search.toLowerCase()) || tag.id === search.trim(),
   );
 
   function handleCreateOpenChange(open: boolean) {
