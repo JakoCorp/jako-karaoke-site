@@ -13,3 +13,4 @@ pub mod routes;
 pub mod state;
 pub mod storage;
 pub mod tasks;
+pub(crate) mod youtube;

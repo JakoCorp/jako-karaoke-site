@@ -246,6 +246,7 @@ pub(crate) async fn add_video_link(
             credits: body.credits,
             source_url: body.source_url,
             external_url: body.external_url,
+            length: None,
         },
     )
     .await?;

@@ -52,4 +52,6 @@ pub struct NewExternalAsset {
     pub source_url: Option<String>,
     /// The external URL being referenced.
     pub external_url: String,
+    /// Playback length in seconds, when the source is audio of a known length.
+    pub length: Option<u32>,
 }

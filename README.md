@@ -18,6 +18,7 @@ Create a `.env` file at the repo root with the following:
 | `STORAGE_BASE_URL` | Public base URL that maps to uploaded media (see backend README). Required, no default. |
 | `TWITCH_CLIENT_ID` / `TWITCH_CLIENT_SECRET` | Twitch OAuth app credentials. |
 | `DISCORD_CLIENT_ID` / `DISCORD_CLIENT_SECRET` | Discord OAuth app credentials. |
+| `GOOGLE_API_KEY` | Optional Google Cloud API key (see backend README). |
 | `SITE_DOMAIN` | Public domain for the frontend. Defaults to `localhost`. |
 | `FRONTEND_URL` | Overrides the derived `https://${SITE_DOMAIN}` if set. |
 | `API_DOMAIN` | Public domain for the backend. Defaults to `api.localhost`. |
@@ -37,6 +38,9 @@ TWITCH_CLIENT_ID=
 TWITCH_CLIENT_SECRET=
 DISCORD_CLIENT_ID=
 DISCORD_CLIENT_SECRET=
+
+# Optional
+GOOGLE_API_KEY=
 
 # Defaults to *.localhost for local development
 SITE_DOMAIN=
