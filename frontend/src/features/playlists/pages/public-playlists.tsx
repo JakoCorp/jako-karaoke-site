@@ -56,10 +56,7 @@ export function PublicPlaylistsPage() {
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const total = data?.pages[0]?.total ?? 0;
-  const items =
-    data?.pages
-      .flatMap((page) => page?.items ?? [])
-      .filter((p) => p.is_public && p.kind !== "favorites") ?? [];
+  const items = data?.pages.flatMap((page) => page.items) ?? [];
 
   return (
     <div>

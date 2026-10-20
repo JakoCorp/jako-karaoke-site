@@ -31,6 +31,19 @@ pub async fn get_by_id(
     .map_err(DbError::from)
 }
 
+/// Fetches a user by primary key and locks the row until the transaction ends.
+pub async fn get_by_id_for_update(conn: &mut MySqlConnection, id: Uuid) -> Result<Option<User>> {
+    sqlx::query_as::<_, User>(concat!(
+        "SELECT ",
+        user_columns!(),
+        " FROM users WHERE id = ? FOR UPDATE"
+    ))
+    .bind(id)
+    .fetch_optional(conn)
+    .await
+    .map_err(DbError::from)
+}
+
 /// Fetches a user by Twitch provider ID.
 pub async fn get_by_twitch_id(
     executor: impl Executor<'_, Database = MySql>,

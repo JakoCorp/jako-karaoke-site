@@ -27,13 +27,16 @@ pub async fn get_by_id(
 /// Returns a page of playlists matching the given filters.
 ///
 /// When `include_private` is `false`, only public playlists are returned.
-/// When `created_by` is `Some`, only playlists owned by that user are returned.
+/// When `created_by` is `Some`, only playlists owned by that user are returned. Otherwise favorites
+/// playlists are left out, since they are personal and never part of a global listing.
+/// When `kind` is `Some`, only playlists of that kind are returned.
 /// When `q` is `Some`, results are filtered by a case-insensitive substring match against the title.
 pub async fn search(
     executor: impl Executor<'_, Database = MySql>,
     q: Option<&str>,
     include_private: bool,
     created_by: Option<Uuid>,
+    kind: Option<&str>,
     limit: u32,
     offset: u32,
 ) -> Result<Vec<Playlist>> {
@@ -59,6 +62,14 @@ pub async fn search(
         push_where(&mut builder);
         builder.push(" created_by = ");
         builder.push_bind(user_id);
+    } else {
+        push_where(&mut builder);
+        builder.push(" kind <> 'favorites'");
+    }
+    if let Some(kind) = kind {
+        push_where(&mut builder);
+        builder.push(" kind = ");
+        builder.push_bind(kind);
     }
     if let Some(query) = q {
         push_where(&mut builder);
@@ -84,6 +95,7 @@ pub async fn search_count(
     q: Option<&str>,
     include_private: bool,
     created_by: Option<Uuid>,
+    kind: Option<&str>,
 ) -> Result<i64> {
     let mut builder = QueryBuilder::new("SELECT COUNT(*) FROM playlists");
     let mut where_started = false;
@@ -103,6 +115,14 @@ pub async fn search_count(
         push_where(&mut builder);
         builder.push(" created_by = ");
         builder.push_bind(user_id);
+    } else {
+        push_where(&mut builder);
+        builder.push(" kind <> 'favorites'");
+    }
+    if let Some(kind) = kind {
+        push_where(&mut builder);
+        builder.push(" kind = ");
+        builder.push_bind(kind);
     }
     if let Some(query) = q {
         push_where(&mut builder);
@@ -130,6 +150,18 @@ pub async fn get_favorites_by_user(
     .fetch_optional(executor)
     .await
     .map_err(DbError::from)
+}
+
+/// Counts the `user` kind playlists owned by `user_id`.
+pub async fn count_user_playlists(
+    executor: impl Executor<'_, Database = MySql>,
+    user_id: Uuid,
+) -> Result<i64> {
+    sqlx::query_scalar("SELECT COUNT(*) FROM playlists WHERE created_by = ? AND kind = 'user'")
+        .bind(user_id)
+        .fetch_one(executor)
+        .await
+        .map_err(DbError::from)
 }
 
 /// Inserts a new playlist and returns the created row.

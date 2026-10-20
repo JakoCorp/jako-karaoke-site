@@ -10,6 +10,7 @@ export type PlaylistListParams = {
   page?: number;
   per_page?: number;
   q?: string;
+  kind?: PlaylistKind;
 };
 
 /** Playlist endpoints. */

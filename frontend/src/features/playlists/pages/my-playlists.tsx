@@ -68,8 +68,7 @@ export function MyPlaylistsPage() {
   }
 
   const total = data?.pages[0]?.total ?? 0;
-  const items =
-    data?.pages.flatMap((page) => page?.items ?? []).filter((p) => p.kind === "user") ?? [];
+  const items = data?.pages.flatMap((page) => page.items) ?? [];
 
   return (
     <div>

@@ -1,6 +1,6 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { ensureOk, unwrap } from "@/api/client";
+import { ApiError, ensureOk, unwrap } from "@/api/client";
 import { type CreatePlaylistRequest, playlists } from "@/api/playlists";
 import { errorMessage } from "@/lib/error-message";
 import { toast } from "@/lib/toast";
@@ -36,13 +36,18 @@ export function useInfinitePublicPlaylists(q?: string) {
   });
 }
 
-/** Infinite scroll query for a user's playlist list. */
+/** Infinite scroll query for the playlists a user created themselves, without favorites. */
 export function useInfiniteUserPlaylists(userId: string | null, q?: string) {
   return useInfiniteQuery({
     queryKey: ["playlists", "infinite", "user", userId, { q }],
     queryFn: async ({ pageParam }) =>
       unwrap(
-        await playlists.listByUser(userId!, { page: pageParam, per_page: PLAYLISTS_PER_PAGE, q }),
+        await playlists.listByUser(userId!, {
+          page: pageParam,
+          per_page: PLAYLISTS_PER_PAGE,
+          q,
+          kind: "user",
+        }),
       ),
     initialPageParam: 1,
     getNextPageParam: (lastPage, allPages) => {
@@ -157,7 +162,7 @@ export function useDeletePlaylist() {
   });
 }
 
-/** Creates a playlist. Failures are left to the caller so a form can show them inline. */
+/** Creates a playlist. Reaching the playlist limit shows a toast, other failures are left to the caller. */
 export function useCreatePlaylist() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -171,6 +176,13 @@ export function useCreatePlaylist() {
         });
       }
       toast.success("Playlist created", { description: playlist.title });
+    },
+    onError: (error) => {
+      if (error instanceof ApiError && error.status === 409) {
+        toast.error("Playlist limit reached", {
+          description: errorMessage(error, "You cannot create more playlists."),
+        });
+      }
     },
   });
 }
