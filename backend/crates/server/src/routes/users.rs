@@ -180,13 +180,15 @@ pub(crate) async fn update_user(
         }));
     }
 
-    let mut conn = state.pool.acquire().await.map_err(DbError::Sqlx)?;
-    let updated = queries::users::update_username(&mut conn, id, &req.username)
+    let mut tx = state.pool.begin().await.map_err(DbError::Sqlx)?;
+    let updated = queries::users::update_username(&mut tx, id, &req.username)
         .await
         .map_err(|e| match e {
             DbError::Conflict => ApiError::Conflict("username already taken".into()),
             other => ApiError::from(other),
         })?;
+    queries::playlists::retitle_favorites(&mut *tx, id, &updated.username).await?;
+    tx.commit().await.map_err(DbError::Sqlx)?;
 
     Ok(Json(UserSummary {
         id: updated.id,
@@ -217,9 +219,18 @@ pub(crate) async fn list_user_playlists(
     let include_private = can_view_private(&auth, id);
     let (limit, offset) = pagination::limit_offset(params.page, params.per_page);
     let q = params.q.as_deref().filter(|s| !s.is_empty());
+    let kind = params.kind.as_ref().map(PlaylistKind::as_str);
     let (rows, total) = tokio::try_join!(
-        queries::playlists::search(&state.pool, q, include_private, Some(id), limit, offset),
-        queries::playlists::search_count(&state.pool, q, include_private, Some(id)),
+        queries::playlists::search(
+            &state.pool,
+            q,
+            include_private,
+            Some(id),
+            kind,
+            limit,
+            offset
+        ),
+        queries::playlists::search_count(&state.pool, q, include_private, Some(id), kind),
     )?;
     let items = rows
         .into_iter()

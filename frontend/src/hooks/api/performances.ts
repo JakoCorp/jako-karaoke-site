@@ -1,5 +1,6 @@
 import { keepPreviousData, useInfiniteQuery, useQuery } from "@tanstack/react-query";
 
+import { unwrap } from "@/api/client";
 import { performancesApi } from "@/api/performances";
 import type { PerformanceListParams } from "@/api/performances";
 
@@ -15,11 +16,7 @@ const PLAYERS_PER_PAGE = 20;
 export function usePerformances(params?: PerformanceListParams, enabled = true) {
   return useQuery({
     queryKey: performanceKeys.list(params),
-    queryFn: async () => {
-      const { data, error } = await performancesApi.list(params);
-      if (error) throw error;
-      return data;
-    },
+    queryFn: async () => unwrap(await performancesApi.list(params)),
     enabled,
     placeholderData: keepPreviousData,
   });
@@ -28,11 +25,7 @@ export function usePerformances(params?: PerformanceListParams, enabled = true) 
 export function usePerformance(id: string, enabled = true) {
   return useQuery({
     queryKey: performanceKeys.detail(id),
-    queryFn: async () => {
-      const { data, error } = await performancesApi.get(id);
-      if (error) throw error;
-      return data;
-    },
+    queryFn: async () => unwrap(await performancesApi.get(id)),
     enabled,
   });
 }
@@ -40,11 +33,7 @@ export function usePerformance(id: string, enabled = true) {
 export function usePerformancePlayers(id: string, page: number, enabled = true) {
   return useQuery({
     queryKey: performanceKeys.players(id, page),
-    queryFn: async () => {
-      const { data, error } = await performancesApi.listPlayers(id, page, PLAYERS_PER_PAGE);
-      if (error) throw error;
-      return data;
-    },
+    queryFn: async () => unwrap(await performancesApi.listPlayers(id, page, PLAYERS_PER_PAGE)),
     enabled,
   });
 }
@@ -53,10 +42,8 @@ export function usePerformanceLyrics(id: string, enabled = true) {
   return useQuery({
     queryKey: ["performances", "lyrics", id],
     queryFn: async () => {
-      const { data, error, response } = await performancesApi.getLyrics(id);
-      if (response.status === 404) return null;
-      if (error) throw error;
-      return data ?? null;
+      const result = await performancesApi.getLyrics(id);
+      return result.response.status === 404 ? null : unwrap(result);
     },
     enabled,
   });
@@ -70,15 +57,10 @@ export function useInfinitePerformances(
 
   return useInfiniteQuery({
     queryKey: ["performances", "infinite", params],
-    queryFn: async ({ pageParam }) => {
-      const { data, error } = await performancesApi.list({
-        ...params,
-        page: pageParam,
-        per_page: PERFORMANCES_PER_PAGE,
-      });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: async ({ pageParam }) =>
+      unwrap(
+        await performancesApi.list({ ...params, page: pageParam, per_page: PERFORMANCES_PER_PAGE }),
+      ),
     initialPageParam: 1,
     getNextPageParam: (lastPage, allPages) => {
       const fetched = allPages.length * PERFORMANCES_PER_PAGE;

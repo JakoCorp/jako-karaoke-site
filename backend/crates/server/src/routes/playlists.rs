@@ -27,6 +27,9 @@ use crate::{
     auth::middleware::AuthUser, capabilities, convert, error::ApiError, pagination, state::AppState,
 };
 
+/// Maximum number of `user` kind playlists a single user can own.
+const MAX_USER_PLAYLISTS: i64 = 100;
+
 /// Query parameters for `GET /api/playlists` and `GET /api/users/{id}/playlists`.
 #[derive(Debug, Clone, serde::Deserialize, utoipa::IntoParams)]
 #[into_params(parameter_in = Query)]
@@ -39,6 +42,8 @@ pub(crate) struct PlaylistListParams {
     pub per_page: u32,
     /// Optional text search filter against playlist title.
     pub q: Option<String>,
+    /// Optional filter returning only playlists of this kind.
+    pub kind: Option<PlaylistKind>,
 }
 
 #[derive(utoipa::OpenApi)]
@@ -105,9 +110,10 @@ pub(crate) async fn list_playlists(
     });
     let (limit, offset) = pagination::limit_offset(params.page, params.per_page);
     let q = params.q.as_deref().filter(|s| !s.is_empty());
+    let kind = params.kind.as_ref().map(PlaylistKind::as_str);
     let (rows, total) = tokio::try_join!(
-        queries::playlists::search(&state.pool, q, include_private, None, limit, offset),
-        queries::playlists::search_count(&state.pool, q, include_private, None),
+        queries::playlists::search(&state.pool, q, include_private, None, kind, limit, offset),
+        queries::playlists::search_count(&state.pool, q, include_private, None, kind),
     )?;
     let items = rows
         .into_iter()
@@ -163,6 +169,7 @@ pub(crate) async fn get_playlist(
         (status = 201, description = "Created playlist", body = PlaylistResponse),
         (status = 401, description = "Unauthorized", body = ErrorResponse),
         (status = 403, description = "Forbidden", body = ErrorResponse),
+        (status = 409, description = "User already owns 100 playlists", body = ErrorResponse),
     ),
     tag = "playlists",
     security(("session" = []))
@@ -178,9 +185,18 @@ pub(crate) async fn create_playlist(
         return Err(ApiError::Forbidden);
     }
 
-    let mut conn = state.pool.acquire().await.map_err(DbError::Sqlx)?;
+    let mut tx = state.pool.begin().await.map_err(DbError::Sqlx)?;
+    if req.kind == PlaylistKind::User {
+        queries::users::get_by_id_for_update(&mut tx, auth.user_id).await?;
+        let owned = queries::playlists::count_user_playlists(&mut *tx, auth.user_id).await?;
+        if owned >= MAX_USER_PLAYLISTS {
+            return Err(ApiError::Conflict(format!(
+                "playlist limit of {MAX_USER_PLAYLISTS} reached"
+            )));
+        }
+    }
     let playlist = queries::playlists::create(
-        &mut conn,
+        &mut tx,
         &NewPlaylist {
             title: req.title,
             description: req.description,
@@ -190,6 +206,7 @@ pub(crate) async fn create_playlist(
         },
     )
     .await?;
+    tx.commit().await.map_err(DbError::Sqlx)?;
     Ok((
         StatusCode::CREATED,
         Json(convert::playlist_response(playlist)?),

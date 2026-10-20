@@ -1,6 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import { useEffect } from "react";
 
+import { unwrap } from "@/api/client";
 import type { AudioInfo } from "@/api/performances";
 import { performancesApi } from "@/api/performances";
 import { openOfflineAudio, releaseOfflineAudio } from "@/features/local";
@@ -21,11 +22,7 @@ function resolveAudioUrl(asset: AudioInfo | null | undefined): string | null {
 function performanceDetailOptions(id: string) {
   return queryOptions({
     queryKey: performanceKeys.detail(id),
-    queryFn: async () => {
-      const { data, error } = await performancesApi.get(id);
-      if (error) throw error;
-      return data;
-    },
+    queryFn: async () => unwrap(await performancesApi.get(id)),
   });
 }
 

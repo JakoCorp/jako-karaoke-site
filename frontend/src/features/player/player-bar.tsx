@@ -190,7 +190,7 @@ export function MusicPlayer() {
             }}
             className="player-range"
           />
-          <span className="w-10 player-time">{formatDuration(duration)}</span>
+          <span className="w-10 player-time">{formatDuration(duration, "up")}</span>
         </div>
       </div>
 

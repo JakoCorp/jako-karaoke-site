@@ -2,6 +2,7 @@ import { Dialog } from "@base-ui/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
+import { ensureOk } from "@/api/client";
 import { tagsApi } from "@/api/tags";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { filterCatalogKeys } from "@/hooks/api/filter-catalog";
@@ -21,8 +22,7 @@ export function TagsAdminTab() {
 
   const createMutation = useMutation({
     mutationFn: async (name: string) => {
-      const { error } = await tagsApi.create({ name });
-      if (error) throw error;
+      ensureOk(await tagsApi.create({ name }));
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: tagKeys.all() });
@@ -38,8 +38,7 @@ export function TagsAdminTab() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await tagsApi.delete(id);
-      if (error) throw error;
+      ensureOk(await tagsApi.delete(id));
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: tagKeys.all() });

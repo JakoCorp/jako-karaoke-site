@@ -20,22 +20,14 @@ const PLAYS_PER_PAGE = 20;
 export function useUsers(q?: string) {
   return useQuery({
     queryKey: userKeys.list(q),
-    queryFn: async () => {
-      const { data, error } = await usersApi.search(q);
-      if (error) throw error;
-      return data ?? [];
-    },
+    queryFn: async () => unwrap(await usersApi.search(q)),
   });
 }
 
 export function useUserCapabilities(userId: string | undefined) {
   return useQuery({
     queryKey: userKeys.capabilities(userId ?? ""),
-    queryFn: async () => {
-      const { data, error } = await usersApi.listCapabilities(userId!);
-      if (error) throw error;
-      return data ?? [];
-    },
+    queryFn: async () => unwrap(await usersApi.listCapabilities(userId!)),
     enabled: !!userId,
   });
 }
@@ -43,11 +35,7 @@ export function useUserCapabilities(userId: string | undefined) {
 export function useUserPlays(userId: string | undefined, page: number) {
   return useQuery({
     queryKey: userKeys.plays(userId ?? "", page),
-    queryFn: async () => {
-      const { data, error } = await usersApi.listPlays(userId!, page, PLAYS_PER_PAGE);
-      if (error) throw error;
-      return data;
-    },
+    queryFn: async () => unwrap(await usersApi.listPlays(userId!, page, PLAYS_PER_PAGE)),
     enabled: !!userId,
   });
 }

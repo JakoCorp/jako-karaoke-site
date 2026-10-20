@@ -2414,6 +2414,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "description": "Optional filter returning only playlists of this kind.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/PlaylistKind"
+            }
           }
         ],
         "responses": {
@@ -2467,6 +2476,16 @@
           },
           "403": {
             "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "User already owns 100 playlists",
             "content": {
               "application/json": {
                 "schema": {
@@ -4297,6 +4316,15 @@
             "required": false,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "description": "Optional filter returning only playlists of this kind.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/PlaylistKind"
             }
           }
         ],
