@@ -125,7 +125,7 @@ export function FullscreenPlayer({
                 }}
                 className="player-range"
               />
-              <span className="w-10 player-time">{formatDuration(duration)}</span>
+              <span className="w-10 player-time">{formatDuration(duration, "up")}</span>
             </div>
 
             <div className="player-fullscreen-bottom">

@@ -26,7 +26,7 @@ pub fn audio_length(data: &[u8]) -> Option<u32> {
         .options(ParseOptions::new().read_tags(false))
         .read()
         .ok()?;
-    let seconds = file.properties().duration().as_secs_f64().round() as u32;
+    let seconds = file.properties().duration().as_secs_f64().ceil() as u32;
     (seconds > 0).then_some(seconds)
 }
 

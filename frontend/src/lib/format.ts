@@ -1,7 +1,11 @@
-/** Formats a duration as `M:SS`. Hours are not shown. Use `formatStreamTime` for h:mm:ss output. */
-export function formatDuration(totalSeconds: number): string {
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = Math.floor(totalSeconds % 60);
+/**
+ * Formats a duration as `M:SS`, truncating fractional seconds unless `round` is `"up"`.
+ * Hours are not shown. Use `formatStreamTime` for h:mm:ss output.
+ */
+export function formatDuration(totalSeconds: number, round: "down" | "up" = "down"): string {
+  const wholeSeconds = round === "up" ? Math.ceil(totalSeconds) : Math.floor(totalSeconds);
+  const minutes = Math.floor(wholeSeconds / 60);
+  const seconds = wholeSeconds % 60;
   return `${String(minutes)}:${String(seconds).padStart(2, "0")}`;
 }
 
