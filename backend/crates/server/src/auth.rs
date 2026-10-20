@@ -186,7 +186,7 @@ async fn claim(
         other => ApiError::from(other),
     })?;
 
-    queries::playlists::create_favorites(&mut tx, user.id).await?;
+    queries::playlists::create_favorites(&mut tx, user.id, &user.username).await?;
     queries::pending_oauth::delete(&mut *tx, &pending_token).await?;
 
     tx.commit().await.map_err(DbError::Sqlx)?;

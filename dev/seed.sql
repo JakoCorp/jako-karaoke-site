@@ -186,7 +186,7 @@ INSERT IGNORE INTO performance_tags (performance_id, tag_id, kind) VALUES
 INSERT IGNORE INTO playlists (id, title, description, kind, is_public, created_by) VALUES
 (
     UNHEX('01000000000000000000000000000051'),
-    'user_a favorites',
+    'user_a''s Favorites',
     NULL,
     'favorites',
     FALSE,

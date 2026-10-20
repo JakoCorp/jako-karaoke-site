@@ -84,13 +84,15 @@ pub(crate) async fn update_me(
         )));
     }
 
-    let mut conn = state.pool.acquire().await.map_err(DbError::Sqlx)?;
-    let updated = queries::users::update_username(&mut conn, user.id, &req.username)
+    let mut tx = state.pool.begin().await.map_err(DbError::Sqlx)?;
+    let updated = queries::users::update_username(&mut tx, user.id, &req.username)
         .await
         .map_err(|e| match e {
             DbError::Conflict => ApiError::Conflict("username already taken".into()),
             other => ApiError::from(other),
         })?;
+    queries::playlists::retitle_favorites(&mut *tx, user.id, &updated.username).await?;
+    tx.commit().await.map_err(DbError::Sqlx)?;
 
     Ok(Json(me_response(&state, updated, auth.capabilities).await?))
 }
