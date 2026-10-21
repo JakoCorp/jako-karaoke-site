@@ -84,7 +84,9 @@ fn push_filters(builder: &mut QueryBuilder<MySql>, q: Option<&str>) {
 /// Field an artist list is sorted by.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SortKey {
+    /// Alphabetical by artist name.
     Name,
+    /// Number of songs the artist is credited on as an original artist.
     SongCount,
 }
 

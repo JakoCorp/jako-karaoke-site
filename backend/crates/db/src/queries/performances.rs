@@ -102,8 +102,11 @@ fn push_filters(builder: &mut QueryBuilder<MySql>, filter: PerformanceFilter<'_>
 /// Field a performance list is sorted by.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SortKey {
+    /// Chronological by performance date, then stream and performance number.
     PerformanceDate,
+    /// Number of counted plays.
     PlayCount,
+    /// Length of the primary audio. Performances without one sort as the shortest.
     Duration,
 }
 

@@ -1,7 +1,11 @@
 //! Sort types shared by list queries.
+
+/// Direction of a sorted list.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SortDirection {
+    /// Smallest or oldest first.
     Asc,
+    /// Largest or newest first.
     Desc,
 }
 

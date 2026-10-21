@@ -99,6 +99,7 @@ fn push_filters(builder: &mut QueryBuilder<MySql>, filter: SongFilter<'_>) {
 /// Field a song list is sorted by.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SortKey {
+    /// Number of performances of the song.
     PerformanceCount,
 }
 
