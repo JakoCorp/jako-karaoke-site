@@ -28,7 +28,11 @@ use db::{
     error::DbError,
     filter::Subject,
     models::{NewLyrics, NewSong, UpdateSong},
-    queries::{self, songs::SongFilter},
+    queries::{
+        self,
+        songs::{SongFilter, SortKey},
+    },
+    sort::SortDirection,
 };
 
 use crate::{
@@ -107,13 +111,11 @@ pub(crate) struct SongListParams {
 }
 
 impl SongListParams {
-    fn order_by_clause(&self) -> String {
-        let dir = self.sort_dir.as_ref().map_or("DESC", SortDir::as_str);
-        match &self.sort {
-            Some(SongSort::PerformanceCount) | None => {
-                format!("performance_count {dir}, s.id DESC")
-            }
-        }
+    fn order(&self) -> (SortKey, SortDirection) {
+        let sort = match self.sort {
+            Some(SongSort::PerformanceCount) | None => SortKey::PerformanceCount,
+        };
+        (sort, self.sort_dir.map_or(SortDirection::Desc, Into::into))
     }
 }
 
@@ -203,11 +205,11 @@ pub(crate) async fn list_songs(
         q: params.q.as_deref().filter(|s| !s.is_empty()),
         clauses: &parsed.clauses,
     };
-    let order_by = params.order_by_clause();
+    let (sort, direction) = params.order();
 
     let (total, songs) = tokio::try_join!(
         queries::songs::search_count(&state.pool, filter),
-        queries::songs::search(&state.pool, filter, &order_by, limit, offset),
+        queries::songs::search(&state.pool, filter, sort, direction, limit, offset),
     )?;
 
     let song_ids: Vec<Uuid> = songs.iter().map(|s| s.id).collect();

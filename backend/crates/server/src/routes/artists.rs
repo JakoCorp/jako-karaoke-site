@@ -24,7 +24,8 @@ use db::{
     MySqlPool,
     error::DbError,
     models::{NewArtist, NewArtistLink, UpdateArtist},
-    queries,
+    queries::{self, artists::SortKey},
+    sort::SortDirection,
 };
 
 use crate::{
@@ -90,12 +91,12 @@ pub(crate) struct ArtistListParams {
 }
 
 impl ArtistListParams {
-    fn order_by_clause(&self) -> String {
-        let dir = self.sort_dir.as_ref().map_or("ASC", SortDir::as_str);
-        match &self.sort {
-            Some(ArtistSort::SongCount) => format!("song_count {dir}"),
-            _ => format!("name {dir}"),
-        }
+    fn order(&self) -> (SortKey, SortDirection) {
+        let sort = match self.sort {
+            Some(ArtistSort::SongCount) => SortKey::SongCount,
+            Some(ArtistSort::Name) | None => SortKey::Name,
+        };
+        (sort, self.sort_dir.map_or(SortDirection::Asc, Into::into))
     }
 }
 
@@ -174,9 +175,9 @@ pub(crate) async fn list_artists(
 ) -> Result<Json<PagedResponse<ArtistSummary>>, ApiError> {
     let (limit, offset) = pagination::limit_offset(params.page, params.per_page);
     let q = params.q.as_deref().filter(|s| !s.is_empty());
-    let order_by = params.order_by_clause();
+    let (sort, direction) = params.order();
     let (artists, total) = tokio::try_join!(
-        queries::artists::search(&state.pool, q, &order_by, limit, offset),
+        queries::artists::search(&state.pool, q, sort, direction, limit, offset),
         queries::artists::search_count(&state.pool, q),
     )?;
 

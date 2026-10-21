@@ -8,15 +8,23 @@ use crate::models::asset::{Asset, NewExternalAsset, NewInternalAsset};
 
 type Result<T> = std::result::Result<T, DbError>;
 
+/// Column list matching the fields of [`Asset`].
+macro_rules! asset_columns {
+    () => {
+        "id, title, credits, source_url, hash, storage_url, internal_path, external_url, length"
+    };
+}
+
 /// Fetches an asset by ID.
 pub async fn get_by_id(
     executor: impl Executor<'_, Database = MySql>,
     id: Uuid,
 ) -> Result<Option<Asset>> {
-    sqlx::query_as::<_, Asset>(
-        "SELECT id, title, credits, source_url, hash, storage_url, internal_path, external_url, \
-         length FROM assets WHERE id = ?",
-    )
+    sqlx::query_as::<_, Asset>(concat!(
+        "SELECT ",
+        asset_columns!(),
+        " FROM assets WHERE id = ?"
+    ))
     .bind(id)
     .fetch_optional(executor)
     .await
@@ -28,10 +36,11 @@ pub async fn get_by_hash(
     executor: impl Executor<'_, Database = MySql>,
     hash: &str,
 ) -> Result<Option<Asset>> {
-    sqlx::query_as::<_, Asset>(
-        "SELECT id, title, credits, source_url, hash, storage_url, internal_path, external_url, \
-         length FROM assets WHERE hash = ?",
-    )
+    sqlx::query_as::<_, Asset>(concat!(
+        "SELECT ",
+        asset_columns!(),
+        " FROM assets WHERE hash = ?"
+    ))
     .bind(hash)
     .fetch_optional(executor)
     .await
@@ -65,12 +74,11 @@ pub async fn reference_count(
 
 /// Inserts a new internal asset record and returns the created row.
 pub async fn create_internal(conn: &mut MySqlConnection, new: &NewInternalAsset) -> Result<Asset> {
-    sqlx::query_as::<_, Asset>(
+    sqlx::query_as::<_, Asset>(concat!(
         "INSERT INTO assets (title, credits, source_url, hash, storage_url, internal_path, length) \
-         VALUES (?, ?, ?, ?, ?, ?, ?) \
-         RETURNING id, title, credits, source_url, hash, storage_url, internal_path, external_url, \
-         length",
-    )
+         VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING ",
+        asset_columns!()
+    ))
     .bind(&new.title)
     .bind(&new.credits)
     .bind(&new.source_url)
@@ -85,12 +93,11 @@ pub async fn create_internal(conn: &mut MySqlConnection, new: &NewInternalAsset)
 
 /// Inserts a new external asset record and returns the created row.
 pub async fn create_external(conn: &mut MySqlConnection, new: &NewExternalAsset) -> Result<Asset> {
-    sqlx::query_as::<_, Asset>(
+    sqlx::query_as::<_, Asset>(concat!(
         "INSERT INTO assets (title, credits, source_url, external_url, length) \
-         VALUES (?, ?, ?, ?, ?) \
-         RETURNING id, title, credits, source_url, hash, storage_url, internal_path, external_url, \
-         length",
-    )
+         VALUES (?, ?, ?, ?, ?) RETURNING ",
+        asset_columns!()
+    ))
     .bind(&new.title)
     .bind(&new.credits)
     .bind(&new.source_url)

@@ -33,7 +33,11 @@ use db::{
     error::DbError,
     filter::Subject,
     models::{NewLyrics, NewPerformance, UpdatePerformance, performance::Performance},
-    queries::{self, performances::PerformanceFilter},
+    queries::{
+        self,
+        performances::{PerformanceFilter, SortKey},
+    },
+    sort::SortDirection,
 };
 
 use crate::{
@@ -123,26 +127,13 @@ pub(crate) struct PerformanceListParams {
 }
 
 impl PerformanceListParams {
-    fn sort_dir_str(&self) -> &'static str {
-        self.sort_dir.as_ref().map_or("DESC", SortDir::as_str)
-    }
-
-    fn order_by_clause(&self) -> String {
-        let dir = self.sort_dir_str();
-        let id_tiebreak = format!(
-            "performance_date {dir}, stream_number {dir}, performance_number {dir}, id {dir}"
-        );
-        match &self.sort {
-            Some(PerformanceSort::PlayCount) => format!(
-                "{} {dir}, {id_tiebreak}",
-                queries::performance_plays::PLAY_COUNT_EXPR
-            ),
-            Some(PerformanceSort::Duration) => format!(
-                "{} {dir}, {id_tiebreak}",
-                queries::performance_audios::PRIMARY_LENGTH_EXPR
-            ),
-            _ => id_tiebreak,
-        }
+    fn order(&self) -> (SortKey, SortDirection) {
+        let sort = match self.sort {
+            Some(PerformanceSort::PlayCount) => SortKey::PlayCount,
+            Some(PerformanceSort::Duration) => SortKey::Duration,
+            Some(PerformanceSort::PerformanceDate) | None => SortKey::PerformanceDate,
+        };
+        (sort, self.sort_dir.map_or(SortDirection::Desc, Into::into))
     }
 }
 
@@ -382,10 +373,10 @@ pub(crate) async fn list_performances(
         date_to: parsed.date_to,
     };
 
-    let order_by = params.order_by_clause();
+    let (sort, direction) = params.order();
     let (total, perfs) = tokio::try_join!(
         queries::performances::search_count(&state.pool, filter),
-        queries::performances::search(&state.pool, filter, &order_by, limit, offset),
+        queries::performances::search(&state.pool, filter, sort, direction, limit, offset),
     )?;
 
     let items = build_performance_summaries(&state.pool, perfs).await?;

@@ -3,8 +3,9 @@ use db::models::artist::NewArtist;
 use db::models::song::{NewSong, UpdateSong};
 use db::models::tag::NewTag;
 use db::models::user::NewUser;
-use db::queries::songs::SongFilter;
+use db::queries::songs::{SongFilter, SortKey};
 use db::queries::{artists, songs, tags, users};
+use db::sort::SortDirection;
 use sqlx::MySqlPool;
 use uuid::Uuid;
 
@@ -61,7 +62,8 @@ async fn list_returns_newest_first(pool: MySqlPool) {
     let results = songs::search(
         &pool,
         SongFilter::default(),
-        "performance_count DESC, s.id DESC",
+        SortKey::PerformanceCount,
+        SortDirection::Desc,
         10,
         0,
     )
@@ -95,12 +97,19 @@ async fn search_matches_title_or_original_artist(pool: MySqlPool) {
         q: Some("needle"),
         ..SongFilter::default()
     };
-    let results = songs::search(&pool, filter, "s.id ASC", 10, 0)
-        .await
-        .unwrap();
+    let results = songs::search(
+        &pool,
+        filter,
+        SortKey::PerformanceCount,
+        SortDirection::Desc,
+        10,
+        0,
+    )
+    .await
+    .unwrap();
     let ids: Vec<_> = results.iter().map(|song| song.id).collect();
 
-    assert_eq!(ids, vec![by_title.id, by_artist.id]);
+    assert_eq!(ids, vec![by_artist.id, by_title.id]);
     assert_eq!(songs::search_count(&pool, filter).await.unwrap(), 2);
 }
 
@@ -114,9 +123,16 @@ async fn search_matches_exact_id(pool: MySqlPool) {
         q: Some(&query),
         ..SongFilter::default()
     };
-    let results = songs::search(&pool, filter, "s.id ASC", 10, 0)
-        .await
-        .unwrap();
+    let results = songs::search(
+        &pool,
+        filter,
+        SortKey::PerformanceCount,
+        SortDirection::Desc,
+        10,
+        0,
+    )
+    .await
+    .unwrap();
     let ids: Vec<_> = results.iter().map(|song| song.id).collect();
 
     assert_eq!(ids, vec![target.id]);
@@ -154,9 +170,16 @@ async fn search_filters_by_clauses_and_lists_used_catalog_values(pool: MySqlPool
         clauses: &clauses,
         ..SongFilter::default()
     };
-    let results = songs::search(&pool, filter, "s.id ASC", 10, 0)
-        .await
-        .unwrap();
+    let results = songs::search(
+        &pool,
+        filter,
+        SortKey::PerformanceCount,
+        SortDirection::Desc,
+        10,
+        0,
+    )
+    .await
+    .unwrap();
     assert_eq!(results.len(), 1);
     assert_eq!(results[0].id, tagged.id);
 
@@ -169,9 +192,16 @@ async fn search_filters_by_clauses_and_lists_used_catalog_values(pool: MySqlPool
         clauses: &excluded,
         ..SongFilter::default()
     };
-    let results = songs::search(&pool, filter, "s.id ASC", 10, 0)
-        .await
-        .unwrap();
+    let results = songs::search(
+        &pool,
+        filter,
+        SortKey::PerformanceCount,
+        SortDirection::Desc,
+        10,
+        0,
+    )
+    .await
+    .unwrap();
     assert_eq!(results.len(), 1);
     assert_eq!(results[0].id, untagged.id);
 

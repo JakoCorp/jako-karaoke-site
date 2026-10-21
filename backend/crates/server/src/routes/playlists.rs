@@ -20,7 +20,7 @@ use api_types::{
 use db::{
     error::DbError,
     models::playlist::{NewPlaylist, UpdatePlaylist},
-    queries,
+    queries::{self, playlists::PlaylistFilter},
 };
 
 use crate::{
@@ -111,9 +111,15 @@ pub(crate) async fn list_playlists(
     let (limit, offset) = pagination::limit_offset(params.page, params.per_page);
     let q = params.q.as_deref().filter(|s| !s.is_empty());
     let kind = params.kind.as_ref().map(PlaylistKind::as_str);
+    let filter = PlaylistFilter {
+        q,
+        include_private,
+        created_by: None,
+        kind,
+    };
     let (rows, total) = tokio::try_join!(
-        queries::playlists::search(&state.pool, q, include_private, None, kind, limit, offset),
-        queries::playlists::search_count(&state.pool, q, include_private, None, kind),
+        queries::playlists::search(&state.pool, filter, limit, offset),
+        queries::playlists::search_count(&state.pool, filter),
     )?;
     let items = rows
         .into_iter()

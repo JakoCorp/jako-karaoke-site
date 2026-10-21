@@ -4,82 +4,104 @@ use sqlx::{Executor, MySql, MySqlConnection, QueryBuilder};
 use uuid::Uuid;
 
 use crate::error::DbError;
+use crate::filter::WhereClause;
 use crate::models::playlist::{NewPlaylist, Playlist, PlaylistPerformanceRow, UpdatePlaylist};
 
 type Result<T> = std::result::Result<T, DbError>;
+
+/// Column list matching the fields of [`Playlist`], for a query over `playlists`.
+///
+/// The `inserted` form is for a freshly inserted row, which has no performances yet.
+macro_rules! playlist_columns {
+    () => {
+        playlist_columns!(@with "(SELECT COUNT(*) FROM playlist_performances WHERE playlist_id = playlists.id)")
+    };
+    (inserted) => {
+        playlist_columns!(@with "0")
+    };
+    (@with $performance_count:literal) => {
+        concat!(
+            "id, title, description, kind, is_public, created_by, ",
+            $performance_count,
+            " AS performance_count"
+        )
+    };
+}
 
 /// Fetches a playlist by ID.
 pub async fn get_by_id(
     executor: impl Executor<'_, Database = MySql>,
     id: Uuid,
 ) -> Result<Option<Playlist>> {
-    sqlx::query_as::<_, Playlist>(
-        "SELECT id, title, description, kind, is_public, created_by, \
-         (SELECT COUNT(*) FROM playlist_performances WHERE playlist_id = playlists.id) AS performance_count \
-         FROM playlists WHERE id = ?",
-    )
+    sqlx::query_as::<_, Playlist>(concat!(
+        "SELECT ",
+        playlist_columns!(),
+        " FROM playlists WHERE id = ?"
+    ))
     .bind(id)
     .fetch_optional(executor)
     .await
     .map_err(DbError::from)
 }
 
-/// Returns a page of playlists matching the given filters.
-///
-/// When `include_private` is `false`, only public playlists are returned.
-/// When `created_by` is `Some`, only playlists owned by that user are returned. Otherwise favorites
-/// playlists are left out, since they are personal and never part of a global listing.
-/// When `kind` is `Some`, only playlists of that kind are returned.
-/// When `q` is `Some`, results are filtered by a case-insensitive substring match against the title.
+/// Filters applied by [`search`] and [`search_count`]. Every set field must match.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct PlaylistFilter<'a> {
+    /// Case insensitive substring matched against the playlist title.
+    pub q: Option<&'a str>,
+    /// Whether private playlists are included. Only public playlists are returned when `false`.
+    pub include_private: bool,
+    /// Only playlists owned by this user. Otherwise favorites playlists are left out, since they
+    /// are personal and never part of a global listing.
+    pub created_by: Option<Uuid>,
+    /// Only playlists of this kind.
+    pub kind: Option<&'a str>,
+}
+
+/// Appends the `WHERE` clause for `filter`, binding its values.
+fn push_filters(builder: &mut QueryBuilder<MySql>, filter: PlaylistFilter<'_>) {
+    let mut conditions = WhereClause::new(builder);
+
+    if !filter.include_private {
+        conditions.condition().push("is_public = TRUE");
+    }
+
+    if let Some(user_id) = filter.created_by {
+        conditions
+            .condition()
+            .push("created_by = ")
+            .push_bind(user_id);
+    } else {
+        conditions.condition().push("kind <> 'favorites'");
+    }
+
+    if let Some(kind) = filter.kind {
+        conditions.condition().push("kind = ").push_bind(kind);
+    }
+
+    if let Some(q) = filter.q {
+        conditions
+            .condition()
+            .push("title LIKE ")
+            .push_bind(format!("%{q}%"));
+    }
+}
+
+/// Returns a page of playlists matching `filter`, ordered by title.
 pub async fn search(
     executor: impl Executor<'_, Database = MySql>,
-    q: Option<&str>,
-    include_private: bool,
-    created_by: Option<Uuid>,
-    kind: Option<&str>,
+    filter: PlaylistFilter<'_>,
     limit: u32,
     offset: u32,
 ) -> Result<Vec<Playlist>> {
-    let mut builder = QueryBuilder::new(
-        "SELECT id, title, description, kind, is_public, created_by, \
-         (SELECT COUNT(*) FROM playlist_performances WHERE playlist_id = playlists.id) AS performance_count \
-         FROM playlists",
-    );
-    let mut where_started = false;
-    let mut push_where = |builder: &mut QueryBuilder<MySql>| {
-        if where_started {
-            builder.push(" AND");
-        } else {
-            builder.push(" WHERE");
-            where_started = true;
-        }
-    };
-    if !include_private {
-        push_where(&mut builder);
-        builder.push(" is_public = TRUE");
-    }
-    if let Some(user_id) = created_by {
-        push_where(&mut builder);
-        builder.push(" created_by = ");
-        builder.push_bind(user_id);
-    } else {
-        push_where(&mut builder);
-        builder.push(" kind <> 'favorites'");
-    }
-    if let Some(kind) = kind {
-        push_where(&mut builder);
-        builder.push(" kind = ");
-        builder.push_bind(kind);
-    }
-    if let Some(query) = q {
-        push_where(&mut builder);
-        builder.push(" title LIKE ");
-        builder.push_bind(format!("%{query}%"));
-    }
-    builder.push(" ORDER BY title LIMIT ");
-    builder.push_bind(limit);
-    builder.push(" OFFSET ");
-    builder.push_bind(offset);
+    let mut builder = QueryBuilder::new(concat!("SELECT ", playlist_columns!(), " FROM playlists"));
+    push_filters(&mut builder, filter);
+    builder
+        .push(" ORDER BY title LIMIT ")
+        .push_bind(limit)
+        .push(" OFFSET ")
+        .push_bind(offset);
+
     builder
         .build_query_as::<Playlist>()
         .fetch_all(executor)
@@ -87,48 +109,14 @@ pub async fn search(
         .map_err(DbError::from)
 }
 
-/// Returns the total count of playlists matching the given filters.
-///
-/// Parameters have the same semantics as [`search`].
+/// Returns the total number of playlists matching `filter`.
 pub async fn search_count(
     executor: impl Executor<'_, Database = MySql>,
-    q: Option<&str>,
-    include_private: bool,
-    created_by: Option<Uuid>,
-    kind: Option<&str>,
+    filter: PlaylistFilter<'_>,
 ) -> Result<i64> {
     let mut builder = QueryBuilder::new("SELECT COUNT(*) FROM playlists");
-    let mut where_started = false;
-    let mut push_where = |builder: &mut QueryBuilder<MySql>| {
-        if where_started {
-            builder.push(" AND");
-        } else {
-            builder.push(" WHERE");
-            where_started = true;
-        }
-    };
-    if !include_private {
-        push_where(&mut builder);
-        builder.push(" is_public = TRUE");
-    }
-    if let Some(user_id) = created_by {
-        push_where(&mut builder);
-        builder.push(" created_by = ");
-        builder.push_bind(user_id);
-    } else {
-        push_where(&mut builder);
-        builder.push(" kind <> 'favorites'");
-    }
-    if let Some(kind) = kind {
-        push_where(&mut builder);
-        builder.push(" kind = ");
-        builder.push_bind(kind);
-    }
-    if let Some(query) = q {
-        push_where(&mut builder);
-        builder.push(" title LIKE ");
-        builder.push_bind(format!("%{query}%"));
-    }
+    push_filters(&mut builder, filter);
+
     builder
         .build_query_scalar()
         .fetch_one(executor)
@@ -141,11 +129,11 @@ pub async fn get_favorites_by_user(
     executor: impl Executor<'_, Database = MySql>,
     user_id: Uuid,
 ) -> Result<Option<Playlist>> {
-    sqlx::query_as::<_, Playlist>(
-        "SELECT id, title, description, kind, is_public, created_by, \
-         (SELECT COUNT(*) FROM playlist_performances WHERE playlist_id = playlists.id) AS performance_count \
-         FROM playlists WHERE created_by = ? AND kind = 'favorites'",
-    )
+    sqlx::query_as::<_, Playlist>(concat!(
+        "SELECT ",
+        playlist_columns!(),
+        " FROM playlists WHERE created_by = ? AND kind = 'favorites'"
+    ))
     .bind(user_id)
     .fetch_optional(executor)
     .await
@@ -166,11 +154,11 @@ pub async fn count_user_playlists(
 
 /// Inserts a new playlist and returns the created row.
 pub async fn create(conn: &mut MySqlConnection, new: &NewPlaylist) -> Result<Playlist> {
-    sqlx::query_as::<_, Playlist>(
+    sqlx::query_as::<_, Playlist>(concat!(
         "INSERT INTO playlists (title, description, kind, is_public, created_by) \
-         VALUES (?, ?, ?, ?, ?) \
-         RETURNING id, title, description, kind, is_public, created_by, 0 AS performance_count",
-    )
+         VALUES (?, ?, ?, ?, ?) RETURNING ",
+        playlist_columns!(inserted)
+    ))
     .bind(&new.title)
     .bind(&new.description)
     .bind(&new.kind)
@@ -214,11 +202,11 @@ pub async fn create_favorites(
     user_id: Uuid,
     username: &str,
 ) -> Result<Playlist> {
-    sqlx::query_as::<_, Playlist>(
+    sqlx::query_as::<_, Playlist>(concat!(
         "INSERT INTO playlists (title, kind, is_public, created_by) \
-         VALUES (?, 'favorites', FALSE, ?) \
-         RETURNING id, title, description, kind, is_public, created_by, 0 AS performance_count",
-    )
+         VALUES (?, 'favorites', FALSE, ?) RETURNING ",
+        playlist_columns!(inserted)
+    ))
     .bind(favorites_title(username))
     .bind(user_id)
     .fetch_one(conn)
@@ -332,20 +320,18 @@ pub async fn remove_performances(
     if performance_ids.is_empty() {
         return Ok(());
     }
-    let placeholders = performance_ids
-        .iter()
-        .map(|_| "?")
-        .collect::<Vec<_>>()
-        .join(", ");
-    let sql = format!(
-        "DELETE FROM playlist_performances \
-         WHERE playlist_id = ? AND performance_id IN ({placeholders})"
-    );
-    let mut query = sqlx::query(sqlx::AssertSqlSafe(sql.as_str())).bind(playlist_id);
-    for &id in performance_ids {
-        query = query.bind(id);
+    let mut builder = QueryBuilder::new("DELETE FROM playlist_performances WHERE playlist_id = ");
+    builder
+        .push_bind(playlist_id)
+        .push(" AND performance_id IN (");
+    let mut separated = builder.separated(", ");
+    for performance_id in performance_ids {
+        separated.push_bind(performance_id);
     }
-    query
+    builder.push(")");
+
+    builder
+        .build()
         .execute(executor)
         .await
         .map(|_| ())

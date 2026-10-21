@@ -15,19 +15,30 @@ use crate::models::artist::Artist;
 use crate::models::performance::{NewPerformance, Performance, UpdatePerformance};
 use crate::models::song::Song;
 use crate::models::tag::TagWithKind;
+use crate::queries::performance_audios::PRIMARY_LENGTH_EXPR;
+use crate::queries::performance_plays::PLAY_COUNT_EXPR;
+use crate::sort::SortDirection;
 
 type Result<T> = std::result::Result<T, DbError>;
+
+/// Column list matching the fields of [`Performance`].
+macro_rules! performance_columns {
+    () => {
+        "id, created_by, title, lyrics_id, stream_time, \
+         performance_date, stream_number, performance_number"
+    };
+}
 
 /// Fetches a performance by ID.
 pub async fn get_by_id(
     executor: impl Executor<'_, Database = MySql>,
     id: Uuid,
 ) -> Result<Option<Performance>> {
-    sqlx::query_as::<_, Performance>(
-        "SELECT id, created_by, title, lyrics_id, stream_time, \
-         performance_date, stream_number, performance_number \
-         FROM performances WHERE id = ?",
-    )
+    sqlx::query_as::<_, Performance>(concat!(
+        "SELECT ",
+        performance_columns!(),
+        " FROM performances WHERE id = ?"
+    ))
     .bind(id)
     .fetch_optional(executor)
     .await
@@ -90,25 +101,70 @@ fn push_filters(builder: &mut QueryBuilder<MySql>, filter: PerformanceFilter<'_>
     }
 }
 
-/// Returns a filtered, sorted page of performances.
-///
-/// `order_by` must be derived from validated enums to prevent injection.
+/// Field a performance list is sorted by.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SortKey {
+    PerformanceDate,
+    PlayCount,
+    Duration,
+}
+
+/// Columns that break ties, and fully order the list when sorting by date.
+const DATE_ORDER_COLUMNS: [&str; 4] = [
+    "performance_date",
+    "stream_number",
+    "performance_number",
+    "id",
+];
+
+/// Appends the `ORDER BY` clause. Ties are broken chronologically in the same direction.
+fn push_order(builder: &mut QueryBuilder<MySql>, sort: SortKey, direction: SortDirection) {
+    let direction = direction.as_sql();
+    builder.push(" ORDER BY ");
+    match sort {
+        SortKey::PerformanceDate => {}
+        SortKey::PlayCount => {
+            builder
+                .push(PLAY_COUNT_EXPR)
+                .push(" ")
+                .push(direction)
+                .push(", ");
+        }
+        SortKey::Duration => {
+            builder
+                .push(PRIMARY_LENGTH_EXPR)
+                .push(" ")
+                .push(direction)
+                .push(", ");
+        }
+    }
+
+    let mut columns = builder.separated(", ");
+    for column in DATE_ORDER_COLUMNS {
+        columns
+            .push(column)
+            .push_unseparated(" ")
+            .push_unseparated(direction);
+    }
+}
+
+/// Returns a filtered page of performances sorted by `sort` in `direction`.
 pub async fn search(
     executor: impl Executor<'_, Database = MySql>,
     filter: PerformanceFilter<'_>,
-    order_by: &str,
+    sort: SortKey,
+    direction: SortDirection,
     limit: u32,
     offset: u32,
 ) -> Result<Vec<Performance>> {
-    let mut builder = QueryBuilder::new(
-        "SELECT id, created_by, title, lyrics_id, stream_time, \
-         performance_date, stream_number, performance_number \
-         FROM performances",
-    );
+    let mut builder = QueryBuilder::new(concat!(
+        "SELECT ",
+        performance_columns!(),
+        " FROM performances"
+    ));
     push_filters(&mut builder, filter);
+    push_order(&mut builder, sort, direction);
     builder
-        .push(" ORDER BY ")
-        .push(order_by)
         .push(" LIMIT ")
         .push_bind(limit)
         .push(" OFFSET ")
@@ -198,13 +254,12 @@ pub async fn get_songs_batch(
 
 /// Inserts a new performance and returns the created row.
 pub async fn create(conn: &mut MySqlConnection, new: &NewPerformance) -> Result<Performance> {
-    sqlx::query_as::<_, Performance>(
+    sqlx::query_as::<_, Performance>(concat!(
         "INSERT INTO performances \
          (created_by, title, lyrics_id, stream_time, performance_date, stream_number, performance_number) \
-         VALUES (?, ?, ?, ?, ?, ?, ?) \
-         RETURNING id, created_by, title, lyrics_id, stream_time, \
-         performance_date, stream_number, performance_number",
-    )
+         VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING ",
+        performance_columns!()
+    ))
     .bind(new.created_by)
     .bind(&new.title)
     .bind(new.lyrics_id)

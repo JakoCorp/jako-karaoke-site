@@ -1,6 +1,8 @@
 use db::models::artist::{NewArtist, NewArtistLink, UpdateArtist};
 use db::models::asset::NewInternalAsset;
-use db::queries::{artists, assets};
+use db::queries::artists::{self, SortKey};
+use db::queries::assets;
+use db::sort::SortDirection;
 use sqlx::MySqlPool;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
@@ -67,9 +69,32 @@ async fn list_ordered_by_name(pool: MySqlPool) {
         .await
         .unwrap();
 
-    let results = artists::search(&pool, None, "name", 10, 0).await.unwrap();
+    let results = artists::search(&pool, None, SortKey::Name, SortDirection::Asc, 10, 0)
+        .await
+        .unwrap();
     let names: Vec<&str> = results.iter().map(|a| a.name.as_str()).collect();
     assert_eq!(names, vec!["name_a", "name_b", "name_c"]);
+}
+
+#[sqlx::test(migrator = "db::MIGRATOR")]
+async fn search_orders_by_direction(pool: MySqlPool) {
+    let mut conn = pool.acquire().await.unwrap();
+    artists::create(&mut conn, &new_artist("name_a"))
+        .await
+        .unwrap();
+    artists::create(&mut conn, &new_artist("name_b"))
+        .await
+        .unwrap();
+
+    let results = artists::search(&pool, None, SortKey::Name, SortDirection::Desc, 10, 0)
+        .await
+        .unwrap();
+    let names: Vec<&str> = results.iter().map(|a| a.name.as_str()).collect();
+    assert_eq!(names, vec!["name_b", "name_a"]);
+
+    artists::search(&pool, None, SortKey::SongCount, SortDirection::Asc, 10, 0)
+        .await
+        .unwrap();
 }
 
 #[sqlx::test(migrator = "db::MIGRATOR")]
@@ -83,9 +108,16 @@ async fn search_matches_exact_id(pool: MySqlPool) {
         .unwrap();
 
     let query = target.id.to_string();
-    let results = artists::search(&pool, Some(&query), "name", 10, 0)
-        .await
-        .unwrap();
+    let results = artists::search(
+        &pool,
+        Some(&query),
+        SortKey::Name,
+        SortDirection::Asc,
+        10,
+        0,
+    )
+    .await
+    .unwrap();
     let ids: Vec<_> = results.iter().map(|artist| artist.id).collect();
 
     assert_eq!(ids, vec![target.id]);

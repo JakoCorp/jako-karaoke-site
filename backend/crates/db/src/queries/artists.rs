@@ -2,13 +2,30 @@
 
 use std::collections::HashMap;
 
-use sqlx::{Executor, MySql, MySqlConnection};
+use sqlx::{Executor, MySql, MySqlConnection, QueryBuilder};
 use uuid::Uuid;
 
 use crate::error::DbError;
+use crate::filter::WhereClause;
 use crate::models::artist::{Artist, ArtistLink, NewArtist, NewArtistLink, UpdateArtist};
+use crate::sort::SortDirection;
 
 type Result<T> = std::result::Result<T, DbError>;
+
+/// Column list matching the fields of [`Artist`], for a query over `artists a`.
+///
+/// The `inserted` form is for a freshly inserted row, which has no songs yet.
+macro_rules! artist_columns {
+    () => {
+        artist_columns!(@with "(SELECT COUNT(*) FROM song_original_artists WHERE artist_id = a.id)")
+    };
+    (inserted) => {
+        artist_columns!(@with "0")
+    };
+    (@with $song_count:literal) => {
+        concat!("id, name, description, ", $song_count, " AS song_count")
+    };
+}
 
 /// Flat query result joining an artist image join row with its asset fields.
 #[derive(Debug, Clone, sqlx::FromRow)]
@@ -28,11 +45,11 @@ pub async fn get_by_id(
     executor: impl Executor<'_, Database = MySql>,
     id: Uuid,
 ) -> Result<Option<Artist>> {
-    sqlx::query_as::<_, Artist>(
-        "SELECT id, name, description, \
-         (SELECT COUNT(*) FROM song_original_artists WHERE artist_id = a.id) AS song_count \
-         FROM artists a WHERE id = ?",
-    )
+    sqlx::query_as::<_, Artist>(concat!(
+        "SELECT ",
+        artist_columns!(),
+        " FROM artists a WHERE id = ?"
+    ))
     .bind(id)
     .fetch_optional(executor)
     .await
@@ -52,16 +69,42 @@ pub async fn performance_count(
         .map_err(DbError::from)
 }
 
-/// Returns the total number of artists.
-async fn count(executor: impl Executor<'_, Database = MySql>) -> Result<u64> {
-    sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM artists")
-        .fetch_one(executor)
-        .await
-        .map(|n| n as u64)
-        .map_err(DbError::from)
+/// Appends the `WHERE` clause for the optional query, binding its values. Appends nothing for `None`.
+fn push_filters(builder: &mut QueryBuilder<MySql>, q: Option<&str>) {
+    let mut conditions = WhereClause::new(builder);
+
+    if let Some(q) = q {
+        conditions
+            .condition()
+            .push("(name LIKE ")
+            .push_bind(format!("%{q}%"))
+            .push(" OR id = ")
+            .push_bind(Uuid::parse_str(q).ok())
+            .push(")");
+    }
 }
 
-/// Returns artists matching an optional name query, with the given sort order.
+/// Field an artist list is sorted by.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SortKey {
+    Name,
+    SongCount,
+}
+
+/// Appends the `ORDER BY` clause.
+fn push_order(builder: &mut QueryBuilder<MySql>, sort: SortKey, direction: SortDirection) {
+    let column = match sort {
+        SortKey::Name => "name",
+        SortKey::SongCount => "song_count",
+    };
+    builder
+        .push(" ORDER BY ")
+        .push(column)
+        .push(" ")
+        .push(direction.as_sql());
+}
+
+/// Returns artists matching an optional name query, sorted by `sort` in `direction`.
 ///
 /// When `q` is `None`, all artists are returned. When `q` is `Some`, results are
 /// filtered by a case-insensitive substring match against the artist name, or by an exact
@@ -69,34 +112,22 @@ async fn count(executor: impl Executor<'_, Database = MySql>) -> Result<u64> {
 pub async fn search(
     executor: impl Executor<'_, Database = MySql>,
     q: Option<&str>,
-    order_by: &str,
+    sort: SortKey,
+    direction: SortDirection,
     limit: u32,
     offset: u32,
 ) -> Result<Vec<Artist>> {
-    let sql = if q.is_some() {
-        format!(
-            "SELECT id, name, description, \
-             (SELECT COUNT(*) FROM song_original_artists WHERE artist_id = a.id) AS song_count \
-             FROM artists a WHERE (name LIKE ? OR id = ?) ORDER BY {order_by} LIMIT ? OFFSET ?"
-        )
-    } else {
-        format!(
-            "SELECT id, name, description, \
-             (SELECT COUNT(*) FROM song_original_artists WHERE artist_id = a.id) AS song_count \
-             FROM artists a ORDER BY {order_by} LIMIT ? OFFSET ?"
-        )
-    };
+    let mut builder = QueryBuilder::new(concat!("SELECT ", artist_columns!(), " FROM artists a"));
+    push_filters(&mut builder, q);
+    push_order(&mut builder, sort, direction);
+    builder
+        .push(" LIMIT ")
+        .push_bind(limit)
+        .push(" OFFSET ")
+        .push_bind(offset);
 
-    let query = sqlx::query_as::<_, Artist>(sqlx::AssertSqlSafe(sql.as_str()));
-    let query = if let Some(q) = q {
-        query.bind(format!("%{q}%")).bind(Uuid::parse_str(q).ok())
-    } else {
-        query
-    };
-
-    query
-        .bind(limit)
-        .bind(offset)
+    builder
+        .build_query_as::<Artist>()
         .fetch_all(executor)
         .await
         .map_err(DbError::from)
@@ -107,12 +138,11 @@ pub async fn search_count(
     executor: impl Executor<'_, Database = MySql>,
     q: Option<&str>,
 ) -> Result<u64> {
-    let Some(q) = q else {
-        return count(executor).await;
-    };
-    sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM artists WHERE (name LIKE ? OR id = ?)")
-        .bind(format!("%{q}%"))
-        .bind(Uuid::parse_str(q).ok())
+    let mut builder = QueryBuilder::new("SELECT COUNT(*) FROM artists");
+    push_filters(&mut builder, q);
+
+    builder
+        .build_query_scalar::<i64>()
         .fetch_one(executor)
         .await
         .map(|n| n as u64)
@@ -121,10 +151,10 @@ pub async fn search_count(
 
 /// Inserts a new artist and returns the created row.
 pub async fn create(conn: &mut MySqlConnection, new: &NewArtist) -> Result<Artist> {
-    sqlx::query_as::<_, Artist>(
-        "INSERT INTO artists (name, description) VALUES (?, ?) \
-         RETURNING id, name, description, 0 AS song_count",
-    )
+    sqlx::query_as::<_, Artist>(concat!(
+        "INSERT INTO artists (name, description) VALUES (?, ?) RETURNING ",
+        artist_columns!(inserted)
+    ))
     .bind(&new.name)
     .bind(&new.description)
     .fetch_one(conn)

@@ -5,13 +5,14 @@ use db::models::artist::{Artist, NewArtist};
 use db::models::performance::{NewPerformance, UpdatePerformance};
 use db::models::song::NewSong;
 use db::models::tag::NewTag;
-use db::queries::performances::{self, PerformanceFilter};
+use db::queries::performances::{self, PerformanceFilter, SortKey};
 use db::queries::{artists, songs, tags};
+use db::sort::SortDirection;
 use sqlx::MySqlPool;
 use uuid::Uuid;
 
-const ORDER_BY: &str =
-    "performance_date DESC, stream_number DESC, performance_number DESC, id DESC";
+const SORT: SortKey = SortKey::PerformanceDate;
+const DIRECTION: SortDirection = SortDirection::Desc;
 
 fn date(day: u32) -> NaiveDate {
     NaiveDate::from_ymd_opt(2026, 1, day).unwrap()
@@ -80,6 +81,35 @@ async fn create_without_stream_position(pool: MySqlPool) {
         .unwrap();
     assert_eq!(fetched.stream_number, None);
     assert_eq!(fetched.performance_number, None);
+}
+
+#[sqlx::test(migrator = "db::MIGRATOR")]
+async fn search_orders_by_every_sort_key(pool: MySqlPool) {
+    let earlier = create_performance(&pool, date(1), None, None)
+        .await
+        .unwrap();
+    let later = create_performance(&pool, date(2), None, None)
+        .await
+        .unwrap();
+
+    for sort in [
+        SortKey::PerformanceDate,
+        SortKey::PlayCount,
+        SortKey::Duration,
+    ] {
+        let filter = PerformanceFilter::default();
+        let newest_first = performances::search(&pool, filter, sort, SortDirection::Desc, 10, 0)
+            .await
+            .unwrap();
+        let ids: Vec<_> = newest_first.iter().map(|p| p.id).collect();
+        assert_eq!(ids, vec![later.id, earlier.id]);
+
+        let oldest_first = performances::search(&pool, filter, sort, SortDirection::Asc, 10, 0)
+            .await
+            .unwrap();
+        let ids: Vec<_> = oldest_first.iter().map(|p| p.id).collect();
+        assert_eq!(ids, vec![earlier.id, later.id]);
+    }
 }
 
 #[sqlx::test(migrator = "db::MIGRATOR")]
@@ -155,7 +185,7 @@ async fn search_sorts_without_stream_position_last_within_date(pool: MySqlPool) 
         .await
         .unwrap();
 
-    let results = performances::search(&pool, PerformanceFilter::default(), ORDER_BY, 10, 0)
+    let results = performances::search(&pool, PerformanceFilter::default(), SORT, DIRECTION, 10, 0)
         .await
         .unwrap();
     let ids: Vec<_> = results.iter().map(|performance| performance.id).collect();
@@ -186,7 +216,7 @@ async fn search_matches_exact_id(pool: MySqlPool) {
         q: Some(&query),
         ..PerformanceFilter::default()
     };
-    let results = performances::search(&pool, filter, ORDER_BY, 10, 0)
+    let results = performances::search(&pool, filter, SORT, DIRECTION, 10, 0)
         .await
         .unwrap();
     let ids: Vec<_> = results.iter().map(|performance| performance.id).collect();
@@ -238,7 +268,7 @@ async fn search_filters_by_artist(pool: MySqlPool) {
         clauses: &clauses,
         ..PerformanceFilter::default()
     };
-    let results = performances::search(&pool, filter, ORDER_BY, 10, 0)
+    let results = performances::search(&pool, filter, SORT, DIRECTION, 10, 0)
         .await
         .unwrap();
     let total = performances::search_count(&pool, filter).await.unwrap();
@@ -298,7 +328,7 @@ async fn clause_values_match_any_and_clauses_match_all(pool: MySqlPool) {
         clauses: &all_of,
         ..PerformanceFilter::default()
     };
-    let results = performances::search(&pool, filter, ORDER_BY, 10, 0)
+    let results = performances::search(&pool, filter, SORT, DIRECTION, 10, 0)
         .await
         .unwrap();
     assert_eq!(results.len(), 1);
@@ -309,7 +339,7 @@ async fn clause_values_match_any_and_clauses_match_all(pool: MySqlPool) {
         clauses: &excluded,
         ..PerformanceFilter::default()
     };
-    let results = performances::search(&pool, filter, ORDER_BY, 10, 0)
+    let results = performances::search(&pool, filter, SORT, DIRECTION, 10, 0)
         .await
         .unwrap();
     let ids: Vec<_> = results.iter().map(|performance| performance.id).collect();
@@ -333,7 +363,7 @@ async fn search_filters_by_date_range(pool: MySqlPool) {
         date_to: Some(date(8)),
         ..PerformanceFilter::default()
     };
-    let results = performances::search(&pool, filter, ORDER_BY, 10, 0)
+    let results = performances::search(&pool, filter, SORT, DIRECTION, 10, 0)
         .await
         .unwrap();
 
@@ -398,7 +428,7 @@ async fn misc_tag_clause_matches_performance_and_song_tags(pool: MySqlPool) {
         clauses: &performance_only,
         ..PerformanceFilter::default()
     };
-    let results = performances::search(&pool, filter, ORDER_BY, 10, 0)
+    let results = performances::search(&pool, filter, SORT, DIRECTION, 10, 0)
         .await
         .unwrap();
     assert_eq!(results.len(), 1);
