@@ -6,6 +6,7 @@ use uuid::Uuid;
 use crate::error::DbError;
 use crate::models::playlist::{NewPlaylist, Playlist, PlaylistPerformanceRow, UpdatePlaylist};
 use crate::search::{WhereClause, like_pattern};
+use crate::sort::SortDirection;
 
 type Result<T> = std::result::Result<T, DbError>;
 
@@ -87,17 +88,49 @@ fn push_filters(builder: &mut QueryBuilder<MySql>, filter: PlaylistFilter<'_>) {
     }
 }
 
-/// Returns a page of playlists matching `filter`, ordered by title.
+/// Field a playlist list is sorted by.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SortKey {
+    /// Creation order, which is the playlist id since ids are time ordered UUIDs.
+    Created,
+    /// Alphabetical by playlist title.
+    Title,
+    /// Number of performances in the playlist.
+    PerformanceCount,
+}
+
+/// Appends the `ORDER BY` clause. Ties are broken by playlist id in the same direction.
+fn push_order(builder: &mut QueryBuilder<MySql>, sort: SortKey, direction: SortDirection) {
+    let column = match sort {
+        SortKey::Created => "id",
+        SortKey::Title => "title",
+        SortKey::PerformanceCount => "performance_count",
+    };
+    let direction = direction.as_sql();
+    builder
+        .push(" ORDER BY ")
+        .push(column)
+        .push(" ")
+        .push(direction);
+    if sort != SortKey::Created {
+        builder.push(", id ").push(direction);
+    }
+}
+
+/// Returns a page of playlists matching `filter`, sorted by `sort` in `direction`.
 pub async fn search(
     executor: impl Executor<'_, Database = MySql>,
     filter: PlaylistFilter<'_>,
+    sort: SortKey,
+    direction: SortDirection,
     limit: u32,
     offset: u32,
 ) -> Result<Vec<Playlist>> {
     let mut builder = QueryBuilder::new(concat!("SELECT ", playlist_columns!(), " FROM playlists"));
     push_filters(&mut builder, filter);
+    push_order(&mut builder, sort, direction);
     builder
-        .push(" ORDER BY title LIMIT ")
+        .push(" LIMIT ")
         .push_bind(limit)
         .push(" OFFSET ")
         .push_bind(offset);

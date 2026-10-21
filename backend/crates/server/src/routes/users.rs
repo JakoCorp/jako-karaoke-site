@@ -29,7 +29,10 @@ use crate::{
     capabilities, convert,
     error::ApiError,
     pagination,
-    routes::{common::search_text, playlists::PlaylistListParams},
+    routes::{
+        common::{SortDir, search_text},
+        playlists::params::{PlaylistListParams, PlaylistSort},
+    },
     state::AppState,
 };
 
@@ -58,6 +61,8 @@ use crate::{
         PlaylistResponse,
         PlaylistEntry,
         PlaylistKind,
+        PlaylistSort,
+        SortDir,
         PerformanceSummary,
         ErrorResponse,
         PagedResponse<PlaylistResponse>,
@@ -240,6 +245,7 @@ pub(crate) async fn list_user_playlists(
     let (limit, offset) = pagination::limit_offset(params.page, params.per_page);
     let q = search_text(params.q.as_deref());
     let kind = params.kind.as_ref().map(PlaylistKind::as_str);
+    let (sort, direction) = params.order();
     let filter = PlaylistFilter {
         q,
         include_private,
@@ -247,7 +253,7 @@ pub(crate) async fn list_user_playlists(
         kind,
     };
     let (rows, total) = tokio::try_join!(
-        queries::playlists::search(&state.pool, filter, limit, offset),
+        queries::playlists::search(&state.pool, filter, sort, direction, limit, offset),
         queries::playlists::search_count(&state.pool, filter),
     )?;
     let items = rows

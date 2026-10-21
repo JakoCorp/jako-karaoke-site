@@ -2,8 +2,9 @@ use chrono::NaiveDate;
 use db::models::performance::NewPerformance;
 use db::models::playlist::{NewPlaylist, Playlist};
 use db::models::user::NewUser;
-use db::queries::playlists::{self, PlaylistFilter};
+use db::queries::playlists::{self, PlaylistFilter, SortKey};
 use db::queries::{performances, users};
+use db::sort::SortDirection;
 use sqlx::MySqlPool;
 use uuid::Uuid;
 
@@ -63,8 +64,26 @@ async fn create_performance(pool: &MySqlPool) -> Uuid {
     .id
 }
 
+async fn add_performances(pool: &MySqlPool, playlist_id: Uuid, performance_ids: &[Uuid]) {
+    let mut conn = pool.acquire().await.unwrap();
+    playlists::add_performances(&mut conn, playlist_id, performance_ids)
+        .await
+        .unwrap();
+}
+
+async fn search_ids(pool: &MySqlPool, sort: SortKey, direction: SortDirection) -> Vec<Uuid> {
+    playlists::search(pool, PlaylistFilter::default(), sort, direction, 10, 0)
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|playlist| playlist.id)
+        .collect()
+}
+
 async fn titles(pool: &MySqlPool, filter: PlaylistFilter<'_>) -> Vec<String> {
-    let found = playlists::search(pool, filter, 10, 0).await.unwrap();
+    let found = playlists::search(pool, filter, SortKey::Title, SortDirection::Asc, 10, 0)
+        .await
+        .unwrap();
     assert_eq!(
         playlists::search_count(pool, filter).await.unwrap(),
         found.len() as u64
@@ -112,6 +131,54 @@ async fn search_applies_visibility_owner_kind_and_title(pool: MySqlPool) {
         ..public
     };
     assert_eq!(titles(&pool, by_title).await, vec!["needle_d"]);
+}
+
+#[sqlx::test(migrator = "db::MIGRATOR")]
+async fn search_sorts_by_every_key_in_both_directions(pool: MySqlPool) {
+    let playlist_b = create_playlist(&pool, "playlist_b", "user", true, None).await;
+    let playlist_c = create_playlist(&pool, "playlist_c", "user", true, None).await;
+    let playlist_a = create_playlist(&pool, "playlist_a", "user", true, None).await;
+    let playlist_d = create_playlist(&pool, "playlist_d", "user", true, None).await;
+
+    let performance_ids = [
+        create_performance(&pool).await,
+        create_performance(&pool).await,
+        create_performance(&pool).await,
+    ];
+    add_performances(&pool, playlist_b.id, &performance_ids[..1]).await;
+    add_performances(&pool, playlist_c.id, &performance_ids).await;
+    add_performances(&pool, playlist_a.id, &performance_ids[..2]).await;
+    add_performances(&pool, playlist_d.id, &performance_ids[..1]).await;
+
+    let by_created = |direction| search_ids(&pool, SortKey::Created, direction);
+    assert_eq!(
+        by_created(SortDirection::Asc).await,
+        vec![playlist_b.id, playlist_c.id, playlist_a.id, playlist_d.id]
+    );
+    assert_eq!(
+        by_created(SortDirection::Desc).await,
+        vec![playlist_d.id, playlist_a.id, playlist_c.id, playlist_b.id]
+    );
+
+    let by_title = |direction| search_ids(&pool, SortKey::Title, direction);
+    assert_eq!(
+        by_title(SortDirection::Asc).await,
+        vec![playlist_a.id, playlist_b.id, playlist_c.id, playlist_d.id]
+    );
+    assert_eq!(
+        by_title(SortDirection::Desc).await,
+        vec![playlist_d.id, playlist_c.id, playlist_b.id, playlist_a.id]
+    );
+
+    let by_performance_count = |direction| search_ids(&pool, SortKey::PerformanceCount, direction);
+    assert_eq!(
+        by_performance_count(SortDirection::Asc).await,
+        vec![playlist_b.id, playlist_d.id, playlist_a.id, playlist_c.id]
+    );
+    assert_eq!(
+        by_performance_count(SortDirection::Desc).await,
+        vec![playlist_c.id, playlist_a.id, playlist_d.id, playlist_b.id]
+    );
 }
 
 #[sqlx::test(migrator = "db::MIGRATOR")]

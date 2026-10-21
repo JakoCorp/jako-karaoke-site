@@ -2423,6 +2423,24 @@
             "schema": {
               "$ref": "#/components/schemas/PlaylistKind"
             }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Field to sort by. Defaults to `created`.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/PlaylistSort"
+            }
+          },
+          {
+            "name": "sort_dir",
+            "in": "query",
+            "description": "Sort direction. Defaults to `desc`.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/SortDir"
+            }
           }
         ],
         "responses": {
@@ -4344,6 +4362,24 @@
             "required": false,
             "schema": {
               "$ref": "#/components/schemas/PlaylistKind"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Field to sort by. Defaults to `created`.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/PlaylistSort"
+            }
+          },
+          {
+            "name": "sort_dir",
+            "in": "query",
+            "description": "Sort direction. Defaults to `desc`.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/SortDir"
             }
           }
         ],
@@ -6908,6 +6944,15 @@
             "description": "Display title."
           }
         }
+      },
+      "PlaylistSort": {
+        "type": "string",
+        "description": "Field to sort playlists by in list endpoints.",
+        "enum": [
+          "created",
+          "title",
+          "performance_count"
+        ]
       },
       "RemovePerformancesRequest": {
         "type": "object",
