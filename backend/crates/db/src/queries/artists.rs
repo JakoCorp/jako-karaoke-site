@@ -91,17 +91,20 @@ pub enum SortKey {
     SongCount,
 }
 
-/// Appends the `ORDER BY` clause.
+/// Appends the `ORDER BY` clause. Ties are broken by artist id in the same direction.
 fn push_order(builder: &mut QueryBuilder<MySql>, sort: SortKey, direction: SortDirection) {
     let column = match sort {
         SortKey::Name => "name",
         SortKey::SongCount => "song_count",
     };
+    let direction = direction.as_sql();
     builder
         .push(" ORDER BY ")
         .push(column)
         .push(" ")
-        .push(direction.as_sql());
+        .push(direction)
+        .push(", id ")
+        .push(direction);
 }
 
 /// Returns artists matching an optional name query, sorted by `sort` in `direction`.

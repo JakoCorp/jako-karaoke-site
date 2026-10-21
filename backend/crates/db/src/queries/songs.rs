@@ -104,17 +104,19 @@ pub enum SortKey {
     PerformanceCount,
 }
 
-/// Appends the `ORDER BY` clause. Ties are always broken by newest song first.
+/// Appends the `ORDER BY` clause. Ties are broken by song id in the same direction.
 fn push_order(builder: &mut QueryBuilder<MySql>, sort: SortKey, direction: SortDirection) {
     let column = match sort {
         SortKey::PerformanceCount => "performance_count",
     };
+    let direction = direction.as_sql();
     builder
         .push(" ORDER BY ")
         .push(column)
         .push(" ")
-        .push(direction.as_sql())
-        .push(", s.id DESC");
+        .push(direction)
+        .push(", s.id ")
+        .push(direction);
 }
 
 /// Returns a filtered page of songs sorted by `sort` in `direction`.
