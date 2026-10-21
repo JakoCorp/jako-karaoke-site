@@ -5,85 +5,67 @@ use uuid::Uuid;
 
 async fn create_user(pool: &MySqlPool, username: &str) -> Uuid {
     let mut conn = pool.acquire().await.unwrap();
-    let new_user = NewUser {
-        username: username.to_string(),
-        twitch_id: None,
-        discord_id: None,
-    };
-    users::create(&mut conn, &new_user).await.unwrap().id
+    users::create(
+        &mut conn,
+        &NewUser {
+            username: username.to_string(),
+            twitch_id: None,
+            discord_id: None,
+        },
+    )
+    .await
+    .unwrap()
+    .id
 }
 
 #[sqlx::test(migrator = "db::MIGRATOR")]
-async fn list_returns_alphabetical_order(pool: MySqlPool) {
-    let user_id = create_user(&pool, "alice").await;
+async fn capabilities_are_sorted_unique_and_scoped_per_user(pool: MySqlPool) {
+    let alice = create_user(&pool, "alice").await;
+    let bob = create_user(&pool, "bob").await;
     let mut conn = pool.acquire().await.unwrap();
 
-    capabilities::add_to_user(&mut conn, user_id, "songs:manage_any")
-        .await
-        .unwrap();
-    capabilities::add_to_user(&mut conn, user_id, "capabilities:manage")
+    for capability in [
+        "songs:manage_any",
+        "capabilities:manage",
+        "songs:manage_any",
+    ] {
+        capabilities::add_to_user(&mut conn, alice, capability)
+            .await
+            .unwrap();
+    }
+    capabilities::add_to_user(&mut conn, bob, "songs:manage_any")
         .await
         .unwrap();
 
-    let caps = capabilities::list_for_user(&pool, user_id).await.unwrap();
-    assert_eq!(caps, vec!["capabilities:manage", "songs:manage_any"]);
+    assert_eq!(
+        capabilities::list_for_user(&pool, alice).await.unwrap(),
+        vec!["capabilities:manage", "songs:manage_any"]
+    );
+    assert_eq!(
+        capabilities::list_for_user(&pool, bob).await.unwrap(),
+        vec!["songs:manage_any"]
+    );
 }
 
 #[sqlx::test(migrator = "db::MIGRATOR")]
-async fn add_duplicate_is_idempotent(pool: MySqlPool) {
-    let user_id = create_user(&pool, "alice").await;
+async fn remove_deletes_only_the_given_capability(pool: MySqlPool) {
+    let alice = create_user(&pool, "alice").await;
     let mut conn = pool.acquire().await.unwrap();
+    for capability in ["capabilities:manage", "songs:manage_any"] {
+        capabilities::add_to_user(&mut conn, alice, capability)
+            .await
+            .unwrap();
+    }
 
-    capabilities::add_to_user(&mut conn, user_id, "capabilities:manage")
+    capabilities::remove_from_user(&pool, alice, "capabilities:manage")
         .await
         .unwrap();
-    capabilities::add_to_user(&mut conn, user_id, "capabilities:manage")
-        .await
-        .unwrap();
-
-    let caps = capabilities::list_for_user(&pool, user_id).await.unwrap();
-    assert_eq!(caps.len(), 1);
-}
-
-#[sqlx::test(migrator = "db::MIGRATOR")]
-async fn remove_existing(pool: MySqlPool) {
-    let user_id = create_user(&pool, "alice").await;
-    let mut conn = pool.acquire().await.unwrap();
-
-    capabilities::add_to_user(&mut conn, user_id, "capabilities:manage")
-        .await
-        .unwrap();
-    capabilities::remove_from_user(&pool, user_id, "capabilities:manage")
+    capabilities::remove_from_user(&pool, alice, "capabilities:manage")
         .await
         .unwrap();
 
-    let caps = capabilities::list_for_user(&pool, user_id).await.unwrap();
-    assert!(caps.is_empty());
-}
-
-#[sqlx::test(migrator = "db::MIGRATOR")]
-async fn remove_nonexistent_is_ok(pool: MySqlPool) {
-    let user_id = create_user(&pool, "alice").await;
-    let result = capabilities::remove_from_user(&pool, user_id, "capabilities:manage").await;
-    assert!(result.is_ok());
-}
-
-#[sqlx::test(migrator = "db::MIGRATOR")]
-async fn list_for_different_users(pool: MySqlPool) {
-    let alice_id = create_user(&pool, "alice").await;
-    let bob_id = create_user(&pool, "bob").await;
-    let mut conn = pool.acquire().await.unwrap();
-
-    capabilities::add_to_user(&mut conn, alice_id, "capabilities:manage")
-        .await
-        .unwrap();
-    capabilities::add_to_user(&mut conn, bob_id, "songs:manage_any")
-        .await
-        .unwrap();
-
-    let alice_caps = capabilities::list_for_user(&pool, alice_id).await.unwrap();
-    let bob_caps = capabilities::list_for_user(&pool, bob_id).await.unwrap();
-
-    assert_eq!(alice_caps, vec!["capabilities:manage"]);
-    assert_eq!(bob_caps, vec!["songs:manage_any"]);
+    assert_eq!(
+        capabilities::list_for_user(&pool, alice).await.unwrap(),
+        vec!["songs:manage_any"]
+    );
 }

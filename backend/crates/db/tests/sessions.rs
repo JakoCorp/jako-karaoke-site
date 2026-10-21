@@ -20,81 +20,47 @@ async fn create_user(pool: &MySqlPool) -> Uuid {
 }
 
 #[sqlx::test(migrator = "db::MIGRATOR")]
-async fn create_and_get_valid(pool: MySqlPool) {
+async fn session_roundtrip(pool: MySqlPool) {
     let user_id = create_user(&pool).await;
     let expires_at = Utc::now() + Duration::hours(1);
-
-    sessions::create(&pool, "token_hash_abc", user_id, expires_at)
+    sessions::create(&pool, "token_a", user_id, expires_at)
         .await
         .unwrap();
 
-    let session = sessions::get_valid(&pool, "token_hash_abc")
+    let session = sessions::get_valid(&pool, "token_a")
         .await
         .unwrap()
         .unwrap();
-    assert_eq!(session.id, "token_hash_abc");
     assert_eq!(session.user_id, user_id);
+
+    sessions::delete(&pool, "token_a").await.unwrap();
+    assert!(
+        sessions::get_valid(&pool, "token_a")
+            .await
+            .unwrap()
+            .is_none()
+    );
 }
 
 #[sqlx::test(migrator = "db::MIGRATOR")]
-async fn get_valid_returns_none_for_expired(pool: MySqlPool) {
+async fn expired_sessions_are_hidden_and_purged(pool: MySqlPool) {
     let user_id = create_user(&pool).await;
-    let expires_at = Utc::now() - Duration::seconds(1);
-
-    sessions::create(&pool, "expired_token", user_id, expires_at)
+    let valid = Utc::now() + Duration::hours(1);
+    let expired = Utc::now() - Duration::seconds(1);
+    sessions::create(&pool, "valid_token", user_id, valid)
+        .await
+        .unwrap();
+    sessions::create(&pool, "expired_token", user_id, expired)
         .await
         .unwrap();
 
-    let session = sessions::get_valid(&pool, "expired_token").await.unwrap();
-    assert!(session.is_none());
-}
-
-#[sqlx::test(migrator = "db::MIGRATOR")]
-async fn get_valid_returns_none_for_missing(pool: MySqlPool) {
-    let session = sessions::get_valid(&pool, "nonexistent_token")
-        .await
-        .unwrap();
-    assert!(session.is_none());
-}
-
-#[sqlx::test(migrator = "db::MIGRATOR")]
-async fn delete_removes_session(pool: MySqlPool) {
-    let user_id = create_user(&pool).await;
-    let expires_at = Utc::now() + Duration::hours(1);
-
-    sessions::create(&pool, "token_to_delete", user_id, expires_at)
-        .await
-        .unwrap();
-    sessions::delete(&pool, "token_to_delete").await.unwrap();
-
-    let session = sessions::get_valid(&pool, "token_to_delete").await.unwrap();
-    assert!(session.is_none());
-}
-
-#[sqlx::test(migrator = "db::MIGRATOR")]
-async fn delete_expired_removes_only_expired(pool: MySqlPool) {
-    let user_id = create_user(&pool).await;
-
-    sessions::create(
-        &pool,
-        "valid_token",
-        user_id,
-        Utc::now() + Duration::hours(1),
-    )
-    .await
-    .unwrap();
-    sessions::create(
-        &pool,
-        "expired_token",
-        user_id,
-        Utc::now() - Duration::seconds(1),
-    )
-    .await
-    .unwrap();
-
-    let removed = sessions::delete_expired(&pool).await.unwrap();
-    assert_eq!(removed, 1);
-
+    assert!(
+        sessions::get_valid(&pool, "expired_token")
+            .await
+            .unwrap()
+            .is_none()
+    );
+    assert_eq!(sessions::delete_expired(&pool).await.unwrap(), 1);
     assert!(
         sessions::get_valid(&pool, "valid_token")
             .await
