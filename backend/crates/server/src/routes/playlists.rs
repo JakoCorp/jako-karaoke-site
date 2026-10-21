@@ -127,7 +127,7 @@ pub(crate) async fn list_playlists(
         .collect::<Result<Vec<_>, _>>()?;
     Ok(Json(PagedResponse {
         items,
-        total: total as u64,
+        total,
         page: params.page,
         per_page: limit,
     }))

@@ -113,14 +113,15 @@ pub async fn search(
 pub async fn search_count(
     executor: impl Executor<'_, Database = MySql>,
     filter: PlaylistFilter<'_>,
-) -> Result<i64> {
+) -> Result<u64> {
     let mut builder = QueryBuilder::new("SELECT COUNT(*) FROM playlists");
     push_filters(&mut builder, filter);
 
     builder
-        .build_query_scalar()
+        .build_query_scalar::<i64>()
         .fetch_one(executor)
         .await
+        .map(|n| n as u64)
         .map_err(DbError::from)
 }
 
