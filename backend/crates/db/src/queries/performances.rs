@@ -10,13 +10,14 @@ use sqlx::{Executor, MySql, MySqlConnection, QueryBuilder};
 use uuid::Uuid;
 
 use crate::error::DbError;
-use crate::filter::{Clause, Subject, WhereClause, push_clauses};
+use crate::filter::{Clause, Subject, push_clauses};
 use crate::models::artist::Artist;
 use crate::models::performance::{NewPerformance, Performance, UpdatePerformance};
 use crate::models::song::Song;
 use crate::models::tag::TagWithKind;
 use crate::queries::performance_audios::PRIMARY_LENGTH_EXPR;
 use crate::queries::performance_plays::PLAY_COUNT_EXPR;
+use crate::search::{WhereClause, like_pattern, push_text_or_id};
 use crate::sort::SortDirection;
 
 type Result<T> = std::result::Result<T, DbError>;
@@ -64,23 +65,20 @@ fn push_filters(builder: &mut QueryBuilder<MySql>, filter: PerformanceFilter<'_>
     let mut conditions = WhereClause::new(builder);
 
     if let Some(q) = filter.q {
-        let pattern = format!("%{q}%");
-        conditions
-            .condition()
-            .push("id IN (SELECT id FROM performances WHERE title LIKE ")
-            .push_bind(pattern.clone())
-            .push(" OR id = ")
-            .push_bind(Uuid::parse_str(q).ok())
+        let builder = conditions.condition();
+        builder.push("id IN (SELECT id FROM performances WHERE ");
+        push_text_or_id(builder, "title", q);
+        builder
             .push(
                 " UNION SELECT ps.performance_id FROM performance_songs ps \
                  JOIN songs s ON s.id = ps.song_id WHERE s.title LIKE ",
             )
-            .push_bind(pattern.clone())
+            .push_bind(like_pattern(q))
             .push(
                 " UNION SELECT ps.performance_id FROM performance_singers ps \
                  JOIN artists a ON a.id = ps.artist_id WHERE a.name LIKE ",
             )
-            .push_bind(pattern)
+            .push_bind(like_pattern(q))
             .push(")");
     }
 

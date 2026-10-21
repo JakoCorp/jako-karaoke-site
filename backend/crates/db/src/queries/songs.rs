@@ -9,10 +9,11 @@ use sqlx::{Executor, MySql, MySqlConnection, QueryBuilder};
 use uuid::Uuid;
 
 use crate::error::DbError;
-use crate::filter::{Clause, Subject, WhereClause, push_clauses};
+use crate::filter::{Clause, Subject, push_clauses};
 use crate::models::artist::Artist;
 use crate::models::song::{NewSong, Song, UpdateSong};
 use crate::models::tag::TagWithKind;
+use crate::search::{WhereClause, like_pattern, push_text_or_id};
 use crate::sort::SortDirection;
 
 /// Flat query result joining a song image join row with its asset fields.
@@ -80,18 +81,15 @@ fn push_filters(builder: &mut QueryBuilder<MySql>, filter: SongFilter<'_>) {
     let mut conditions = WhereClause::new(builder);
 
     if let Some(q) = filter.q {
-        let pattern = format!("%{q}%");
-        conditions
-            .condition()
-            .push("s.id IN (SELECT id FROM songs WHERE title LIKE ")
-            .push_bind(pattern.clone())
-            .push(" OR id = ")
-            .push_bind(Uuid::parse_str(q).ok())
+        let builder = conditions.condition();
+        builder.push("s.id IN (SELECT id FROM songs WHERE ");
+        push_text_or_id(builder, "title", q);
+        builder
             .push(
                 " UNION SELECT soa.song_id FROM song_original_artists soa \
                  JOIN artists a ON a.id = soa.artist_id WHERE a.name LIKE ",
             )
-            .push_bind(pattern)
+            .push_bind(like_pattern(q))
             .push(")");
     }
 

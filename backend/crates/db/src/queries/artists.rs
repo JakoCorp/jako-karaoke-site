@@ -6,8 +6,8 @@ use sqlx::{Executor, MySql, MySqlConnection, QueryBuilder};
 use uuid::Uuid;
 
 use crate::error::DbError;
-use crate::filter::WhereClause;
 use crate::models::artist::{Artist, ArtistLink, NewArtist, NewArtistLink, UpdateArtist};
+use crate::search::{WhereClause, push_text_or_id};
 use crate::sort::SortDirection;
 
 type Result<T> = std::result::Result<T, DbError>;
@@ -74,13 +74,10 @@ fn push_filters(builder: &mut QueryBuilder<MySql>, q: Option<&str>) {
     let mut conditions = WhereClause::new(builder);
 
     if let Some(q) = q {
-        conditions
-            .condition()
-            .push("(name LIKE ")
-            .push_bind(format!("%{q}%"))
-            .push(" OR id = ")
-            .push_bind(Uuid::parse_str(q).ok())
-            .push(")");
+        let builder = conditions.condition();
+        builder.push("(");
+        push_text_or_id(builder, "name", q);
+        builder.push(")");
     }
 }
 

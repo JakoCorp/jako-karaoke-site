@@ -4,8 +4,8 @@ use sqlx::{Executor, MySql, MySqlConnection, QueryBuilder};
 use uuid::Uuid;
 
 use crate::error::DbError;
-use crate::filter::WhereClause;
 use crate::models::playlist::{NewPlaylist, Playlist, PlaylistPerformanceRow, UpdatePlaylist};
+use crate::search::{WhereClause, like_pattern};
 
 type Result<T> = std::result::Result<T, DbError>;
 
@@ -83,7 +83,7 @@ fn push_filters(builder: &mut QueryBuilder<MySql>, filter: PlaylistFilter<'_>) {
         conditions
             .condition()
             .push("title LIKE ")
-            .push_bind(format!("%{q}%"));
+            .push_bind(like_pattern(q));
     }
 }
 

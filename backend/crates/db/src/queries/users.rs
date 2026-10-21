@@ -5,6 +5,7 @@ use uuid::Uuid;
 
 use crate::error::DbError;
 use crate::models::user::{NewUser, User, UserSummary};
+use crate::search::like_pattern;
 
 type Result<T> = std::result::Result<T, DbError>;
 
@@ -101,7 +102,7 @@ pub async fn search(
         Some(term) => sqlx::query_as::<_, UserSummary>(
             "SELECT id, username FROM users WHERE (username LIKE ? OR id = ?) ORDER BY username",
         )
-        .bind(format!("%{term}%"))
+        .bind(like_pattern(term))
         .bind(Uuid::parse_str(term).ok())
         .fetch_all(executor)
         .await

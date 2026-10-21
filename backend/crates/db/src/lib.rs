@@ -4,6 +4,7 @@ pub mod error;
 pub mod filter;
 pub mod models;
 pub mod queries;
+pub mod search;
 pub mod sort;
 
 pub use sqlx::MySqlPool;
