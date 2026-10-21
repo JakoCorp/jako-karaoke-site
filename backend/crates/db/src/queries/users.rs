@@ -1,11 +1,11 @@
 //! Query functions for the `users` table.
 
-use sqlx::{Executor, MySql, MySqlConnection};
+use sqlx::{Executor, MySql, MySqlConnection, QueryBuilder};
 use uuid::Uuid;
 
 use crate::error::DbError;
 use crate::models::user::{NewUser, User, UserSummary};
-use crate::search::like_pattern;
+use crate::search::{WhereClause, push_text_or_id};
 
 type Result<T> = std::result::Result<T, DbError>;
 
@@ -93,27 +93,58 @@ pub async fn get_by_username(
     .map_err(DbError::from)
 }
 
-/// Searches users by optional username substring or exact id. Returns all users when `q` is `None`.
+/// Appends the `WHERE` clause for the optional query, binding its values. Appends nothing for `None`.
+fn push_filters(builder: &mut QueryBuilder<MySql>, q: Option<&str>) {
+    let mut conditions = WhereClause::new(builder);
+
+    if let Some(q) = q {
+        let builder = conditions.condition();
+        builder.push("(");
+        push_text_or_id(builder, "username", q);
+        builder.push(")");
+    }
+}
+
+/// Returns a page of users ordered by username.
+///
+/// When `q` is `None`, all users are returned. When `q` is `Some`, results are filtered by a
+/// case-insensitive substring match against the username, or by an exact match when `q` is the
+/// user id.
 pub async fn search(
     executor: impl Executor<'_, Database = MySql>,
     q: Option<&str>,
+    limit: u32,
+    offset: u32,
 ) -> Result<Vec<UserSummary>> {
-    match q {
-        Some(term) => sqlx::query_as::<_, UserSummary>(
-            "SELECT id, username FROM users WHERE (username LIKE ? OR id = ?) ORDER BY username",
-        )
-        .bind(like_pattern(term))
-        .bind(Uuid::parse_str(term).ok())
+    let mut builder = QueryBuilder::new("SELECT id, username FROM users");
+    push_filters(&mut builder, q);
+    builder
+        .push(" ORDER BY username LIMIT ")
+        .push_bind(limit)
+        .push(" OFFSET ")
+        .push_bind(offset);
+
+    builder
+        .build_query_as::<UserSummary>()
         .fetch_all(executor)
         .await
-        .map_err(DbError::from),
-        None => {
-            sqlx::query_as::<_, UserSummary>("SELECT id, username FROM users ORDER BY username")
-                .fetch_all(executor)
-                .await
-                .map_err(DbError::from)
-        }
-    }
+        .map_err(DbError::from)
+}
+
+/// Returns the total number of users matching the optional query.
+pub async fn search_count(
+    executor: impl Executor<'_, Database = MySql>,
+    q: Option<&str>,
+) -> Result<u64> {
+    let mut builder = QueryBuilder::new("SELECT COUNT(*) FROM users");
+    push_filters(&mut builder, q);
+
+    builder
+        .build_query_scalar::<i64>()
+        .fetch_one(executor)
+        .await
+        .map(|n| n as u64)
+        .map_err(DbError::from)
 }
 
 /// Inserts a new user and returns the created row.

@@ -16,11 +16,12 @@ export const userKeys = {
 };
 
 const PLAYS_PER_PAGE = 20;
+const USERS_PER_PAGE = 200;
 
 export function useUsers(q?: string) {
   return useQuery({
     queryKey: userKeys.list(q),
-    queryFn: async () => unwrap(await usersApi.search(q)),
+    queryFn: async () => unwrap(await usersApi.search(q, USERS_PER_PAGE)),
   });
 }
 
