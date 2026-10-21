@@ -24,7 +24,8 @@ use db::{
 };
 
 use crate::{
-    auth::middleware::AuthUser, capabilities, convert, error::ApiError, pagination, state::AppState,
+    auth::middleware::AuthUser, capabilities, convert, error::ApiError, pagination,
+    routes::common::search_text, state::AppState,
 };
 
 /// Maximum number of `user` kind playlists a single user can own.
@@ -109,7 +110,7 @@ pub(crate) async fn list_playlists(
             .contains(capabilities::PLAYLISTS_VIEW_PRIVATE)
     });
     let (limit, offset) = pagination::limit_offset(params.page, params.per_page);
-    let q = params.q.as_deref().filter(|s| !s.is_empty());
+    let q = search_text(params.q.as_deref());
     let kind = params.kind.as_ref().map(PlaylistKind::as_str);
     let filter = PlaylistFilter {
         q,

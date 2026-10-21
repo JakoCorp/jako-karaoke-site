@@ -29,8 +29,12 @@ use db::{
 };
 
 use crate::{
-    auth::middleware::AuthUser, capabilities, convert, error::ApiError, pagination,
-    routes::common::SortDir, state::AppState,
+    auth::middleware::AuthUser,
+    capabilities, convert,
+    error::ApiError,
+    pagination,
+    routes::common::{SortDir, search_text},
+    state::AppState,
 };
 use params::{ArtistListParams, ArtistSort};
 
@@ -139,7 +143,7 @@ pub(crate) async fn list_artists(
     Query(params): Query<ArtistListParams>,
 ) -> Result<Json<PagedResponse<ArtistSummary>>, ApiError> {
     let (limit, offset) = pagination::limit_offset(params.page, params.per_page);
-    let q = params.q.as_deref().filter(|s| !s.is_empty());
+    let q = search_text(params.q.as_deref());
     let (sort, direction) = params.order();
     let (artists, total) = tokio::try_join!(
         queries::artists::search(&state.pool, q, sort, direction, limit, offset),

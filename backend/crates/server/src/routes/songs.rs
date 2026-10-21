@@ -33,8 +33,13 @@ use db::{
 };
 
 use crate::{
-    auth::middleware::AuthUser, capabilities, convert, error::ApiError, filters::parse_filters,
-    pagination, routes::common::SortDir, state::AppState,
+    auth::middleware::AuthUser,
+    capabilities, convert,
+    error::ApiError,
+    filters::parse_filters,
+    pagination,
+    routes::common::{SortDir, search_text},
+    state::AppState,
 };
 use params::{SongListParams, SongSort};
 
@@ -162,7 +167,7 @@ pub(crate) async fn list_songs(
     let (limit, offset) = pagination::limit_offset(params.page, params.per_page);
     let parsed = parse_filters(&params.filter, Subject::Song)?;
     let filter = SongFilter {
-        q: params.q.as_deref().filter(|s| !s.is_empty()),
+        q: search_text(params.q.as_deref()),
         clauses: &parsed.clauses,
     };
     let (sort, direction) = params.order();

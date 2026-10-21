@@ -29,7 +29,7 @@ use crate::{
     capabilities, convert,
     error::ApiError,
     pagination,
-    routes::playlists::PlaylistListParams,
+    routes::{common::search_text, playlists::PlaylistListParams},
     state::AppState,
 };
 
@@ -138,7 +138,7 @@ pub(crate) async fn search_users(
         return Err(ApiError::Forbidden);
     }
     let (limit, offset) = pagination::limit_offset(params.page, params.per_page);
-    let q = params.q.as_deref().filter(|s| !s.is_empty());
+    let q = search_text(params.q.as_deref());
     let (users, total) = tokio::try_join!(
         queries::users::search(&state.pool, q, limit, offset),
         queries::users::search_count(&state.pool, q),
@@ -238,7 +238,7 @@ pub(crate) async fn list_user_playlists(
 
     let include_private = can_view_private(&auth, id);
     let (limit, offset) = pagination::limit_offset(params.page, params.per_page);
-    let q = params.q.as_deref().filter(|s| !s.is_empty());
+    let q = search_text(params.q.as_deref());
     let kind = params.kind.as_ref().map(PlaylistKind::as_str);
     let filter = PlaylistFilter {
         q,
