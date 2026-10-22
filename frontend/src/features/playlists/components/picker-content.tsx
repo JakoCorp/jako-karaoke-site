@@ -1,11 +1,14 @@
 import { CheckIcon, HeartIcon, PlusIcon } from "@phosphor-icons/react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import {
   useAddToPlaylist,
+  useFavoritesForPicker,
+  useInfinitePickerPlaylists,
   usePlaylistsContaining,
-  useUserPlaylistsForPicker,
 } from "@/hooks/api/playlists";
+import { useDebounced } from "@/hooks/use-debounced";
+import { useInfiniteSentinel } from "@/hooks/use-infinite-sentinel";
 import { useAuthStore } from "@/store/auth";
 
 interface Props {
@@ -17,18 +20,39 @@ export function PlaylistPickerContent({ performanceId }: Props) {
   const [filter, setFilter] = useState("");
   const [sessionAddedIds, setSessionAddedIds] = useState<Set<string>>(new Set());
 
-  const { data: allPlaylists = [], isLoading } = useUserPlaylistsForPicker(user?.id ?? null);
+  const debouncedFilter = useDebounced(filter);
+  const q = debouncedFilter.trim() || undefined;
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  const { data: favorites = [], isLoading: isLoadingFavorites } = useFavoritesForPicker(
+    user?.id ?? null,
+    q,
+  );
+  const {
+    data: pages,
+    isLoading: isLoadingPlaylists,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+  } = useInfinitePickerPlaylists(user?.id ?? null, q);
+  const sentinelRef = useInfiniteSentinel({
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+    scrollContainerRef,
+  });
   const { data: existingIds = new Set<string>() } = usePlaylistsContaining(
     user?.id ?? null,
     performanceId,
   );
   const addToPlaylist = useAddToPlaylist();
 
+  const isLoading = isLoadingFavorites || isLoadingPlaylists;
   const addedIds = new Set([...existingIds, ...sessionAddedIds]);
-  const filtered = allPlaylists.filter((p) => p.title.toLowerCase().includes(filter.toLowerCase()));
+  const playlists = [...favorites, ...(pages?.pages.flatMap((page) => page.items) ?? [])];
   const sorted = [
-    ...filtered.filter((p) => !addedIds.has(p.id)),
-    ...filtered.filter((p) => addedIds.has(p.id)),
+    ...playlists.filter((p) => !addedIds.has(p.id)),
+    ...playlists.filter((p) => addedIds.has(p.id)),
   ];
 
   function handleAdd(playlistId: string, playlistTitle: string) {
@@ -58,7 +82,7 @@ export function PlaylistPickerContent({ performanceId }: Props) {
           aria-label="Filter playlists"
         />
       </div>
-      <div className="playlist-picker-list">
+      <div ref={scrollContainerRef} className="playlist-picker-list">
         {isLoading && <p className="playlist-picker-empty">Loading…</p>}
         {!isLoading && sorted.length === 0 && (
           <p className="playlist-picker-empty">No playlists found.</p>
@@ -86,6 +110,8 @@ export function PlaylistPickerContent({ performanceId }: Props) {
             </div>
           );
         })}
+        <div ref={sentinelRef} />
+        {isFetchingNextPage && <p className="playlist-picker-empty">Loading more…</p>}
       </div>
     </>
   );

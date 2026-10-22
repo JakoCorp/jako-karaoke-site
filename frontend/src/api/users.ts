@@ -1,5 +1,6 @@
 import { api } from "./client";
 import type { components } from "./generated";
+import type { SearchPaginationParams } from "./types";
 
 export type UserSummary = components["schemas"]["UserSummary"];
 export type UserPlayEntry = components["schemas"]["UserPlayEntry"];
@@ -7,8 +8,7 @@ export type UserPlayEntry = components["schemas"]["UserPlayEntry"];
 /** User endpoints. */
 export const usersApi = {
   /** Returns a paginated list of users matching an optional username substring or id. */
-  search: (q: string | undefined, perPage: number) =>
-    api.GET("/api/users", { params: { query: { q, per_page: perPage } } }),
+  search: (params?: SearchPaginationParams) => api.GET("/api/users", { params: { query: params } }),
 
   /** Changes a user's username, bypassing the cooldown. Requires `capabilities:manage`. */
   updateUsername: (userId: string, username: string) =>

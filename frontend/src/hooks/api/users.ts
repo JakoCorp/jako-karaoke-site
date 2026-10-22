@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { authApi, toAuthUser } from "@/api/auth";
 import { ensureOk, unwrap } from "@/api/client";
@@ -9,19 +9,26 @@ import { useAuthStore } from "@/store/auth";
 
 export const userKeys = {
   all: () => ["users"] as const,
-  list: (q?: string) => ["users", "list", q] as const,
+  list: (q?: string) => ["users", "infinite", q] as const,
   capabilities: (id: string) => ["users", "capabilities", id] as const,
   plays: (id: string, page: number) => ["users", "plays", id, page] as const,
   allPlays: (id: string) => ["users", "plays", id] as const,
 };
 
 const PLAYS_PER_PAGE = 20;
-const USERS_PER_PAGE = 200;
+const USERS_PER_PAGE = 24;
 
-export function useUsers(q?: string) {
-  return useQuery({
+/** Infinite scroll query for the users list. Appends pages as the user scrolls. */
+export function useInfiniteUsers(q?: string) {
+  return useInfiniteQuery({
     queryKey: userKeys.list(q),
-    queryFn: async () => unwrap(await usersApi.search(q, USERS_PER_PAGE)),
+    queryFn: async ({ pageParam }) =>
+      unwrap(await usersApi.search({ q, page: pageParam, per_page: USERS_PER_PAGE })),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, allPages) => {
+      const fetched = allPages.length * USERS_PER_PAGE;
+      return fetched < lastPage.total ? allPages.length + 1 : undefined;
+    },
   });
 }
 

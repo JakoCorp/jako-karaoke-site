@@ -1,10 +1,11 @@
 import { MagnifyingGlassIcon } from "@phosphor-icons/react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
 
 import type { ArtistSortField } from "@/api/artists";
 import { useInfiniteArtists } from "@/hooks/api/artists";
 import { useDebounced } from "@/hooks/use-debounced";
+import { useInfiniteSentinel } from "@/hooks/use-infinite-sentinel";
 import { createStateCodec } from "@/lib/url-state";
 
 import { ArtistCard } from "../components/artist-card";
@@ -56,7 +57,6 @@ export function ArtistsPage() {
   const [inputValue, setInputValue] = useState(q);
   const [prevQ, setPrevQ] = useState(q);
   const debouncedInput = useDebounced(inputValue);
-  const sentinelRef = useRef<HTMLDivElement>(null);
 
   if (q !== prevQ) {
     setPrevQ(q);
@@ -112,20 +112,7 @@ export function ArtistsPage() {
     sort_dir: sortDir,
   });
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting && hasNextPage && !isFetchingNextPage) {
-          void fetchNextPage();
-        }
-      },
-      { rootMargin: "200px" },
-    );
-    if (sentinelRef.current) observer.observe(sentinelRef.current);
-    return () => {
-      observer.disconnect();
-    };
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+  const sentinelRef = useInfiniteSentinel({ hasNextPage, isFetchingNextPage, fetchNextPage });
 
   const total = data?.pages[0]?.total ?? 0;
   const items = data?.pages.flatMap((page) => page.items) ?? [];

@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { type SongSummary } from "@/api/songs";
-import { useSongs } from "@/hooks/api/songs";
+import { useInfiniteSongs } from "@/hooks/api/songs";
 import { useDebounced } from "@/hooks/use-debounced";
+import { useInfiniteSentinel } from "@/hooks/use-infinite-sentinel";
 
 import { SongDetailPanel } from "./detail";
 
@@ -13,12 +14,23 @@ export function SongsAdminTab() {
 
   const debouncedQuery = useDebounced(searchInput.trim());
 
-  const { data: songPage, isLoading: songsLoading } = useSongs({
-    per_page: 100,
-    q: debouncedQuery || undefined,
+  const scrollContainerRef = useRef<HTMLUListElement>(null);
+
+  const {
+    data: songPages,
+    isLoading: songsLoading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+  } = useInfiniteSongs({ q: debouncedQuery || undefined });
+  const sentinelRef = useInfiniteSentinel<HTMLLIElement>({
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+    scrollContainerRef,
   });
 
-  const songs = songPage?.items ?? [];
+  const songs = songPages?.pages.flatMap((page) => page.items) ?? [];
 
   return (
     <div className="admin-layout">
@@ -44,7 +56,7 @@ export function SongsAdminTab() {
             New
           </button>
         </div>
-        <ul className="admin-user-list">
+        <ul ref={scrollContainerRef} className="admin-user-list">
           {songsLoading && <li className="admin-empty">Loading…</li>}
           {!songsLoading && songs.length === 0 && <li className="admin-empty">No songs found.</li>}
           {songs.map((song) => (
@@ -69,6 +81,8 @@ export function SongsAdminTab() {
               </button>
             </li>
           ))}
+          <li ref={sentinelRef} />
+          {isFetchingNextPage && <li className="admin-empty">Loading more…</li>}
         </ul>
       </div>
 
