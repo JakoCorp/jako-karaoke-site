@@ -1,5 +1,7 @@
 //! Playlist CRUD handlers and the `PlaylistsApi` OpenAPI spec struct.
 
+pub(crate) mod params;
+
 use axum::{
     Json, Router,
     extract::{Path, Query, State},
@@ -10,7 +12,7 @@ use uuid::Uuid;
 
 use api_types::{
     common::ErrorResponse,
-    pagination::{PagedResponse, defaults as pagination_defaults},
+    pagination::PagedResponse,
     performances::PerformanceSummary,
     playlists::{
         AddPerformancesRequest, CreatePlaylistRequest, PlaylistEntry, PlaylistKind,
@@ -24,28 +26,17 @@ use db::{
 };
 
 use crate::{
-    auth::middleware::AuthUser, capabilities, convert, error::ApiError, pagination,
-    routes::common::search_text, state::AppState,
+    auth::middleware::AuthUser,
+    capabilities, convert,
+    error::ApiError,
+    pagination,
+    routes::common::{SortDir, search_text},
+    state::AppState,
 };
+use params::{PlaylistListParams, PlaylistSort};
 
 /// Maximum number of `user` kind playlists a single user can own.
 const MAX_USER_PLAYLISTS: i64 = 100;
-
-/// Query parameters for `GET /api/playlists` and `GET /api/users/{id}/playlists`.
-#[derive(Debug, Clone, serde::Deserialize, utoipa::IntoParams)]
-#[into_params(parameter_in = Query)]
-pub(crate) struct PlaylistListParams {
-    /// Page number, 1-indexed. Defaults to 1.
-    #[serde(default = "pagination_defaults::page")]
-    pub page: u32,
-    /// Items per page. Defaults to 20. The server enforces a maximum.
-    #[serde(default = "pagination_defaults::per_page")]
-    pub per_page: u32,
-    /// Optional text search filter against playlist title.
-    pub q: Option<String>,
-    /// Optional filter returning only playlists of this kind.
-    pub kind: Option<PlaylistKind>,
-}
 
 #[derive(utoipa::OpenApi)]
 #[openapi(
@@ -63,6 +54,8 @@ pub(crate) struct PlaylistListParams {
         PlaylistResponse,
         PlaylistEntry,
         PlaylistKind,
+        PlaylistSort,
+        SortDir,
         CreatePlaylistRequest,
         UpdatePlaylistRequest,
         AddPerformancesRequest,
@@ -112,6 +105,7 @@ pub(crate) async fn list_playlists(
     let (limit, offset) = pagination::limit_offset(params.page, params.per_page);
     let q = search_text(params.q.as_deref());
     let kind = params.kind.as_ref().map(PlaylistKind::as_str);
+    let (sort, direction) = params.order();
     let filter = PlaylistFilter {
         q,
         include_private,
@@ -119,7 +113,7 @@ pub(crate) async fn list_playlists(
         kind,
     };
     let (rows, total) = tokio::try_join!(
-        queries::playlists::search(&state.pool, filter, limit, offset),
+        queries::playlists::search(&state.pool, filter, sort, direction, limit, offset),
         queries::playlists::search_count(&state.pool, filter),
     )?;
     let items = rows
