@@ -3,6 +3,7 @@ import { keepPreviousData, useInfiniteQuery, useQuery } from "@tanstack/react-qu
 import { unwrap } from "@/api/client";
 import { performancesApi } from "@/api/performances";
 import type { PerformanceListParams } from "@/api/performances";
+import type { WithoutPaging } from "@/api/types";
 
 export const performanceKeys = {
   all: () => ["performances"] as const,
@@ -50,7 +51,7 @@ export function usePerformanceLyrics(id: string, enabled = true) {
 }
 
 export function useInfinitePerformances(
-  params?: Omit<PerformanceListParams, "page" | "per_page">,
+  params?: WithoutPaging<PerformanceListParams>,
   enabled = true,
 ) {
   const PERFORMANCES_PER_PAGE = 200;

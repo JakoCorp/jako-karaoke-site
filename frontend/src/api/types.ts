@@ -1,10 +1,12 @@
-/** Shared pagination query parameters for list endpoints. */
-export type PaginationParams = {
-  page?: number;
-  per_page?: number;
-};
+import type { components, operations } from "./generated";
 
-/** Pagination query parameters with an optional text search filter. */
-export type SearchPaginationParams = PaginationParams & {
-  q?: string;
-};
+/** Sort direction accepted by the sortable list endpoints. */
+export type SortDir = components["schemas"]["SortDir"];
+
+/** Query parameters of a generated operation, documented by the API spec. */
+export type QueryOf<Operation extends keyof operations> = NonNullable<
+  operations[Operation]["parameters"]["query"]
+>;
+
+/** List query parameters without the paging fields, for infinite queries that choose the page. */
+export type WithoutPaging<T> = Omit<T, "page" | "per_page">;

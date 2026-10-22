@@ -2,7 +2,7 @@ import { multipartSerializer } from "@/lib/multipart";
 
 import { api } from "./client";
 import type { components } from "./generated";
-import type { SearchPaginationParams } from "./types";
+import type { QueryOf } from "./types";
 
 export type PerformanceSummary = components["schemas"]["PerformanceSummary"];
 export type PerformanceResponse = components["schemas"]["PerformanceResponse"];
@@ -14,14 +14,9 @@ export type VideoKind = components["schemas"]["VideoKind"];
 export type StartPlayResponse = components["schemas"]["StartPlayResponse"];
 export type PerformancePlayer = components["schemas"]["PerformancePlayer"];
 export type PerformanceSortField = components["schemas"]["PerformanceSort"];
-export type PerformanceSortDir = components["schemas"]["SortDir"];
 
-/** Query parameters accepted by the performances list endpoint. */
-export type PerformanceListParams = SearchPaginationParams & {
-  sort?: PerformanceSortField;
-  sort_dir?: PerformanceSortDir;
-  filter?: string[];
-};
+/** Query parameters of the performances list endpoint. */
+export type PerformanceListParams = QueryOf<"list_performances">;
 
 export const PERFORMANCE_TAG_KINDS = [
   "instrument",

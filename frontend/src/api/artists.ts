@@ -2,18 +2,12 @@ import { multipartSerializer } from "@/lib/multipart";
 
 import { api } from "./client";
 import type { components } from "./generated";
-import type { SearchPaginationParams } from "./types";
+import type { QueryOf } from "./types";
 
-/** Fields available for sorting the artists list. */
-export type ArtistSortField = "name" | "song_count";
+export type ArtistSortField = components["schemas"]["ArtistSort"];
 
-/** Query parameters for the artist list endpoint. */
-export type ArtistListParams = SearchPaginationParams & {
-  /** Field to sort by. Defaults to `name`. */
-  sort?: ArtistSortField;
-  /** Sort direction. Defaults to `asc`. */
-  sort_dir?: "asc" | "desc";
-};
+/** Query parameters of the artist list endpoint. */
+export type ArtistListParams = QueryOf<"list_artists">;
 
 export type ArtistSummary = components["schemas"]["ArtistSummary"];
 export type ArtistResponse = components["schemas"]["ArtistResponse"];

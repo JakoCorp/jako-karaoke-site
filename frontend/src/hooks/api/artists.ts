@@ -3,6 +3,7 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { artistsApi } from "@/api/artists";
 import type { ArtistListParams } from "@/api/artists";
 import { unwrap } from "@/api/client";
+import type { WithoutPaging } from "@/api/types";
 
 export const artistKeys = {
   all: () => ["artists"] as const,
@@ -19,7 +20,7 @@ export function useArtists(params?: ArtistListParams, enabled = true) {
 }
 
 /** Infinite scroll query for the artists list. Appends pages as the user scrolls. */
-export function useInfiniteArtists(params?: Omit<ArtistListParams, "page" | "per_page">) {
+export function useInfiniteArtists(params?: WithoutPaging<ArtistListParams>) {
   const ARTISTS_PER_PAGE = 24;
 
   return useInfiniteQuery({

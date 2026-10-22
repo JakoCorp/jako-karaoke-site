@@ -1,22 +1,16 @@
 import { api } from "./client";
 import type { components } from "./generated";
+import type { QueryOf } from "./types";
 
 export type PlaylistResponse = components["schemas"]["PlaylistResponse"];
 export type PlaylistEntry = components["schemas"]["PlaylistEntry"];
 export type PlaylistKind = components["schemas"]["PlaylistKind"];
 export type CreatePlaylistRequest = components["schemas"]["CreatePlaylistRequest"];
 
-/** Fields available for sorting the playlists list. */
-export type PlaylistSortField = "created" | "title" | "performance_count";
+export type PlaylistSortField = components["schemas"]["PlaylistSort"];
 
-export type PlaylistListParams = {
-  page?: number;
-  per_page?: number;
-  q?: string;
-  kind?: PlaylistKind;
-  sort?: PlaylistSortField;
-  sort_dir?: "asc" | "desc";
-};
+/** Query parameters of the playlist list endpoints, which are the same for all playlists and a user's. */
+export type PlaylistListParams = QueryOf<"list_playlists">;
 
 /** Playlist endpoints. */
 export const playlists = {

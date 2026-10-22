@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
 
 import type { ArtistSortField } from "@/api/artists";
+import type { SortDir } from "@/api/types";
 import { useInfiniteArtists } from "@/hooks/api/artists";
 import { useDebounced } from "@/hooks/use-debounced";
 import { useInfiniteSentinel } from "@/hooks/use-infinite-sentinel";
@@ -10,12 +11,12 @@ import { createStateCodec } from "@/lib/url-state";
 
 import { ArtistCard } from "../components/artist-card";
 
-type SortOption = `${ArtistSortField}-${"asc" | "desc"}`;
+type SortOption = `${ArtistSortField}-${SortDir}`;
 
 interface ArtistState {
   q?: string;
   sort?: ArtistSortField;
-  sort_dir?: "asc" | "desc";
+  sort_dir?: SortDir;
 }
 
 const SORT_OPTIONS: { value: SortOption; label: string; params: Partial<ArtistState> }[] = [

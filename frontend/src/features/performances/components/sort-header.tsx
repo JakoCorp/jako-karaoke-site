@@ -1,10 +1,11 @@
-import type { PerformanceSortDir, PerformanceSortField } from "@/api/performances";
+import type { PerformanceSortField } from "@/api/performances";
+import type { SortDir } from "@/api/types";
 
 interface SortHeaderProps {
   label: string;
   field: PerformanceSortField;
   sort: PerformanceSortField;
-  sortDir: PerformanceSortDir;
+  sortDir: SortDir;
   onSort: (field: PerformanceSortField) => void;
 }
 

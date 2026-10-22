@@ -2,7 +2,7 @@ import { multipartSerializer } from "@/lib/multipart";
 
 import { api } from "./client";
 import type { components } from "./generated";
-import type { SearchPaginationParams } from "./types";
+import type { QueryOf } from "./types";
 
 export type SongSummary = components["schemas"]["SongSummary"];
 export type SongResponse = components["schemas"]["SongResponse"];
@@ -10,14 +10,9 @@ export type SongTagKind = components["schemas"]["SongTagKind"];
 export type SongImageInfo = components["schemas"]["SongImageInfo"];
 export type SongImageKind = components["schemas"]["SongImageKind"];
 export type SongSort = components["schemas"]["SongSort"];
-export type SongSortDir = components["schemas"]["SortDir"];
 
-/** Query parameters accepted by the songs list endpoint. */
-export type SongListParams = SearchPaginationParams & {
-  sort?: SongSort;
-  sort_dir?: SongSortDir;
-  filter?: string[];
-};
+/** Query parameters of the songs list endpoint. */
+export type SongListParams = QueryOf<"list_songs">;
 
 export const SONG_IMAGE_KINDS = [
   "cover_art",
