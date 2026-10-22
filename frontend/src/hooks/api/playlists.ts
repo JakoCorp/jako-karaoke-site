@@ -90,16 +90,36 @@ export function usePlaylistsContaining(userId: string | null, performanceId: str
   });
 }
 
-/** Fetches all of a user's playlists (excluding favorites) for use in picker UI. */
-export function useUserPlaylistsForPicker(userId: string | null) {
+/** Fetches a user's favorites playlist for use in picker UI. */
+export function useFavoritesForPicker(userId: string | null, q?: string) {
   return useQuery({
-    queryKey: ["playlists", "picker", userId],
-    queryFn: async () => {
-      const { items } = unwrap(await playlists.listByUser(userId!, { per_page: 200 }));
-      return [
-        ...items.filter((p) => p.kind === "favorites"),
-        ...items.filter((p) => p.kind !== "favorites"),
-      ];
+    queryKey: ["playlists", "picker", "favorites", userId, q],
+    queryFn: async () =>
+      unwrap(await playlists.listByUser(userId!, { q, kind: "favorites" })).items,
+    enabled: !!userId,
+  });
+}
+
+/** Infinite scroll query for a user's playlists other than favorites, for use in picker UI. */
+export function useInfinitePickerPlaylists(userId: string | null, q?: string) {
+  return useInfiniteQuery({
+    queryKey: ["playlists", "picker", "infinite", userId, q],
+    queryFn: async ({ pageParam }) => {
+      const page = unwrap(
+        await playlists.listByUser(userId!, {
+          q,
+          sort: "title",
+          sort_dir: "asc",
+          page: pageParam,
+          per_page: PLAYLISTS_PER_PAGE,
+        }),
+      );
+      return { ...page, items: page.items.filter((p) => p.kind !== "favorites") };
+    },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, allPages) => {
+      const fetched = allPages.length * PLAYLISTS_PER_PAGE;
+      return fetched < lastPage.total ? allPages.length + 1 : undefined;
     },
     enabled: !!userId,
   });
