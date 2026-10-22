@@ -2,6 +2,7 @@
 
 pub(crate) mod images;
 pub(crate) mod lyrics;
+mod params;
 
 use axum::{
     Json, Router,
@@ -16,7 +17,7 @@ use api_types::{
     assets::AssetInfo,
     common::{ArtistInfo, ErrorResponse, TagInfo},
     lyrics::{LyricsResponse, UpdateLyricsRequest},
-    pagination::{PagedResponse, defaults as pagination_defaults},
+    pagination::PagedResponse,
     songs::{
         AddSongImageLinkRequest, CreateSongRequest, SongImageInfo, SongImageKind, SongResponse,
         SongSummary, SongTagAssignment, UpdateSongImageRequest, UpdateSongRequest,
@@ -32,9 +33,15 @@ use db::{
 };
 
 use crate::{
-    auth::middleware::AuthUser, capabilities, convert, error::ApiError, filters::parse_filters,
-    pagination, routes::common::SortDir, state::AppState,
+    auth::middleware::AuthUser,
+    capabilities, convert,
+    error::ApiError,
+    filters::parse_filters,
+    pagination,
+    routes::common::{SortDir, search_text},
+    state::AppState,
 };
+use params::{SongListParams, SongSort};
 
 #[derive(utoipa::OpenApi)]
 #[openapi(
@@ -76,46 +83,6 @@ use crate::{
     ))
 )]
 pub(crate) struct SongsApi;
-
-/// Field to sort songs by in list endpoints.
-#[derive(Debug, Clone, serde::Deserialize, utoipa::ToSchema)]
-#[serde(rename_all = "snake_case")]
-pub(crate) enum SongSort {
-    PerformanceCount,
-}
-
-/// Query parameters for `GET /api/songs`.
-#[derive(Debug, Clone, serde::Deserialize, utoipa::IntoParams)]
-#[into_params(parameter_in = Query)]
-pub(crate) struct SongListParams {
-    /// Page number, 1-indexed. Defaults to 1.
-    #[serde(default = "pagination_defaults::page")]
-    pub page: u32,
-    /// Items per page. Defaults to 20. The server enforces a maximum.
-    #[serde(default = "pagination_defaults::per_page")]
-    pub per_page: u32,
-    /// Text search by title or original artist name.
-    pub q: Option<String>,
-    /// Filter expressions like `original_artist:<id>,<id>` or `-genre:<id>`, repeated for each
-    /// condition. All expressions must hold, values within one are alternatives.
-    #[serde(default)]
-    pub filter: Vec<String>,
-    /// Field to sort by. Defaults to `performance_count`.
-    pub sort: Option<SongSort>,
-    /// Sort direction. Defaults to `desc`.
-    pub sort_dir: Option<SortDir>,
-}
-
-impl SongListParams {
-    fn order_by_clause(&self) -> String {
-        let dir = self.sort_dir.as_ref().map_or("DESC", SortDir::as_str);
-        match &self.sort {
-            Some(SongSort::PerformanceCount) | None => {
-                format!("performance_count {dir}, s.id DESC")
-            }
-        }
-    }
-}
 
 pub fn router() -> Router<AppState> {
     Router::new()
@@ -200,14 +167,14 @@ pub(crate) async fn list_songs(
     let (limit, offset) = pagination::limit_offset(params.page, params.per_page);
     let parsed = parse_filters(&params.filter, Subject::Song)?;
     let filter = SongFilter {
-        q: params.q.as_deref().filter(|s| !s.is_empty()),
+        q: search_text(params.q.as_deref()),
         clauses: &parsed.clauses,
     };
-    let order_by = params.order_by_clause();
+    let (sort, direction) = params.order();
 
     let (total, songs) = tokio::try_join!(
         queries::songs::search_count(&state.pool, filter),
-        queries::songs::search(&state.pool, filter, &order_by, limit, offset),
+        queries::songs::search(&state.pool, filter, sort, direction, limit, offset),
     )?;
 
     let song_ids: Vec<Uuid> = songs.iter().map(|s| s.id).collect();

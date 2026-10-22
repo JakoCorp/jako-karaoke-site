@@ -26,7 +26,7 @@ export function UsersAdminTab() {
   const queryClient = useQueryClient();
 
   const { data: allCapabilities } = useCapabilities();
-  const { data: userResults, isLoading: usersLoading } = useUsers(debouncedQuery || undefined);
+  const { data: userPage, isLoading: usersLoading } = useUsers(debouncedQuery || undefined);
   const { data: userCapabilities, isLoading: capsLoading } = useUserCapabilities(selectedUser?.id);
 
   const invalidateCaps = () =>
@@ -100,10 +100,10 @@ export function UsersAdminTab() {
         />
         <ul className="admin-user-list">
           {usersLoading && <li className="admin-empty">Loading…</li>}
-          {!usersLoading && userResults?.length === 0 && (
+          {!usersLoading && userPage?.items.length === 0 && (
             <li className="admin-empty">No users found.</li>
           )}
-          {userResults?.map((u) => (
+          {userPage?.items.map((u) => (
             <li key={u.id}>
               <button
                 className={

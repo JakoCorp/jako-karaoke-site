@@ -1,6 +1,7 @@
 //! Artist CRUD handlers and the `ArtistsApi` OpenAPI spec struct.
 
 pub(crate) mod images;
+mod params;
 
 use axum::{
     Json, Router,
@@ -18,7 +19,7 @@ use api_types::{
     },
     assets::AssetInfo,
     common::ErrorResponse,
-    pagination::{PagedResponse, defaults as pagination_defaults},
+    pagination::PagedResponse,
 };
 use db::{
     MySqlPool,
@@ -28,9 +29,14 @@ use db::{
 };
 
 use crate::{
-    auth::middleware::AuthUser, capabilities, convert, error::ApiError, pagination,
-    routes::common::SortDir, state::AppState,
+    auth::middleware::AuthUser,
+    capabilities, convert,
+    error::ApiError,
+    pagination,
+    routes::common::{SortDir, search_text},
+    state::AppState,
 };
+use params::{ArtistListParams, ArtistSort};
 
 #[derive(utoipa::OpenApi)]
 #[openapi(
@@ -70,42 +76,6 @@ use crate::{
     ))
 )]
 pub(crate) struct ArtistsApi;
-
-/// Query parameters for `GET /api/artists`.
-#[derive(Debug, Clone, serde::Deserialize, utoipa::IntoParams)]
-#[into_params(parameter_in = Query)]
-pub(crate) struct ArtistListParams {
-    /// Page number, 1-indexed. Defaults to 1.
-    #[serde(default = "pagination_defaults::page")]
-    pub page: u32,
-    /// Items per page. Defaults to 20. The server enforces a maximum.
-    #[serde(default = "pagination_defaults::per_page")]
-    pub per_page: u32,
-    /// Text search by artist name.
-    pub q: Option<String>,
-    /// Field to sort by. Defaults to `name`.
-    pub sort: Option<ArtistSort>,
-    /// Sort direction. Defaults to `asc`.
-    pub sort_dir: Option<SortDir>,
-}
-
-impl ArtistListParams {
-    fn order_by_clause(&self) -> String {
-        let dir = self.sort_dir.as_ref().map_or("ASC", SortDir::as_str);
-        match &self.sort {
-            Some(ArtistSort::SongCount) => format!("song_count {dir}"),
-            _ => format!("name {dir}"),
-        }
-    }
-}
-
-/// Field to sort artists by in list endpoints.
-#[derive(Debug, Clone, serde::Deserialize, utoipa::ToSchema)]
-#[serde(rename_all = "snake_case")]
-pub(crate) enum ArtistSort {
-    Name,
-    SongCount,
-}
 
 pub fn router() -> Router<AppState> {
     Router::new()
@@ -173,10 +143,10 @@ pub(crate) async fn list_artists(
     Query(params): Query<ArtistListParams>,
 ) -> Result<Json<PagedResponse<ArtistSummary>>, ApiError> {
     let (limit, offset) = pagination::limit_offset(params.page, params.per_page);
-    let q = params.q.as_deref().filter(|s| !s.is_empty());
-    let order_by = params.order_by_clause();
+    let q = search_text(params.q.as_deref());
+    let (sort, direction) = params.order();
     let (artists, total) = tokio::try_join!(
-        queries::artists::search(&state.pool, q, &order_by, limit, offset),
+        queries::artists::search(&state.pool, q, sort, direction, limit, offset),
         queries::artists::search_count(&state.pool, q),
     )?;
 

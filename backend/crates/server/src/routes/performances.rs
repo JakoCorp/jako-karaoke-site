@@ -2,6 +2,7 @@
 
 pub(crate) mod audio;
 pub(crate) mod lyrics;
+mod params;
 pub(crate) mod plays;
 pub(crate) mod video;
 
@@ -18,7 +19,7 @@ use api_types::{
     assets::AssetInfo,
     common::{ArtistInfo, ErrorResponse, TagInfo},
     lyrics::{LyricsResponse, UpdateLyricsRequest},
-    pagination::{PagedResponse, defaults as pagination_defaults},
+    pagination::PagedResponse,
     performances::{
         AddAudioLinkRequest, AddVideoLinkRequest, AudioInfo, AudioKind, CreatePerformanceRequest,
         PerformanceResponse, PerformanceSummary, PerformanceTagAssignment, UpdateAudioKindRequest,
@@ -37,9 +38,15 @@ use db::{
 };
 
 use crate::{
-    auth::middleware::AuthUser, capabilities, convert, error::ApiError, filters::parse_filters,
-    pagination, routes::common::SortDir, state::AppState,
+    auth::middleware::AuthUser,
+    capabilities, convert,
+    error::ApiError,
+    filters::parse_filters,
+    pagination,
+    routes::common::{SortDir, search_text},
+    state::AppState,
 };
+use params::{PerformanceListParams, PerformanceSort};
 
 #[derive(utoipa::OpenApi)]
 #[openapi(
@@ -99,61 +106,6 @@ use crate::{
     ))
 )]
 pub(crate) struct PerformancesApi;
-
-/// Query parameters for `GET /api/performances`.
-#[derive(Debug, Clone, serde::Deserialize, utoipa::IntoParams)]
-#[into_params(parameter_in = Query)]
-pub(crate) struct PerformanceListParams {
-    /// Page number, 1-indexed. Defaults to 1.
-    #[serde(default = "pagination_defaults::page")]
-    pub page: u32,
-    /// Items per page. Defaults to 20. The server enforces a maximum.
-    #[serde(default = "pagination_defaults::per_page")]
-    pub per_page: u32,
-    /// Text search across performance title, song title, and singer names.
-    pub q: Option<String>,
-    /// Filter expressions like `singer:<id>,<id>` or `-genre:<id>`, repeated for each condition.
-    /// All expressions must hold, values within one are alternatives.
-    #[serde(default)]
-    pub filter: Vec<String>,
-    /// Field to sort by. Defaults to `performance_date`.
-    pub sort: Option<PerformanceSort>,
-    /// Sort direction. Defaults to `desc`.
-    pub sort_dir: Option<SortDir>,
-}
-
-impl PerformanceListParams {
-    fn sort_dir_str(&self) -> &'static str {
-        self.sort_dir.as_ref().map_or("DESC", SortDir::as_str)
-    }
-
-    fn order_by_clause(&self) -> String {
-        let dir = self.sort_dir_str();
-        let id_tiebreak = format!(
-            "performance_date {dir}, stream_number {dir}, performance_number {dir}, id {dir}"
-        );
-        match &self.sort {
-            Some(PerformanceSort::PlayCount) => format!(
-                "{} {dir}, {id_tiebreak}",
-                queries::performance_plays::PLAY_COUNT_EXPR
-            ),
-            Some(PerformanceSort::Duration) => format!(
-                "{} {dir}, {id_tiebreak}",
-                queries::performance_audios::PRIMARY_LENGTH_EXPR
-            ),
-            _ => id_tiebreak,
-        }
-    }
-}
-
-/// Field to sort performances by in list endpoints.
-#[derive(Debug, Clone, serde::Deserialize, utoipa::ToSchema)]
-#[serde(rename_all = "snake_case")]
-pub(crate) enum PerformanceSort {
-    PerformanceDate,
-    PlayCount,
-    Duration,
-}
 
 /// Hydrates a list of performances with singers and songs for use in summary responses.
 pub(crate) async fn build_performance_summaries(
@@ -376,16 +328,16 @@ pub(crate) async fn list_performances(
     let (limit, offset) = pagination::limit_offset(params.page, params.per_page);
     let parsed = parse_filters(&params.filter, Subject::Performance)?;
     let filter = PerformanceFilter {
-        q: params.q.as_deref().filter(|s| !s.is_empty()),
+        q: search_text(params.q.as_deref()),
         clauses: &parsed.clauses,
         date_from: parsed.date_from,
         date_to: parsed.date_to,
     };
 
-    let order_by = params.order_by_clause();
+    let (sort, direction) = params.order();
     let (total, perfs) = tokio::try_join!(
         queries::performances::search_count(&state.pool, filter),
-        queries::performances::search(&state.pool, filter, &order_by, limit, offset),
+        queries::performances::search(&state.pool, filter, sort, direction, limit, offset),
     )?;
 
     let items = build_performance_summaries(&state.pool, perfs).await?;

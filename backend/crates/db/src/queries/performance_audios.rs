@@ -13,7 +13,7 @@ type Result<T> = std::result::Result<T, DbError>;
 /// SQL expression for the primary audio length of the row in an unaliased `performances` table.
 ///
 /// Meant for `ORDER BY` in queries on `performances`.
-pub const PRIMARY_LENGTH_EXPR: &str = "(SELECT a.length FROM performance_audios pa \
+pub(crate) const PRIMARY_LENGTH_EXPR: &str = "(SELECT a.length FROM performance_audios pa \
      JOIN assets a ON a.id = pa.asset_id \
      WHERE pa.performance_id = performances.id AND pa.kind = 'primary')";
 

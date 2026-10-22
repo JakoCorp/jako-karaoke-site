@@ -8,6 +8,7 @@ use sqlx::{Executor, MySql, QueryBuilder};
 use uuid::Uuid;
 
 use crate::error::DbError;
+use crate::search::WhereClause;
 
 /// Which join tables a tag relation reads.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -59,29 +60,6 @@ pub struct Clause {
 pub struct CatalogValue {
     pub id: Uuid,
     pub name: String,
-}
-
-/// Appends `WHERE` for the first condition and `AND` for every following one.
-pub struct WhereClause<'builder> {
-    builder: &'builder mut QueryBuilder<MySql>,
-    started: bool,
-}
-
-impl<'builder> WhereClause<'builder> {
-    /// Wraps `builder`, which must not yet contain a `WHERE` clause.
-    pub fn new(builder: &'builder mut QueryBuilder<MySql>) -> Self {
-        Self {
-            builder,
-            started: false,
-        }
-    }
-
-    /// Pushes the keyword for the next condition and returns the builder to append it to.
-    pub fn condition(&mut self) -> &mut QueryBuilder<MySql> {
-        let keyword = if self.started { " AND " } else { " WHERE " };
-        self.started = true;
-        self.builder.push(keyword)
-    }
 }
 
 /// Appends `SELECT entity_id, value_id FROM ...` for the relation. Returns `false` and appends

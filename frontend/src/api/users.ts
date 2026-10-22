@@ -6,8 +6,9 @@ export type UserPlayEntry = components["schemas"]["UserPlayEntry"];
 
 /** User endpoints. */
 export const usersApi = {
-  /** Searches users by optional username substring. */
-  search: (q?: string) => api.GET("/api/users", { params: { query: { q } } }),
+  /** Returns a paginated list of users matching an optional username substring or id. */
+  search: (q: string | undefined, perPage: number) =>
+    api.GET("/api/users", { params: { query: { q, per_page: perPage } } }),
 
   /** Changes a user's username, bypassing the cooldown. Requires `capabilities:manage`. */
   updateUsername: (userId: string, username: string) =>

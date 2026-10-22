@@ -9,10 +9,12 @@ use sqlx::{Executor, MySql, MySqlConnection, QueryBuilder};
 use uuid::Uuid;
 
 use crate::error::DbError;
-use crate::filter::{Clause, Subject, WhereClause, push_clauses};
+use crate::filter::{Clause, Subject, push_clauses};
 use crate::models::artist::Artist;
 use crate::models::song::{NewSong, Song, UpdateSong};
 use crate::models::tag::TagWithKind;
+use crate::search::{WhereClause, like_pattern, push_text_or_id};
+use crate::sort::SortDirection;
 
 /// Flat query result joining a song image join row with its asset fields.
 #[derive(Debug, Clone, sqlx::FromRow)]
@@ -29,16 +31,35 @@ pub struct SongImageRow {
 
 type Result<T> = std::result::Result<T, DbError>;
 
+/// Column list matching the fields of [`Song`], for a query over `songs s`.
+///
+/// The `inserted` form is for a freshly inserted row, which has no performances yet.
+macro_rules! song_columns {
+    () => {
+        song_columns!(@with "(SELECT COUNT(*) FROM performance_songs WHERE song_id = s.id)")
+    };
+    (inserted) => {
+        song_columns!(@with "0")
+    };
+    (@with $performance_count:literal) => {
+        concat!(
+            "id, title, created_by, lyrics_id, ",
+            $performance_count,
+            " AS performance_count"
+        )
+    };
+}
+
 /// Fetches a song by ID.
 pub async fn get_by_id(
     executor: impl Executor<'_, Database = MySql>,
     id: Uuid,
 ) -> Result<Option<Song>> {
-    sqlx::query_as::<_, Song>(
-        "SELECT id, title, created_by, lyrics_id, \
-         (SELECT COUNT(*) FROM performance_songs WHERE song_id = s.id) AS performance_count \
-         FROM songs s WHERE s.id = ?",
-    )
+    sqlx::query_as::<_, Song>(concat!(
+        "SELECT ",
+        song_columns!(),
+        " FROM songs s WHERE s.id = ?"
+    ))
     .bind(id)
     .fetch_optional(executor)
     .await
@@ -60,43 +81,56 @@ fn push_filters(builder: &mut QueryBuilder<MySql>, filter: SongFilter<'_>) {
     let mut conditions = WhereClause::new(builder);
 
     if let Some(q) = filter.q {
-        let pattern = format!("%{q}%");
-        conditions
-            .condition()
-            .push("s.id IN (SELECT id FROM songs WHERE title LIKE ")
-            .push_bind(pattern.clone())
-            .push(" OR id = ")
-            .push_bind(Uuid::parse_str(q).ok())
+        let builder = conditions.condition();
+        builder.push("s.id IN (SELECT id FROM songs WHERE ");
+        push_text_or_id(builder, "title", q);
+        builder
             .push(
                 " UNION SELECT soa.song_id FROM song_original_artists soa \
                  JOIN artists a ON a.id = soa.artist_id WHERE a.name LIKE ",
             )
-            .push_bind(pattern)
+            .push_bind(like_pattern(q))
             .push(")");
     }
 
     push_clauses(&mut conditions, Subject::Song, "s.id", filter.clauses);
 }
 
-/// Returns a filtered page of songs with a caller-specified sort order.
-///
-/// `order_by` must be a trusted SQL fragment (e.g. `"performance_count DESC, s.id DESC"`).
+/// Field a song list is sorted by.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SortKey {
+    /// Number of performances of the song.
+    PerformanceCount,
+}
+
+/// Appends the `ORDER BY` clause. Ties are broken by song id in the same direction.
+fn push_order(builder: &mut QueryBuilder<MySql>, sort: SortKey, direction: SortDirection) {
+    let column = match sort {
+        SortKey::PerformanceCount => "performance_count",
+    };
+    let direction = direction.as_sql();
+    builder
+        .push(" ORDER BY ")
+        .push(column)
+        .push(" ")
+        .push(direction)
+        .push(", s.id ")
+        .push(direction);
+}
+
+/// Returns a filtered page of songs sorted by `sort` in `direction`.
 pub async fn search(
     executor: impl Executor<'_, Database = MySql>,
     filter: SongFilter<'_>,
-    order_by: &str,
+    sort: SortKey,
+    direction: SortDirection,
     limit: u32,
     offset: u32,
 ) -> Result<Vec<Song>> {
-    let mut builder = QueryBuilder::new(
-        "SELECT id, title, created_by, lyrics_id, \
-         (SELECT COUNT(*) FROM performance_songs WHERE song_id = s.id) AS performance_count \
-         FROM songs s",
-    );
+    let mut builder = QueryBuilder::new(concat!("SELECT ", song_columns!(), " FROM songs s"));
     push_filters(&mut builder, filter);
+    push_order(&mut builder, sort, direction);
     builder
-        .push(" ORDER BY ")
-        .push(order_by)
         .push(" LIMIT ")
         .push_bind(limit)
         .push(" OFFSET ")
@@ -129,10 +163,10 @@ pub async fn search_count(
 ///
 /// Returns [`DbError::Conflict`] if a song with the same title already exists.
 pub async fn create(conn: &mut MySqlConnection, new: &NewSong) -> Result<Song> {
-    sqlx::query_as::<_, Song>(
-        "INSERT INTO songs (title, created_by, lyrics_id) VALUES (?, ?, ?) \
-         RETURNING id, title, created_by, lyrics_id, 0 AS performance_count",
-    )
+    sqlx::query_as::<_, Song>(concat!(
+        "INSERT INTO songs (title, created_by, lyrics_id) VALUES (?, ?, ?) RETURNING ",
+        song_columns!(inserted)
+    ))
     .bind(&new.title)
     .bind(new.created_by)
     .bind(new.lyrics_id)

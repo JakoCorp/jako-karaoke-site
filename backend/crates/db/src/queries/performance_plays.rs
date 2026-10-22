@@ -17,7 +17,7 @@ type Result<T> = std::result::Result<T, DbError>;
 /// SQL expression for the play count of the row in an unaliased `performances` table.
 ///
 /// Meant for `ORDER BY` in queries on `performances`.
-pub const PLAY_COUNT_EXPR: &str = "(SELECT COUNT(*) FROM performance_plays \
+pub(crate) const PLAY_COUNT_EXPR: &str = "(SELECT COUNT(*) FROM performance_plays \
      WHERE performance_plays.performance_id = performances.id \
      AND performance_plays.counted_at IS NOT NULL)";
 

@@ -13,20 +13,23 @@ use uuid::Uuid;
 
 use api_types::{
     common::ErrorResponse,
-    pagination::PagedResponse,
+    pagination::{PagedResponse, defaults as pagination_defaults},
     performances::PerformanceSummary,
     playlists::{PlaylistEntry, PlaylistKind, PlaylistResponse},
     plays::UserPlayEntry,
     users::{GrantCapabilityRequest, UpdateUserRequest, UserSummary},
 };
-use db::{error::DbError, queries};
+use db::{
+    error::DbError,
+    queries::{self, playlists::PlaylistFilter},
+};
 
 use crate::{
     auth::{middleware::AuthUser, validate_username},
     capabilities, convert,
     error::ApiError,
     pagination,
-    routes::playlists::PlaylistListParams,
+    routes::{common::search_text, playlists::PlaylistListParams},
     state::AppState,
 };
 
@@ -49,6 +52,7 @@ use crate::{
         UserPlayEntry,
         PagedResponse<UserPlayEntry>,
         UserSummary,
+        PagedResponse<UserSummary>,
         UpdateUserRequest,
         GrantCapabilityRequest,
         PlaylistResponse,
@@ -100,7 +104,13 @@ fn can_view_private(auth: &Option<AuthUser>, user_id: Uuid) -> bool {
 #[derive(Deserialize, utoipa::IntoParams)]
 #[into_params(parameter_in = Query)]
 pub(crate) struct UserSearchParams {
-    /// Optional username substring filter.
+    /// Page number, 1-indexed. Defaults to 1.
+    #[serde(default = "pagination_defaults::page")]
+    page: u32,
+    /// Items per page. Defaults to 20. The server enforces a maximum.
+    #[serde(default = "pagination_defaults::per_page")]
+    per_page: u32,
+    /// Optional username substring or exact user id filter.
     q: Option<String>,
 }
 
@@ -109,7 +119,7 @@ pub(crate) struct UserSearchParams {
     path = "/api/users",
     params(UserSearchParams),
     responses(
-        (status = 200, description = "Users matching the search query, or all users when `q` is omitted", body = Vec<UserSummary>),
+        (status = 200, description = "Paginated users matching the search query, or all users when `q` is omitted", body = PagedResponse<UserSummary>),
         (status = 401, description = "Unauthorized", body = ErrorResponse),
         (status = 403, description = "Forbidden", body = ErrorResponse),
     ),
@@ -120,23 +130,33 @@ pub(crate) async fn search_users(
     State(state): State<AppState>,
     auth: AuthUser,
     Query(params): Query<UserSearchParams>,
-) -> Result<Json<Vec<UserSummary>>, ApiError> {
+) -> Result<Json<PagedResponse<UserSummary>>, ApiError> {
     if !auth
         .capabilities
         .contains(capabilities::CAPABILITIES_MANAGE)
     {
         return Err(ApiError::Forbidden);
     }
-    let results = queries::users::search(&state.pool, params.q.as_deref()).await?;
-    Ok(Json(
-        results
-            .into_iter()
-            .map(|u| UserSummary {
-                id: u.id,
-                username: u.username,
-            })
-            .collect(),
-    ))
+    let (limit, offset) = pagination::limit_offset(params.page, params.per_page);
+    let q = search_text(params.q.as_deref());
+    let (users, total) = tokio::try_join!(
+        queries::users::search(&state.pool, q, limit, offset),
+        queries::users::search_count(&state.pool, q),
+    )?;
+
+    let items = users
+        .into_iter()
+        .map(|u| UserSummary {
+            id: u.id,
+            username: u.username,
+        })
+        .collect();
+    Ok(Json(PagedResponse {
+        items,
+        total,
+        page: params.page,
+        per_page: limit,
+    }))
 }
 
 #[utoipa::path(
@@ -218,19 +238,17 @@ pub(crate) async fn list_user_playlists(
 
     let include_private = can_view_private(&auth, id);
     let (limit, offset) = pagination::limit_offset(params.page, params.per_page);
-    let q = params.q.as_deref().filter(|s| !s.is_empty());
+    let q = search_text(params.q.as_deref());
     let kind = params.kind.as_ref().map(PlaylistKind::as_str);
+    let filter = PlaylistFilter {
+        q,
+        include_private,
+        created_by: Some(id),
+        kind,
+    };
     let (rows, total) = tokio::try_join!(
-        queries::playlists::search(
-            &state.pool,
-            q,
-            include_private,
-            Some(id),
-            kind,
-            limit,
-            offset
-        ),
-        queries::playlists::search_count(&state.pool, q, include_private, Some(id), kind),
+        queries::playlists::search(&state.pool, filter, limit, offset),
+        queries::playlists::search_count(&state.pool, filter),
     )?;
     let items = rows
         .into_iter()
@@ -238,7 +256,7 @@ pub(crate) async fn list_user_playlists(
         .collect::<Result<Vec<_>, _>>()?;
     Ok(Json(PagedResponse {
         items,
-        total: total as u64,
+        total,
         page: params.page,
         per_page: limit,
     }))
