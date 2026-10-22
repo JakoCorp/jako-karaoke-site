@@ -6,11 +6,16 @@ export type PlaylistEntry = components["schemas"]["PlaylistEntry"];
 export type PlaylistKind = components["schemas"]["PlaylistKind"];
 export type CreatePlaylistRequest = components["schemas"]["CreatePlaylistRequest"];
 
+/** Fields available for sorting the playlists list. */
+export type PlaylistSortField = "created" | "title" | "performance_count";
+
 export type PlaylistListParams = {
   page?: number;
   per_page?: number;
   q?: string;
   kind?: PlaylistKind;
+  sort?: PlaylistSortField;
+  sort_dir?: "asc" | "desc";
 };
 
 /** Playlist endpoints. */

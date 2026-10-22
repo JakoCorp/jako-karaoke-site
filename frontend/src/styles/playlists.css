@@ -254,9 +254,31 @@
   justify-content: space-between;
 }
 
+@utility playlist-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 @utility playlist-search-wrapper {
   position: relative;
   width: 100%;
+}
+
+@utility playlist-sort-select {
+  padding: 0.375rem 0.625rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.375rem;
+  background-color: var(--color-canvas);
+  color: var(--color-fg);
+  font-size: 0.8125rem;
+  cursor: pointer;
+  flex-shrink: 0;
+
+  &:focus-visible {
+    outline: 2px solid var(--color-fg);
+    outline-offset: 2px;
+  }
 }
 
 @utility playlist-search-icon {

@@ -1,7 +1,7 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ApiError, ensureOk, unwrap } from "@/api/client";
-import { type CreatePlaylistRequest, playlists } from "@/api/playlists";
+import { type CreatePlaylistRequest, type PlaylistListParams, playlists } from "@/api/playlists";
 import { errorMessage } from "@/lib/error-message";
 import { toast } from "@/lib/toast";
 
@@ -23,11 +23,13 @@ export function usePlaylist(id: string) {
 }
 
 /** Infinite scroll query for the public playlists list. */
-export function useInfinitePublicPlaylists(q?: string) {
+export function useInfinitePublicPlaylists(
+  params?: Omit<PlaylistListParams, "page" | "per_page" | "kind">,
+) {
   return useInfiniteQuery({
-    queryKey: ["playlists", "infinite", "public", { q }],
+    queryKey: ["playlists", "infinite", "public", params],
     queryFn: async ({ pageParam }) =>
-      unwrap(await playlists.list({ page: pageParam, per_page: PLAYLISTS_PER_PAGE, q })),
+      unwrap(await playlists.list({ ...params, page: pageParam, per_page: PLAYLISTS_PER_PAGE })),
     initialPageParam: 1,
     getNextPageParam: (lastPage, allPages) => {
       const fetched = allPages.length * PLAYLISTS_PER_PAGE;
@@ -37,15 +39,18 @@ export function useInfinitePublicPlaylists(q?: string) {
 }
 
 /** Infinite scroll query for the playlists a user created themselves, without favorites. */
-export function useInfiniteUserPlaylists(userId: string | null, q?: string) {
+export function useInfiniteUserPlaylists(
+  userId: string | null,
+  params?: Omit<PlaylistListParams, "page" | "per_page" | "kind">,
+) {
   return useInfiniteQuery({
-    queryKey: ["playlists", "infinite", "user", userId, { q }],
+    queryKey: ["playlists", "infinite", "user", userId, params],
     queryFn: async ({ pageParam }) =>
       unwrap(
         await playlists.listByUser(userId!, {
+          ...params,
           page: pageParam,
           per_page: PLAYLISTS_PER_PAGE,
-          q,
           kind: "user",
         }),
       ),
