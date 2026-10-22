@@ -1,4 +1,4 @@
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useInfiniteQuery, useQuery } from "@tanstack/react-query";
 
 import { unwrap } from "@/api/client";
 import { songsApi } from "@/api/songs";
@@ -16,6 +16,22 @@ export function useSongs(params?: SongListParams, enabled = true) {
     queryFn: async () => unwrap(await songsApi.list(params)),
     enabled,
     placeholderData: keepPreviousData,
+  });
+}
+
+/** Infinite scroll query for the songs list. Appends pages as the user scrolls. */
+export function useInfiniteSongs(params?: Omit<SongListParams, "page" | "per_page">) {
+  const SONGS_PER_PAGE = 24;
+
+  return useInfiniteQuery({
+    queryKey: ["songs", "infinite", params],
+    queryFn: async ({ pageParam }) =>
+      unwrap(await songsApi.list({ ...params, page: pageParam, per_page: SONGS_PER_PAGE })),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, allPages) => {
+      const fetched = allPages.length * SONGS_PER_PAGE;
+      return fetched < lastPage.total ? allPages.length + 1 : undefined;
+    },
   });
 }
 

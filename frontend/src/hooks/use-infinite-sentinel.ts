@@ -9,13 +9,13 @@ interface InfiniteSentinelOptions {
 }
 
 /** Returns a ref for an element that loads the next page whenever it scrolls near the viewport. */
-export function useInfiniteSentinel({
+export function useInfiniteSentinel<T extends Element = HTMLDivElement>({
   hasNextPage,
   isFetchingNextPage,
   fetchNextPage,
   scrollContainerRef,
 }: InfiniteSentinelOptions) {
-  const sentinelRef = useRef<HTMLDivElement>(null);
+  const sentinelRef = useRef<T>(null);
 
   useEffect(() => {
     const observer = new IntersectionObserver(

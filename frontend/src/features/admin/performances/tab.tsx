@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { type PerformanceSummary } from "@/api/performances";
-import { usePerformances } from "@/hooks/api/performances";
+import { useInfinitePerformances } from "@/hooks/api/performances";
 import { useDebounced } from "@/hooks/use-debounced";
+import { useInfiniteSentinel } from "@/hooks/use-infinite-sentinel";
 import { formatDate, hasStreamPosition } from "@/lib/format";
 
 import { PerformanceDetailPanel } from "./detail";
@@ -17,12 +18,23 @@ export function PerformancesAdminTab() {
 
   const debouncedQuery = useDebounced(searchInput.trim());
 
-  const { data: performancePage, isLoading: performancesLoading } = usePerformances({
-    per_page: 100,
-    q: debouncedQuery || undefined,
+  const scrollContainerRef = useRef<HTMLUListElement>(null);
+
+  const {
+    data: performancePages,
+    isLoading: performancesLoading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+  } = useInfinitePerformances({ q: debouncedQuery || undefined });
+  const sentinelRef = useInfiniteSentinel<HTMLLIElement>({
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+    scrollContainerRef,
   });
 
-  const performances = performancePage?.items ?? [];
+  const performances = performancePages?.pages.flatMap((page) => page.items) ?? [];
 
   return (
     <div className="admin-layout">
@@ -59,7 +71,7 @@ export function PerformancesAdminTab() {
             Import CSV
           </button>
         </div>
-        <ul className="admin-user-list">
+        <ul ref={scrollContainerRef} className="admin-user-list">
           {performancesLoading && <li className="admin-empty">Loading…</li>}
           {!performancesLoading && performances.length === 0 && (
             <li className="admin-empty">No performances found.</li>
@@ -91,6 +103,8 @@ export function PerformancesAdminTab() {
               </button>
             </li>
           ))}
+          <li ref={sentinelRef} />
+          {isFetchingNextPage && <li className="admin-empty">Loading more…</li>}
         </ul>
       </div>
 

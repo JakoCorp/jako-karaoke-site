@@ -1,11 +1,12 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { ensureOk } from "@/api/client";
 import { usersApi, type UserSummary } from "@/api/users";
 import { useCapabilities } from "@/hooks/api/capabilities";
-import { useUserCapabilities, userKeys, useUsers } from "@/hooks/api/users";
+import { useInfiniteUsers, useUserCapabilities, userKeys } from "@/hooks/api/users";
 import { useDebounced } from "@/hooks/use-debounced";
+import { useInfiniteSentinel } from "@/hooks/use-infinite-sentinel";
 import { errorMessage } from "@/lib/error-message";
 import { toast } from "@/lib/toast";
 import { useAuthStore } from "@/store/auth";
@@ -26,7 +27,22 @@ export function UsersAdminTab() {
   const queryClient = useQueryClient();
 
   const { data: allCapabilities } = useCapabilities();
-  const { data: userPage, isLoading: usersLoading } = useUsers(debouncedQuery || undefined);
+  const scrollContainerRef = useRef<HTMLUListElement>(null);
+
+  const {
+    data: userPages,
+    isLoading: usersLoading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+  } = useInfiniteUsers(debouncedQuery || undefined);
+  const sentinelRef = useInfiniteSentinel<HTMLLIElement>({
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+    scrollContainerRef,
+  });
+  const users = userPages?.pages.flatMap((page) => page.items) ?? [];
   const { data: userCapabilities, isLoading: capsLoading } = useUserCapabilities(selectedUser?.id);
 
   const invalidateCaps = () =>
@@ -98,12 +114,10 @@ export function UsersAdminTab() {
           }}
           aria-label="Search users"
         />
-        <ul className="admin-user-list">
+        <ul ref={scrollContainerRef} className="admin-user-list">
           {usersLoading && <li className="admin-empty">Loading…</li>}
-          {!usersLoading && userPage?.items.length === 0 && (
-            <li className="admin-empty">No users found.</li>
-          )}
-          {userPage?.items.map((u) => (
+          {!usersLoading && users.length === 0 && <li className="admin-empty">No users found.</li>}
+          {users.map((u) => (
             <li key={u.id}>
               <button
                 className={
@@ -119,6 +133,8 @@ export function UsersAdminTab() {
               </button>
             </li>
           ))}
+          <li ref={sentinelRef} />
+          {isFetchingNextPage && <li className="admin-empty">Loading more…</li>}
         </ul>
       </div>
 
