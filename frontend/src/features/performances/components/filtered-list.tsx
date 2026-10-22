@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
 import type { PerformanceSortDir, PerformanceSortField } from "@/api/performances";
 import { FilterInput } from "@/components/filter-input/filter-input";
 import { useFilterCatalog } from "@/hooks/api/filter-catalog";
 import { useInfinitePerformances } from "@/hooks/api/performances";
 import { useDebounced } from "@/hooks/use-debounced";
+import { useInfiniteSentinel } from "@/hooks/use-infinite-sentinel";
 import { PERFORMANCE_FILTER_FIELDS } from "@/lib/filter-fields";
 import {
   chipExpressions,
@@ -27,7 +28,6 @@ export function FilteredPerformanceList({ scope }: FilteredPerformanceListProps)
   const [sort, setSort] = useState<PerformanceSortField>("performance_date");
   const [sortDir, setSortDir] = useState<PerformanceSortDir>("desc");
   const debouncedInput = useDebounced(inputValue);
-  const sentinelRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const { data: catalog = [] } = useFilterCatalog("performances");
@@ -37,20 +37,12 @@ export function FilteredPerformanceList({ scope }: FilteredPerformanceListProps)
   const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } =
     useInfinitePerformances({ filter, q, sort, sort_dir: sortDir });
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting && hasNextPage && !isFetchingNextPage) {
-          void fetchNextPage();
-        }
-      },
-      { root: scrollContainerRef.current, rootMargin: "200px" },
-    );
-    if (sentinelRef.current) observer.observe(sentinelRef.current);
-    return () => {
-      observer.disconnect();
-    };
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+  const sentinelRef = useInfiniteSentinel({
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+    scrollContainerRef,
+  });
 
   const total = data?.pages[0]?.total ?? 0;
   const performances = data?.pages.flatMap((page) => page.items) ?? [];
