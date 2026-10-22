@@ -64,7 +64,8 @@ async fn count(executor: impl Executor<'_, Database = MySql>) -> Result<u64> {
 /// Returns artists matching an optional name query, with the given sort order.
 ///
 /// When `q` is `None`, all artists are returned. When `q` is `Some`, results are
-/// filtered by a case-insensitive substring match against the artist name.
+/// filtered by a case-insensitive substring match against the artist name, or by an exact
+/// match when `q` is the artist id.
 pub async fn search(
     executor: impl Executor<'_, Database = MySql>,
     q: Option<&str>,
@@ -76,7 +77,7 @@ pub async fn search(
         format!(
             "SELECT id, name, description, \
              (SELECT COUNT(*) FROM song_original_artists WHERE artist_id = a.id) AS song_count \
-             FROM artists a WHERE name LIKE ? ORDER BY {order_by} LIMIT ? OFFSET ?"
+             FROM artists a WHERE (name LIKE ? OR id = ?) ORDER BY {order_by} LIMIT ? OFFSET ?"
         )
     } else {
         format!(
@@ -87,8 +88,8 @@ pub async fn search(
     };
 
     let query = sqlx::query_as::<_, Artist>(sqlx::AssertSqlSafe(sql.as_str()));
-    let query = if let Some(pattern) = q.map(|q| format!("%{q}%")) {
-        query.bind(pattern)
+    let query = if let Some(q) = q {
+        query.bind(format!("%{q}%")).bind(Uuid::parse_str(q).ok())
     } else {
         query
     };
@@ -109,9 +110,9 @@ pub async fn search_count(
     let Some(q) = q else {
         return count(executor).await;
     };
-    let pattern = format!("%{q}%");
-    sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM artists WHERE name LIKE ?")
-        .bind(&pattern)
+    sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM artists WHERE (name LIKE ? OR id = ?)")
+        .bind(format!("%{q}%"))
+        .bind(Uuid::parse_str(q).ok())
         .fetch_one(executor)
         .await
         .map(|n| n as u64)

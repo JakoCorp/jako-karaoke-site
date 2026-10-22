@@ -38,7 +38,7 @@ pub async fn get_by_id(
 #[derive(Debug, Clone, Copy, Default)]
 pub struct PerformanceFilter<'a> {
     /// Case insensitive substring matched against the performance title, any linked song title
-    /// and any linked singer name.
+    /// and any linked singer name, or the performance id matched exactly.
     pub q: Option<&'a str>,
     /// Relation conditions, all of which must hold.
     pub clauses: &'a [Clause],
@@ -58,6 +58,8 @@ fn push_filters(builder: &mut QueryBuilder<MySql>, filter: PerformanceFilter<'_>
             .condition()
             .push("id IN (SELECT id FROM performances WHERE title LIKE ")
             .push_bind(pattern.clone())
+            .push(" OR id = ")
+            .push_bind(Uuid::parse_str(q).ok())
             .push(
                 " UNION SELECT ps.performance_id FROM performance_songs ps \
                  JOIN songs s ON s.id = ps.song_id WHERE s.title LIKE ",

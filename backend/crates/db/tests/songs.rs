@@ -105,6 +105,25 @@ async fn search_matches_title_or_original_artist(pool: MySqlPool) {
 }
 
 #[sqlx::test(migrator = "db::MIGRATOR")]
+async fn search_matches_exact_id(pool: MySqlPool) {
+    let target = create_song(&pool, "song_a", None).await;
+    create_song(&pool, "song_b", None).await;
+
+    let query = target.id.to_string();
+    let filter = SongFilter {
+        q: Some(&query),
+        ..SongFilter::default()
+    };
+    let results = songs::search(&pool, filter, "s.id ASC", 10, 0)
+        .await
+        .unwrap();
+    let ids: Vec<_> = results.iter().map(|song| song.id).collect();
+
+    assert_eq!(ids, vec![target.id]);
+    assert_eq!(songs::search_count(&pool, filter).await.unwrap(), 1);
+}
+
+#[sqlx::test(migrator = "db::MIGRATOR")]
 async fn search_filters_by_clauses_and_lists_used_catalog_values(pool: MySqlPool) {
     let tagged = create_song(&pool, "song_a", None).await;
     let untagged = create_song(&pool, "song_b", None).await;

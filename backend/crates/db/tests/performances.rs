@@ -173,6 +173,29 @@ async fn search_sorts_without_stream_position_last_within_date(pool: MySqlPool) 
 }
 
 #[sqlx::test(migrator = "db::MIGRATOR")]
+async fn search_matches_exact_id(pool: MySqlPool) {
+    let target = create_performance(&pool, date(1), Some(1), Some(1))
+        .await
+        .unwrap();
+    create_performance(&pool, date(1), Some(1), Some(2))
+        .await
+        .unwrap();
+
+    let query = target.id.to_string();
+    let filter = PerformanceFilter {
+        q: Some(&query),
+        ..PerformanceFilter::default()
+    };
+    let results = performances::search(&pool, filter, ORDER_BY, 10, 0)
+        .await
+        .unwrap();
+    let ids: Vec<_> = results.iter().map(|performance| performance.id).collect();
+
+    assert_eq!(ids, vec![target.id]);
+    assert_eq!(performances::search_count(&pool, filter).await.unwrap(), 1);
+}
+
+#[sqlx::test(migrator = "db::MIGRATOR")]
 async fn search_filters_by_artist(pool: MySqlPool) {
     let sung_by_a = create_performance(&pool, date(1), Some(1), Some(1))
         .await

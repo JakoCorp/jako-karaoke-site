@@ -73,6 +73,26 @@ async fn list_ordered_by_name(pool: MySqlPool) {
 }
 
 #[sqlx::test(migrator = "db::MIGRATOR")]
+async fn search_matches_exact_id(pool: MySqlPool) {
+    let mut conn = pool.acquire().await.unwrap();
+    let target = artists::create(&mut conn, &new_artist("name_a"))
+        .await
+        .unwrap();
+    artists::create(&mut conn, &new_artist("name_b"))
+        .await
+        .unwrap();
+
+    let query = target.id.to_string();
+    let results = artists::search(&pool, Some(&query), "name", 10, 0)
+        .await
+        .unwrap();
+    let ids: Vec<_> = results.iter().map(|artist| artist.id).collect();
+
+    assert_eq!(ids, vec![target.id]);
+    assert_eq!(artists::search_count(&pool, Some(&query)).await.unwrap(), 1);
+}
+
+#[sqlx::test(migrator = "db::MIGRATOR")]
 async fn update_returns_updated_fields(pool: MySqlPool) {
     let mut conn = pool.acquire().await.unwrap();
     let created = artists::create(&mut conn, &new_artist("artist_a"))
