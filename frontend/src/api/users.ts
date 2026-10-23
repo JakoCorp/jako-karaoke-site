@@ -1,14 +1,17 @@
 import { api } from "./client";
 import type { components } from "./generated";
-import type { SearchPaginationParams } from "./types";
+import type { QueryOf } from "./types";
 
 export type UserSummary = components["schemas"]["UserSummary"];
 export type UserPlayEntry = components["schemas"]["UserPlayEntry"];
 
+/** Query parameters of the user search endpoint. */
+export type UserListParams = QueryOf<"search_users">;
+
 /** User endpoints. */
 export const usersApi = {
   /** Returns a paginated list of users matching an optional username substring or id. */
-  search: (params?: SearchPaginationParams) => api.GET("/api/users", { params: { query: params } }),
+  search: (params?: UserListParams) => api.GET("/api/users", { params: { query: params } }),
 
   /** Changes a user's username, bypassing the cooldown. Requires `capabilities:manage`. */
   updateUsername: (userId: string, username: string) =>

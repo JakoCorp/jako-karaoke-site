@@ -3,6 +3,7 @@ import { keepPreviousData, useInfiniteQuery, useQuery } from "@tanstack/react-qu
 import { unwrap } from "@/api/client";
 import { songsApi } from "@/api/songs";
 import type { SongListParams } from "@/api/songs";
+import type { WithoutPaging } from "@/api/types";
 
 export const songKeys = {
   all: () => ["songs"] as const,
@@ -20,7 +21,7 @@ export function useSongs(params?: SongListParams, enabled = true) {
 }
 
 /** Infinite scroll query for the songs list. Appends pages as the user scrolls. */
-export function useInfiniteSongs(params?: Omit<SongListParams, "page" | "per_page">) {
+export function useInfiniteSongs(params?: WithoutPaging<SongListParams>) {
   const SONGS_PER_PAGE = 24;
 
   return useInfiniteQuery({

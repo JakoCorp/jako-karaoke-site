@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 
-import type { PerformanceSortDir, PerformanceSortField } from "@/api/performances";
+import type { PerformanceSortField } from "@/api/performances";
+import type { SortDir } from "@/api/types";
 import { FilterInput } from "@/components/filter-input/filter-input";
 import { useFilterCatalog } from "@/hooks/api/filter-catalog";
 import { useInfinitePerformances } from "@/hooks/api/performances";
@@ -26,7 +27,7 @@ export function FilteredPerformanceList({ scope }: FilteredPerformanceListProps)
   const [inputValue, setInputValue] = useState("");
   const [chips, setChips] = useState<FilterChip[]>([]);
   const [sort, setSort] = useState<PerformanceSortField>("performance_date");
-  const [sortDir, setSortDir] = useState<PerformanceSortDir>("desc");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
   const debouncedInput = useDebounced(inputValue);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 

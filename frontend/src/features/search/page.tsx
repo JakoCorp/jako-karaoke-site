@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 
-import type { PerformanceSortDir, PerformanceSortField } from "@/api/performances";
-import type { SongSortDir } from "@/api/songs";
+import type { PerformanceSortField } from "@/api/performances";
+import type { SortDir } from "@/api/types";
 import { FilterInput } from "@/components/filter-input/filter-input";
 import { PerformanceRow, SortHeader } from "@/features/performances";
 import { useFilterCatalog } from "@/hooks/api/filter-catalog";
@@ -36,8 +36,8 @@ interface SearchState {
   filters?: FilterChip[];
   mode?: "songs";
   sort?: PerformanceSortField;
-  perf_sort_dir?: PerformanceSortDir;
-  song_sort_dir?: SongSortDir;
+  perf_sort_dir?: SortDir;
+  song_sort_dir?: SortDir;
   page?: number;
   per_page?: number;
 }
@@ -89,8 +89,8 @@ export function SearchPage() {
   const filterFields = filterFieldsFor(mode);
   const filterParams = filters.length > 0 ? chipExpressions(filters) : undefined;
   const sort = searchState.sort ?? "performance_date";
-  const perfSortDir: PerformanceSortDir = searchState.perf_sort_dir ?? "desc";
-  const songSortDir: SongSortDir = searchState.song_sort_dir ?? "desc";
+  const perfSortDir: SortDir = searchState.perf_sort_dir ?? "desc";
+  const songSortDir: SortDir = searchState.song_sort_dir ?? "desc";
   const page = searchState.page ?? 1;
   const perPage = searchState.per_page ?? 20;
 

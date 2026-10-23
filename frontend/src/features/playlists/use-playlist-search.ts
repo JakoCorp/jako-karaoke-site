@@ -2,15 +2,16 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
 
 import type { PlaylistSortField } from "@/api/playlists";
+import type { SortDir } from "@/api/types";
 import { useDebounced } from "@/hooks/use-debounced";
 import { createStateCodec } from "@/lib/url-state";
 
-export type PlaylistSortOption = `${PlaylistSortField}-${"asc" | "desc"}`;
+export type PlaylistSortOption = `${PlaylistSortField}-${SortDir}`;
 
 interface PlaylistState {
   q?: string;
   sort?: PlaylistSortField;
-  sort_dir?: "asc" | "desc";
+  sort_dir?: SortDir;
 }
 
 export const PLAYLIST_SORT_OPTIONS: {

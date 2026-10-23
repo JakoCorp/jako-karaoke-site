@@ -5,6 +5,8 @@ import { type CreatePlaylistRequest, type PlaylistListParams, playlists } from "
 import { errorMessage } from "@/lib/error-message";
 import { toast } from "@/lib/toast";
 
+type PlaylistQueryParams = Pick<PlaylistListParams, "q" | "sort" | "sort_dir">;
+
 const PLAYLISTS_PER_PAGE = 24;
 const SHORT_TOAST_TIMEOUT_MS = 3000;
 
@@ -23,9 +25,7 @@ export function usePlaylist(id: string) {
 }
 
 /** Infinite scroll query for the public playlists list. */
-export function useInfinitePublicPlaylists(
-  params?: Omit<PlaylistListParams, "page" | "per_page" | "kind">,
-) {
+export function useInfinitePublicPlaylists(params?: PlaylistQueryParams) {
   return useInfiniteQuery({
     queryKey: ["playlists", "infinite", "public", params],
     queryFn: async ({ pageParam }) =>
@@ -39,10 +39,7 @@ export function useInfinitePublicPlaylists(
 }
 
 /** Infinite scroll query for the playlists a user created themselves, without favorites. */
-export function useInfiniteUserPlaylists(
-  userId: string | null,
-  params?: Omit<PlaylistListParams, "page" | "per_page" | "kind">,
-) {
+export function useInfiniteUserPlaylists(userId: string | null, params?: PlaylistQueryParams) {
   return useInfiniteQuery({
     queryKey: ["playlists", "infinite", "user", userId, params],
     queryFn: async ({ pageParam }) =>
