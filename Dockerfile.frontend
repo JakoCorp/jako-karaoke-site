@@ -6,11 +6,13 @@ WORKDIR /app
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY frontend/package.json ./frontend/
+COPY packages/spectrogram/package.json ./packages/spectrogram/
 
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
-    pnpm install --frozen-lockfile --filter jako-karaoke-frontend --ignore-scripts
+    pnpm install --frozen-lockfile --filter jako-karaoke-frontend... --ignore-scripts
 
 COPY openapi.json ./
+COPY packages/spectrogram/src ./packages/spectrogram/src
 
 WORKDIR /app/frontend
 
