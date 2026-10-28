@@ -224,6 +224,10 @@ export class YouTubeAudioEngine implements AudioEngine {
     this.nextCb = callback;
   }
 
+  getAudioSource(): AudioNode | null {
+    return null;
+  }
+
   destroy(): void {
     this.stopPoll();
     this.player?.destroy();

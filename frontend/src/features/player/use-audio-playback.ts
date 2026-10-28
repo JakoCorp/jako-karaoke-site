@@ -13,6 +13,7 @@ export interface PlaybackProgress {
   currentTime: number;
   duration: number;
   seek: (time: number) => void;
+  getAudioSource: () => AudioNode | null;
 }
 
 /** Drives audio playback in sync with the player store. */
@@ -149,9 +150,12 @@ export function useAudioPlayback(): PlaybackProgress {
     setCurrentTime(time);
   }, []);
 
+  const getAudioSource = useCallback(() => engineRef.current?.getAudioSource() ?? null, []);
+
   return {
     currentTime: currentAudioUrl !== null ? currentTime : 0,
     duration: currentAudioUrl !== null ? duration : 0,
     seek,
+    getAudioSource,
   };
 }

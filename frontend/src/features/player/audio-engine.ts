@@ -11,23 +11,30 @@ export interface AudioEngine {
   onTimeUpdate(callback: (currentTime: number, duration: number) => void): void;
   onPrev(callback: () => void): void;
   onNext(callback: () => void): void;
+  /** Returns the node that carries the audio for analysis, or null when it cannot be tapped. */
+  getAudioSource(): AudioNode | null;
   destroy(): void;
 }
 
 /** Audio playback. */
 export class NativeAudioEngine implements AudioEngine {
   private readonly audio: HTMLAudioElement;
+  private context: AudioContext | null = null;
+  private source: MediaElementAudioSourceNode | null = null;
   private endedHandler: (() => void) | null = null;
   private errorHandler: (() => void) | null = null;
   private timeUpdateHandler: (() => void) | null = null;
 
   constructor() {
     this.audio = new Audio();
+    // Hosted files send CORS headers, which Web Audio needs to read the samples.
+    this.audio.crossOrigin = "anonymous";
   }
 
   play(url: string): void {
     this.audio.src = url;
     this.audio.currentTime = 0;
+    this.resumeContext();
     void this.audio.play();
   }
 
@@ -36,6 +43,7 @@ export class NativeAudioEngine implements AudioEngine {
   }
 
   resume(): void {
+    this.resumeContext();
     void this.audio.play();
   }
 
@@ -80,6 +88,20 @@ export class NativeAudioEngine implements AudioEngine {
 
   onNext(_callback: () => void): void {}
 
+  /**
+   * Routes the element through an AudioContext on first use. The element stays routed
+   * afterwards, so playback depends on the context running.
+   */
+  getAudioSource(): AudioNode | null {
+    if (this.source === null) {
+      this.context = new AudioContext();
+      this.source = this.context.createMediaElementSource(this.audio);
+      this.source.connect(this.context.destination);
+    }
+    this.resumeContext();
+    return this.source;
+  }
+
   destroy(): void {
     this.audio.pause();
     if (this.endedHandler !== null) {
@@ -97,5 +119,15 @@ export class NativeAudioEngine implements AudioEngine {
 
     this.audio.removeAttribute("src");
     this.audio.load();
+
+    void this.context?.close();
+    this.context = null;
+    this.source = null;
+  }
+
+  private resumeContext(): void {
+    if (this.context?.state === "suspended") {
+      void this.context.resume();
+    }
   }
 }

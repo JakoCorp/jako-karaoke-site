@@ -12,12 +12,21 @@ import {
   SpeakerSlashIcon,
   XIcon,
 } from "@phosphor-icons/react";
-import { useState } from "react";
+import { Suspense, lazy, useState } from "react";
 
 import { usePerformance } from "@/hooks/api/performances";
 import { resolveAssetUrl } from "@/lib/asset-url";
 import { formatDuration } from "@/lib/format";
 import { selectCurrent, selectHasNext, selectHasPrev, usePlayerStore } from "@/store/player";
+import { useVisualizerStore } from "@/store/visualizer";
+
+import { useSpectrogramAvailable } from "./visualizer/use-spectrogram-available";
+import { VisualizerToggles } from "./visualizer/visualizer-toggles";
+
+const SpectrogramCanvas = lazy(async () => {
+  const module = await import("./visualizer/spectrogram-canvas");
+  return { default: module.SpectrogramCanvas };
+});
 
 interface FullscreenPlayerProps {
   open: boolean;
@@ -25,6 +34,7 @@ interface FullscreenPlayerProps {
   currentTime: number;
   duration: number;
   seek: (time: number) => void;
+  getAudioSource: () => AudioNode | null;
 }
 
 export function FullscreenPlayer({
@@ -33,9 +43,12 @@ export function FullscreenPlayer({
   currentTime,
   duration,
   seek,
+  getAudioSource,
 }: FullscreenPlayerProps) {
   const [isSeeking, setIsSeeking] = useState(false);
   const [seekValue, setSeekValue] = useState(0);
+  const spectrogramAvailable = useSpectrogramAvailable();
+  const spectrogramEnabled = useVisualizerStore((s) => s.spectrogramEnabled);
 
   const current = usePlayerStore(selectCurrent);
   const isPlaying = usePlayerStore((s) => s.isPlaying);
@@ -77,6 +90,7 @@ export function FullscreenPlayer({
       <Dialog.Portal>
         <Dialog.Popup className="player-fullscreen">
           <header className="player-fullscreen-header">
+            <VisualizerToggles spectrogramAvailable={spectrogramAvailable} />
             <div>
               <p className="player-fullscreen-title">{title}</p>
               <p className="player-fullscreen-artist">{artists}</p>
@@ -92,13 +106,22 @@ export function FullscreenPlayer({
           </header>
 
           <div className="player-fullscreen-art-wrap">
-            {artUrl ? (
-              <img src={artUrl} alt="" className="player-fullscreen-art" />
-            ) : (
-              <div className="player-fullscreen-art-ph" aria-hidden="true">
-                {initial}
-              </div>
-            )}
+            <div className="player-fullscreen-art-frame">
+              {artUrl ? (
+                <img src={artUrl} alt="" className="player-fullscreen-art" />
+              ) : (
+                <div className="player-fullscreen-art-ph" aria-hidden="true">
+                  {initial}
+                </div>
+              )}
+              {spectrogramEnabled && spectrogramAvailable && (
+                <div className="player-fullscreen-visualizer">
+                  <Suspense fallback={null}>
+                    <SpectrogramCanvas getAudioSource={getAudioSource} />
+                  </Suspense>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="player-fullscreen-controls">

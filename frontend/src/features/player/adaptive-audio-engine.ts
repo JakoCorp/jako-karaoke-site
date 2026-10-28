@@ -98,6 +98,10 @@ export class AdaptiveAudioEngine implements AudioEngine {
     this.active.onNext(callback);
   }
 
+  getAudioSource(): AudioNode | null {
+    return this.active.getAudioSource();
+  }
+
   destroy(): void {
     this.native.destroy();
     this.youtube?.destroy();
