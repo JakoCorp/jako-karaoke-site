@@ -33,7 +33,7 @@ import { useSleepTimer } from "./use-sleep-timer";
 export function MusicPlayer() {
   useCurrentTrackResolver();
   const navigate = useNavigate();
-  const { currentTime, duration, seek } = useAudioPlayback();
+  const { currentTime, duration, seek, getAudioSource } = useAudioPlayback();
   useMediaSession({ currentTime, duration, seek });
   const { remaining } = useSleepTimer();
   useKeyboardShortcuts();
@@ -255,6 +255,7 @@ export function MusicPlayer() {
         currentTime={currentTime}
         duration={duration}
         seek={seek}
+        getAudioSource={getAudioSource}
       />
     </div>
   );

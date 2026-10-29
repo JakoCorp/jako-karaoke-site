@@ -1,0 +1,19 @@
+{
+  "name": "@jako/spectrogram",
+  "version": "0.0.1",
+  "private": true,
+  "description": "A scrolling WebGL2 spectrogram for Web Audio, based on kcpr-swrm/spectrogram.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "oxlint . && oxfmt . && tsc --noEmit"
+  },
+  "dependencies": {
+    "gl-matrix": "^3.4.4"
+  },
+  "devDependencies": {
+    "@typescript/native": "npm:typescript@7.0.2"
+  }
+}
