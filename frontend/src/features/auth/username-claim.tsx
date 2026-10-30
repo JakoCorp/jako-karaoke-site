@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 
 import { authApi, toAuthUser } from "@/api/auth";
+import { unwrap } from "@/api/client";
+import { errorMessage } from "@/lib/error-message";
 import { useAuthStore } from "@/store/auth";
 
 export function UsernameClaim() {
@@ -38,15 +40,12 @@ export function UsernameClaim() {
     setSubmitting(true);
     setError(null);
 
-    const { data, response } = await authApi.claim({ username });
-
-    if (data) {
+    try {
+      const data = unwrap(await authApi.claim({ username }));
       setUser(toAuthUser(data));
       void navigate("/", { replace: true });
-    } else if (response?.status === 409) {
-      setError("Username already taken, please choose another.");
-    } else {
-      setError("Something went wrong. Please try again.");
+    } catch (claimError) {
+      setError(errorMessage(claimError, "Something went wrong. Please try again."));
     }
 
     setSubmitting(false);
