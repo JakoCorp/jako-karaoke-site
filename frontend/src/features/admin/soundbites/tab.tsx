@@ -41,6 +41,11 @@ export function SoundbitesAdminTab() {
   });
 
   const soundbites = soundbitePages?.pages.flatMap((page) => page.items) ?? [];
+  const selected =
+    selectedSoundbite === null
+      ? null
+      : (soundbites.find((soundbite) => soundbite.id === selectedSoundbite.id) ??
+        selectedSoundbite);
 
   return (
     <div className="admin-layout">
@@ -107,10 +112,10 @@ export function SoundbitesAdminTab() {
             onClose={() => setCreating(false)}
             onUpdated={setSelectedSoundbite}
           />
-        ) : selectedSoundbite ? (
+        ) : selected ? (
           <SoundbiteDetailPanel
-            key={selectedSoundbite.id}
-            soundbite={selectedSoundbite}
+            key={selected.id}
+            soundbite={selected}
             onClose={() => setSelectedSoundbite(null)}
             onUpdated={setSelectedSoundbite}
           />

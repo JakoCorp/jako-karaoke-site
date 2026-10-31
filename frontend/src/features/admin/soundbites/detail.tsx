@@ -9,11 +9,13 @@ import { soundbiteKeys } from "@/hooks/api/soundbites";
 import { resolveAssetUrl } from "@/lib/asset-url";
 import { failureMessage } from "@/lib/error-message";
 import { formatDate } from "@/lib/format";
+import { useAuthStore } from "@/store/auth";
 
 import { assetLabel } from "../components/asset-utils";
 import { ItemPicker } from "../components/pickers";
 import { SingleAudioField } from "../components/single-audio-field";
 import { parseStreamPosition } from "../components/stream-position";
+import { SoundbitePlayersDialog } from "./players-dialog";
 
 const MAX_TITLE_LENGTH = 256;
 
@@ -33,6 +35,8 @@ export function SoundbiteDetailPanel({
   const isCreating = soundbite === null;
   const [isEditing, setIsEditing] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [playersOpen, setPlayersOpen] = useState(false);
+  const canManagePlays = useAuthStore((state) => state.hasCapability("plays:manage_any"));
   const [editTitle, setEditTitle] = useState("");
   const [editDate, setEditDate] = useState("");
   const [editStreamNumber, setEditStreamNumber] = useState("");
@@ -280,6 +284,16 @@ export function SoundbiteDetailPanel({
           <button className="btn btn-secondary" onClick={startEditing}>
             Edit
           </button>
+          {canManagePlays && (
+            <button
+              className="btn btn-secondary"
+              onClick={() => {
+                setPlayersOpen(true);
+              }}
+            >
+              Plays
+            </button>
+          )}
           <button
             className="btn btn-secondary"
             onClick={() => {
@@ -290,6 +304,13 @@ export function SoundbiteDetailPanel({
           </button>
         </div>
       </div>
+      {canManagePlays && (
+        <SoundbitePlayersDialog
+          soundbite={soundbite}
+          open={playersOpen}
+          onOpenChange={setPlayersOpen}
+        />
+      )}
       <ConfirmDialog
         open={deleteOpen}
         onOpenChange={(nextOpen) => {
@@ -312,6 +333,10 @@ export function SoundbiteDetailPanel({
         <div className="admin-detail-section">
           <span className="admin-detail-label">Date</span>
           <span className="admin-empty">{formatDate(soundbite.soundbite_date)}</span>
+        </div>
+        <div className="admin-detail-section">
+          <span className="admin-detail-label">Plays</span>
+          <span className="admin-empty">{soundbite.play_count.toLocaleString()}</span>
         </div>
         {soundbite.stream_number != null && soundbite.soundbite_number != null && (
           <div className="admin-detail-section">

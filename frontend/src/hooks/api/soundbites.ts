@@ -8,13 +8,24 @@ import type { WithoutPaging } from "@/api/types";
 export const soundbiteKeys = {
   all: () => ["soundbites"] as const,
   list: (params?: SoundbiteListParams) => ["soundbites", "list", params] as const,
+  players: (id: string, page: number) => ["soundbites", "players", id, page] as const,
 };
+
+const PLAYERS_PER_PAGE = 20;
 
 export function useSoundbites(params?: SoundbiteListParams) {
   return useQuery({
     queryKey: soundbiteKeys.list(params),
     queryFn: async () => unwrap(await soundbitesApi.list(params)),
     placeholderData: keepPreviousData,
+  });
+}
+
+export function useSoundbitePlayers(id: string, page: number, enabled = true) {
+  return useQuery({
+    queryKey: soundbiteKeys.players(id, page),
+    queryFn: async () => unwrap(await soundbitesApi.listPlayers(id, page, PLAYERS_PER_PAGE)),
+    enabled,
   });
 }
 

@@ -4,6 +4,7 @@ import type { QueryOf } from "./types";
 
 export type UserSummary = components["schemas"]["UserSummary"];
 export type UserPerformancePlayEntry = components["schemas"]["UserPerformancePlayEntry"];
+export type UserSoundbitePlayEntry = components["schemas"]["UserSoundbitePlayEntry"];
 
 /** Query parameters of the user search endpoint. */
 export type UserListParams = QueryOf<"search_users">;
@@ -38,18 +39,34 @@ export const usersApi = {
     }),
 
   /** Returns a paginated list of the performances a user has played. */
-  listPlays: (userId: string, page: number, perPage: number) =>
+  listPerformancePlays: (userId: string, page: number, perPage: number) =>
     api.GET("/api/users/{id}/plays/performances", {
       params: { path: { id: userId }, query: { page, per_page: perPage } },
     }),
 
   /** Removes every counted performance play of a user. */
-  deletePlays: (userId: string) =>
+  deleteAllPerformancePlays: (userId: string) =>
     api.DELETE("/api/users/{id}/plays/performances", { params: { path: { id: userId } } }),
 
   /** Removes a user's counted plays on one performance. */
-  deletePerformancePlays: (userId: string, performanceId: string) =>
+  deletePlaysOnPerformance: (userId: string, performanceId: string) =>
     api.DELETE("/api/users/{id}/plays/performances/{performance_id}", {
       params: { path: { id: userId, performance_id: performanceId } },
+    }),
+
+  /** Returns a paginated list of the soundbites a user has played. */
+  listSoundbitePlays: (userId: string, page: number, perPage: number) =>
+    api.GET("/api/users/{id}/plays/soundbites", {
+      params: { path: { id: userId }, query: { page, per_page: perPage } },
+    }),
+
+  /** Removes every counted soundbite play of a user. */
+  deleteAllSoundbitePlays: (userId: string) =>
+    api.DELETE("/api/users/{id}/plays/soundbites", { params: { path: { id: userId } } }),
+
+  /** Removes a user's counted plays on one soundbite. */
+  deletePlaysOnSoundbite: (userId: string, soundbiteId: string) =>
+    api.DELETE("/api/users/{id}/plays/soundbites/{soundbite_id}", {
+      params: { path: { id: userId, soundbite_id: soundbiteId } },
     }),
 };
