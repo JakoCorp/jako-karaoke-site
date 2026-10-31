@@ -1,6 +1,8 @@
+use chrono::NaiveDate;
 use db::models::artist::NewArtist;
 use db::models::asset::{NewExternalAsset, NewInternalAsset};
-use db::queries::{artists, assets};
+use db::models::soundbite::NewSoundbite;
+use db::queries::{artists, assets, soundbites};
 use sqlx::MySqlPool;
 
 fn internal_asset(hash_char: &str) -> NewInternalAsset {
@@ -72,6 +74,12 @@ async fn internal_and_external_assets_roundtrip(pool: MySqlPool) {
         .unwrap();
     assert_eq!(fetched.id, external.id);
 
+    let by_ids = assets::get_by_ids(&pool, &[internal.id, external.id])
+        .await
+        .unwrap();
+    assert_eq!(by_ids.len(), 2);
+    assert_eq!(by_ids[&external.id].length, Some(212));
+
     assert!(assets::delete(&pool, internal.id).await.unwrap());
     assert!(
         assets::get_by_id(&pool, internal.id)
@@ -105,4 +113,22 @@ async fn reference_count_follows_join_rows(pool: MySqlPool) {
     tx.commit().await.unwrap();
 
     assert_eq!(assets::reference_count(&pool, asset.id).await.unwrap(), 1);
+
+    let soundbite = soundbites::create(
+        &mut conn,
+        &NewSoundbite {
+            created_by: None,
+            title: "soundbite_a".to_string(),
+            soundbite_date: NaiveDate::from_ymd_opt(2026, 1, 1).unwrap(),
+            stream_number: None,
+            soundbite_number: None,
+        },
+    )
+    .await
+    .unwrap();
+    soundbites::set_asset(&pool, soundbite.id, asset.id)
+        .await
+        .unwrap();
+
+    assert_eq!(assets::reference_count(&pool, asset.id).await.unwrap(), 2);
 }

@@ -20,6 +20,9 @@ pub const TAGS_MANAGE_ANY: &str = "tags:manage_any";
 /// Required to create, update, or delete any performance record.
 pub const PERFORMANCES_MANAGE_ANY: &str = "performances:manage_any";
 
+/// Required to create, update, or delete any soundbite record.
+pub const SOUNDBITES_MANAGE_ANY: &str = "soundbites:manage_any";
+
 /// Allows viewing private playlists owned by any user.
 pub const PLAYLISTS_VIEW_PRIVATE: &str = "playlists:view_private";
 
@@ -43,6 +46,7 @@ pub const ALL_CAPABILITIES: &[&str] = &[
     SONGS_MANAGE_ANY,
     TAGS_MANAGE_ANY,
     PERFORMANCES_MANAGE_ANY,
+    SOUNDBITES_MANAGE_ANY,
     PLAYLISTS_VIEW_PRIVATE,
     PLAYLISTS_CREATE_OFFICIAL,
     PLAYLISTS_CREATE_FAVORITES,

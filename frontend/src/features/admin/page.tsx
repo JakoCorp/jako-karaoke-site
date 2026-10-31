@@ -6,14 +6,16 @@ import { useAuthStore } from "@/store/auth";
 import { ArtistsAdminTab } from "./artists/tab";
 import { PerformancesAdminTab } from "./performances/tab";
 import { SongsAdminTab } from "./songs/tab";
+import { SoundbitesAdminTab } from "./soundbites/tab";
 import { TagsAdminTab } from "./tags/tab";
 import { UsersAdminTab } from "./users/tab";
 
-type AdminTab = "users" | "performances" | "songs" | "artists" | "tags";
+type AdminTab = "users" | "performances" | "soundbites" | "songs" | "artists" | "tags";
 
 const ALL_TABS: { id: AdminTab; label: string; capability: string }[] = [
   { id: "users", label: "Users", capability: "capabilities:manage" },
   { id: "performances", label: "Performances", capability: "performances:manage_any" },
+  { id: "soundbites", label: "Soundbites", capability: "soundbites:manage_any" },
   { id: "songs", label: "Songs", capability: "songs:manage_any" },
   { id: "artists", label: "Artists", capability: "artists:manage_any" },
   { id: "tags", label: "Tags", capability: "tags:manage_any" },
@@ -53,6 +55,7 @@ export function AdminPage() {
       <div className="admin-content">
         {activeTab === "users" && <UsersAdminTab />}
         {activeTab === "performances" && <PerformancesAdminTab />}
+        {activeTab === "soundbites" && <SoundbitesAdminTab />}
         {activeTab === "songs" && <SongsAdminTab />}
         {activeTab === "artists" && <ArtistsAdminTab />}
         {activeTab === "tags" && <TagsAdminTab />}
