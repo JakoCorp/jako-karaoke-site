@@ -5,6 +5,8 @@ import { useState } from "react";
 
 import { authApi, toAuthUser } from "@/api/auth";
 import type { AuthUser } from "@/api/auth";
+import { unwrap } from "@/api/client";
+import { errorMessage } from "@/lib/error-message";
 import { formatDate } from "@/lib/format";
 import { toast } from "@/lib/toast";
 import { USERNAME_PATTERN, USERNAME_RULES_MESSAGE } from "@/lib/username";
@@ -30,22 +32,14 @@ function UsernameForm({ user, onDone }: { user: AuthUser; onDone: () => void }) 
   const locked = changeableAt !== null;
 
   const save = useMutation({
-    mutationFn: async (nextUsername: string) => {
-      const { data, response } = await authApi.updateMe(nextUsername);
-      if (!data) throw response.status;
-      return data;
-    },
+    mutationFn: async (nextUsername: string) => unwrap(await authApi.updateMe(nextUsername)),
     onSuccess: (data) => {
       setUser(toAuthUser(data));
       toast.success("Username changed");
       onDone();
     },
-    onError: (status: unknown) => {
-      setError(
-        status === 409
-          ? "That username is already taken."
-          : "Could not change your username. Please try again.",
-      );
+    onError: (mutationError) => {
+      setError(errorMessage(mutationError, "Could not change your username. Please try again."));
     },
   });
 
