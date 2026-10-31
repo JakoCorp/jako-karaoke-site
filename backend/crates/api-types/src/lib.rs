@@ -15,5 +15,6 @@ pub mod playlists;
 pub mod plays;
 pub mod settings;
 pub mod songs;
+pub mod soundbites;
 pub mod tags;
 pub mod users;

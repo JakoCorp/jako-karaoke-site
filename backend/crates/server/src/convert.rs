@@ -5,15 +5,16 @@ use chrono::{DateTime, Utc};
 use api_types::{
     artists::ArtistImageInfo,
     assets::AssetInfo,
+    common::ArtistInfo,
     performances::{AudioInfo, VideoInfo},
     playlists::{PlaylistEntry, PlaylistKind, PlaylistResponse},
     plays::UserPlayEntry,
     songs::SongImageInfo,
+    soundbites::SoundbiteResponse,
     tags::TagResponse,
 };
 use db::{
-    models::Tag,
-    models::playlist::Playlist,
+    models::{Artist, Asset, Soundbite, Tag, playlist::Playlist},
     queries::{artists::ArtistImageRow, songs::SongImageRow},
 };
 
@@ -125,6 +126,41 @@ pub(crate) fn video_info(row: db::models::PerformanceVideoRow) -> VideoInfo {
             row.external_url,
             row.hash,
         ),
+    }
+}
+
+/// Combines a [`Soundbite`] with its artists and audio [`Asset`] into a [`SoundbiteResponse`].
+pub(crate) fn soundbite_response(
+    soundbite: Soundbite,
+    artists: Vec<Artist>,
+    asset: Option<Asset>,
+) -> SoundbiteResponse {
+    SoundbiteResponse {
+        id: soundbite.id,
+        title: soundbite.title,
+        soundbite_date: soundbite.soundbite_date,
+        stream_number: soundbite.stream_number,
+        soundbite_number: soundbite.soundbite_number,
+        artists: artists
+            .into_iter()
+            .map(|artist| ArtistInfo {
+                id: artist.id,
+                name: artist.name,
+                description: artist.description,
+            })
+            .collect(),
+        duration: asset.as_ref().and_then(|asset| asset.length),
+        audio: asset.map(|asset| {
+            asset_info_from_row(
+                asset.id,
+                asset.title,
+                asset.credits,
+                asset.source_url,
+                asset.storage_url,
+                asset.external_url,
+                asset.hash,
+            )
+        }),
     }
 }
 
