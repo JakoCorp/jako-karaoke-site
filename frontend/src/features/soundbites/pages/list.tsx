@@ -1,6 +1,7 @@
 import { MagnifyingGlassIcon } from "@phosphor-icons/react";
 
 import { Pagination } from "@/components/pagination";
+import { SortHeader } from "@/features/performances";
 import { useSoundbites } from "@/hooks/api/soundbites";
 
 import { SoundbiteRow } from "../components/row";
@@ -67,6 +68,31 @@ export function SoundbitesPage() {
       </div>
 
       <div className="search-results">
+        <div className="soundbite-row-header">
+          <div />
+          <div className="perf-header-label">Title</div>
+          <SortHeader
+            label="Plays"
+            field="play_count"
+            sort={search.sort}
+            sortDir={search.sortDir}
+            onSort={search.setSort}
+          />
+          <SortHeader
+            label="Duration"
+            field="duration"
+            sort={search.sort}
+            sortDir={search.sortDir}
+            onSort={search.setSort}
+          />
+          <SortHeader
+            label="Date"
+            field="soundbite_date"
+            sort={search.sort}
+            sortDir={search.sortDir}
+            onSort={search.setSort}
+          />
+        </div>
         {data?.items.map((soundbite) => (
           <SoundbiteRow
             key={soundbite.id}

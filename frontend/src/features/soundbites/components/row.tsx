@@ -41,6 +41,7 @@ export function SoundbiteRow({ soundbite, isActive, onToggle }: Props) {
         <span className="perf-row-title">{soundbite.title}</span>
         <span className="perf-row-sub">{artists}</span>
       </div>
+      <div className="perf-row-plays">{soundbite.play_count.toLocaleString()}</div>
       <div className="perf-row-duration">
         {audioUrl === undefined
           ? "No audio"

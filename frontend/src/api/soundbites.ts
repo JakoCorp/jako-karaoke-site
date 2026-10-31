@@ -7,6 +7,8 @@ import type { QueryOf } from "./types";
 /** Query parameters of the soundbite list endpoint. */
 export type SoundbiteListParams = QueryOf<"list_soundbites">;
 
+export type SoundbiteSortField = components["schemas"]["SoundbiteSort"];
+
 export type SoundbiteResponse = components["schemas"]["SoundbiteResponse"];
 
 /** Soundbite endpoints. */
