@@ -3,7 +3,7 @@ import type { components } from "./generated";
 import type { QueryOf } from "./types";
 
 export type UserSummary = components["schemas"]["UserSummary"];
-export type UserPlayEntry = components["schemas"]["UserPlayEntry"];
+export type UserPerformancePlayEntry = components["schemas"]["UserPerformancePlayEntry"];
 
 /** Query parameters of the user search endpoint. */
 export type UserListParams = QueryOf<"search_users">;
@@ -39,17 +39,17 @@ export const usersApi = {
 
   /** Returns a paginated list of the performances a user has played. */
   listPlays: (userId: string, page: number, perPage: number) =>
-    api.GET("/api/users/{id}/plays", {
+    api.GET("/api/users/{id}/plays/performances", {
       params: { path: { id: userId }, query: { page, per_page: perPage } },
     }),
 
-  /** Removes every counted play of a user. */
+  /** Removes every counted performance play of a user. */
   deletePlays: (userId: string) =>
-    api.DELETE("/api/users/{id}/plays", { params: { path: { id: userId } } }),
+    api.DELETE("/api/users/{id}/plays/performances", { params: { path: { id: userId } } }),
 
   /** Removes a user's counted plays on one performance. */
   deletePerformancePlays: (userId: string, performanceId: string) =>
-    api.DELETE("/api/users/{id}/plays/{performance_id}", {
+    api.DELETE("/api/users/{id}/plays/performances/{performance_id}", {
       params: { path: { id: userId, performance_id: performanceId } },
     }),
 };

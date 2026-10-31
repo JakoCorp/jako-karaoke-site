@@ -16,7 +16,7 @@ use api_types::{
     pagination::{PagedResponse, defaults as pagination_defaults},
     performances::PerformanceSummary,
     playlists::{PlaylistEntry, PlaylistKind, PlaylistResponse},
-    plays::UserPlayEntry,
+    plays::{UserPerformancePlayEntry, UserSoundbitePlayEntry},
     users::{GrantCapabilityRequest, UpdateUserRequest, UserSummary},
 };
 use db::{
@@ -47,13 +47,18 @@ use crate::{
         list_user_capabilities,
         grant_capability,
         revoke_capability,
-        plays::list_user_plays,
-        plays::delete_user_plays,
-        plays::delete_user_performance_plays,
+        plays::performances::list_user_performance_plays,
+        plays::performances::delete_user_performance_plays,
+        plays::performances::delete_user_plays_on_performance,
+        plays::soundbites::list_user_soundbite_plays,
+        plays::soundbites::delete_user_soundbite_plays,
+        plays::soundbites::delete_user_plays_on_soundbite,
     ),
     components(schemas(
-        UserPlayEntry,
-        PagedResponse<UserPlayEntry>,
+        UserPerformancePlayEntry,
+        PagedResponse<UserPerformancePlayEntry>,
+        UserSoundbitePlayEntry,
+        PagedResponse<UserSoundbitePlayEntry>,
         UserSummary,
         PagedResponse<UserSummary>,
         UpdateUserRequest,
@@ -89,12 +94,22 @@ pub fn router() -> Router<AppState> {
             axum::routing::delete(revoke_capability),
         )
         .route(
-            "/{id}/plays",
-            get(plays::list_user_plays).delete(plays::delete_user_plays),
+            "/{id}/plays/performances",
+            get(plays::performances::list_user_performance_plays)
+                .delete(plays::performances::delete_user_performance_plays),
         )
         .route(
-            "/{id}/plays/{performance_id}",
-            axum::routing::delete(plays::delete_user_performance_plays),
+            "/{id}/plays/performances/{performance_id}",
+            axum::routing::delete(plays::performances::delete_user_plays_on_performance),
+        )
+        .route(
+            "/{id}/plays/soundbites",
+            get(plays::soundbites::list_user_soundbite_plays)
+                .delete(plays::soundbites::delete_user_soundbite_plays),
+        )
+        .route(
+            "/{id}/plays/soundbites/{soundbite_id}",
+            axum::routing::delete(plays::soundbites::delete_user_plays_on_soundbite),
         )
 }
 

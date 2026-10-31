@@ -8,7 +8,9 @@ use sqlx::{Executor, MySql, MySqlConnection, QueryBuilder};
 use uuid::Uuid;
 
 use crate::error::DbError;
-use crate::models::soundbite_play::{SoundbitePlay, SoundbitePlayProgress};
+use crate::models::soundbite_play::{
+    SoundbitePlay, SoundbitePlayProgress, SoundbitePlayerRow, UserSoundbitePlayRow,
+};
 
 type Result<T> = std::result::Result<T, DbError>;
 
@@ -151,4 +153,108 @@ pub async fn counts_batch(
         .into_iter()
         .map(|(id, count)| (id, count as u64))
         .collect())
+}
+
+/// Returns a page of the users who have counted plays on a soundbite, most plays first.
+pub async fn list_players_for_soundbite(
+    executor: impl Executor<'_, Database = MySql>,
+    soundbite_id: Uuid,
+    limit: u32,
+    offset: u32,
+) -> Result<Vec<SoundbitePlayerRow>> {
+    sqlx::query_as::<_, SoundbitePlayerRow>(
+        "SELECT u.id AS user_id, u.username, CAST(COUNT(*) AS UNSIGNED) AS play_count, \
+         MAX(sp.counted_at) AS last_played_at \
+         FROM soundbite_plays sp \
+         JOIN users u ON u.id = sp.user_id \
+         WHERE sp.soundbite_id = ? AND sp.counted_at IS NOT NULL \
+         GROUP BY u.id, u.username \
+         ORDER BY play_count DESC, last_played_at DESC, u.id DESC \
+         LIMIT ? OFFSET ?",
+    )
+    .bind(soundbite_id)
+    .bind(limit)
+    .bind(offset)
+    .fetch_all(executor)
+    .await
+    .map_err(DbError::from)
+}
+
+/// Returns the number of users who have counted plays on a soundbite.
+pub async fn count_players_for_soundbite(
+    executor: impl Executor<'_, Database = MySql>,
+    soundbite_id: Uuid,
+) -> Result<u64> {
+    sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(DISTINCT user_id) FROM soundbite_plays \
+         WHERE soundbite_id = ? AND counted_at IS NOT NULL",
+    )
+    .bind(soundbite_id)
+    .fetch_one(executor)
+    .await
+    .map(|n| n as u64)
+    .map_err(DbError::from)
+}
+
+/// Returns a page of the soundbites a user has counted plays on, most recently played first.
+pub async fn list_for_user(
+    executor: impl Executor<'_, Database = MySql>,
+    user_id: Uuid,
+    limit: u32,
+    offset: u32,
+) -> Result<Vec<UserSoundbitePlayRow>> {
+    sqlx::query_as::<_, UserSoundbitePlayRow>(
+        "SELECT s.id, s.created_by, s.title, s.asset_id, s.soundbite_date, \
+         s.stream_number, s.soundbite_number, \
+         CAST(COUNT(*) AS UNSIGNED) AS user_play_count, MAX(sp.counted_at) AS last_played_at \
+         FROM soundbite_plays sp \
+         JOIN soundbites s ON s.id = sp.soundbite_id \
+         WHERE sp.user_id = ? AND sp.counted_at IS NOT NULL \
+         GROUP BY s.id \
+         ORDER BY last_played_at DESC, s.id DESC \
+         LIMIT ? OFFSET ?",
+    )
+    .bind(user_id)
+    .bind(limit)
+    .bind(offset)
+    .fetch_all(executor)
+    .await
+    .map_err(DbError::from)
+}
+
+/// Returns the number of soundbites a user has counted plays on.
+pub async fn count_for_user(
+    executor: impl Executor<'_, Database = MySql>,
+    user_id: Uuid,
+) -> Result<u64> {
+    sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(DISTINCT soundbite_id) FROM soundbite_plays \
+         WHERE user_id = ? AND counted_at IS NOT NULL",
+    )
+    .bind(user_id)
+    .fetch_one(executor)
+    .await
+    .map(|n| n as u64)
+    .map_err(DbError::from)
+}
+
+/// Deletes a user's counted plays, optionally limited to one soundbite.
+///
+/// Returns the number of plays removed.
+pub async fn delete_counted_for_user(
+    executor: impl Executor<'_, Database = MySql>,
+    user_id: Uuid,
+    soundbite_id: Option<Uuid>,
+) -> Result<u64> {
+    sqlx::query(
+        "DELETE FROM soundbite_plays \
+         WHERE user_id = ? AND counted_at IS NOT NULL AND (? IS NULL OR soundbite_id = ?)",
+    )
+    .bind(user_id)
+    .bind(soundbite_id)
+    .bind(soundbite_id)
+    .execute(executor)
+    .await
+    .map(|r| r.rows_affected())
+    .map_err(DbError::from)
 }

@@ -29,7 +29,9 @@ pub use playlist::{NewPlaylist, Playlist, UpdatePlaylist};
 pub use session::Session;
 pub use song::{NewSong, Song, UpdateSong};
 pub use soundbite::{NewSoundbite, Soundbite, UpdateSoundbite};
-pub use soundbite_play::{SoundbitePlay, SoundbitePlayProgress};
+pub use soundbite_play::{
+    SoundbitePlay, SoundbitePlayProgress, SoundbitePlayerRow, UserSoundbitePlayRow,
+};
 pub use tag::{NewTag, Tag, TagWithKind};
 pub use user::{NewUser, User, UserSummary};
 pub use user_settings::UserSettings;

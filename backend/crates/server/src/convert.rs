@@ -8,13 +8,16 @@ use api_types::{
     common::ArtistInfo,
     performances::{AudioInfo, VideoInfo},
     playlists::{PlaylistEntry, PlaylistKind, PlaylistResponse},
-    plays::UserPlayEntry,
+    plays::{SoundbitePlayer, UserPerformancePlayEntry, UserSoundbitePlayEntry},
     songs::SongImageInfo,
     soundbites::SoundbiteResponse,
     tags::TagResponse,
+    users::UserSummary,
 };
 use db::{
-    models::{Artist, Asset, Soundbite, Tag, playlist::Playlist},
+    models::{
+        Artist, Asset, Soundbite, SoundbitePlayerRow, Tag, UserSoundbitePlayRow, playlist::Playlist,
+    },
     queries::{artists::ArtistImageRow, songs::SongImageRow},
 };
 
@@ -57,12 +60,12 @@ pub(crate) fn playlist_entry(
 }
 
 /// Wraps a [`PerformanceSummary`] with one user's play metadata.
-pub(crate) fn user_play_entry(
+pub(crate) fn user_performance_play_entry(
     performance: api_types::performances::PerformanceSummary,
     user_play_count: u64,
     last_played_at: DateTime<Utc>,
-) -> UserPlayEntry {
-    UserPlayEntry {
+) -> UserPerformancePlayEntry {
+    UserPerformancePlayEntry {
         performance,
         user_play_count,
         last_played_at,
@@ -164,6 +167,31 @@ pub(crate) fn soundbite_response(
                 asset.hash,
             )
         }),
+    }
+}
+
+/// Converts a [`SoundbitePlayerRow`] to a [`SoundbitePlayer`].
+pub(crate) fn soundbite_player(row: SoundbitePlayerRow) -> SoundbitePlayer {
+    SoundbitePlayer {
+        user: UserSummary {
+            id: row.user_id,
+            username: row.username,
+        },
+        play_count: row.play_count,
+        last_played_at: row.last_played_at,
+    }
+}
+
+/// Converts a [`UserSoundbitePlayRow`] to a [`UserSoundbitePlayEntry`].
+pub(crate) fn user_soundbite_play_entry(row: UserSoundbitePlayRow) -> UserSoundbitePlayEntry {
+    UserSoundbitePlayEntry {
+        id: row.soundbite.id,
+        title: row.soundbite.title,
+        soundbite_date: row.soundbite.soundbite_date,
+        stream_number: row.soundbite.stream_number,
+        soundbite_number: row.soundbite.soundbite_number,
+        user_play_count: row.user_play_count,
+        last_played_at: row.last_played_at,
     }
 }
 

@@ -2,12 +2,13 @@
 
 pub(crate) mod audio;
 mod params;
+pub(crate) mod plays;
 
 use axum::{
     Json, Router,
     extract::{DefaultBodyLimit, Path, Query, State},
     http::StatusCode,
-    routing::{get, put},
+    routing::{get, post, put},
 };
 use uuid::Uuid;
 
@@ -15,6 +16,7 @@ use api_types::{
     assets::AssetInfo,
     common::{ArtistInfo, ErrorResponse},
     pagination::PagedResponse,
+    plays::{CompletePlayResponse, SoundbitePlayer, StartPlayResponse},
     soundbites::{CreateSoundbiteRequest, SoundbiteResponse, UpdateSoundbiteRequest},
 };
 use db::{
@@ -50,6 +52,9 @@ const MAX_TITLE_CHARS: usize = 256;
         update_soundbite,
         delete_soundbite,
         audio::upload_soundbite_audio,
+        plays::list_soundbite_plays,
+        plays::start_soundbite_play,
+        plays::complete_soundbite_play,
     ),
     components(schemas(
         SoundbiteResponse,
@@ -60,8 +65,12 @@ const MAX_TITLE_CHARS: usize = 256;
         ArtistInfo,
         AssetInfo,
         audio::SoundbiteAudioUpload,
+        StartPlayResponse,
+        CompletePlayResponse,
+        SoundbitePlayer,
         ErrorResponse,
         PagedResponse<SoundbiteResponse>,
+        PagedResponse<SoundbitePlayer>,
     ))
 )]
 pub(crate) struct SoundbitesApi;
@@ -73,6 +82,14 @@ pub fn router() -> Router<AppState> {
         .route(
             "/{id}/audio",
             put(audio::upload_soundbite_audio).layer(DefaultBodyLimit::max(MAX_UPLOAD_BYTES)),
+        )
+        .route(
+            "/{id}/plays",
+            get(plays::list_soundbite_plays).post(plays::start_soundbite_play),
+        )
+        .route(
+            "/{id}/plays/{play_id}/complete",
+            post(plays::complete_soundbite_play),
         )
 }
 

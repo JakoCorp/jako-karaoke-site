@@ -2,7 +2,7 @@ import { Dialog } from "@base-ui/react";
 import { XIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 
-import type { UserPlayEntry, UserSummary } from "@/api/users";
+import type { UserPerformancePlayEntry, UserSummary } from "@/api/users";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { useRemoveUserPlays, useUserPlays } from "@/hooks/api/users";
 import { errorMessage } from "@/lib/error-message";
@@ -21,7 +21,7 @@ interface Removal {
   performanceId: string | null;
 }
 
-function entryLabel(entry: UserPlayEntry): string {
+function entryLabel(entry: UserPerformancePlayEntry): string {
   return entry.title ?? entry.songs.map((song) => song.title).join(" / ");
 }
 

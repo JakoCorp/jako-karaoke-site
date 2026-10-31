@@ -53,6 +53,23 @@ pub async fn get_by_id(
     .map_err(DbError::from)
 }
 
+/// Returns the length in seconds of a soundbite's audio, if it has one with a known length.
+pub async fn audio_length(
+    executor: impl Executor<'_, Database = MySql>,
+    id: Uuid,
+) -> Result<Option<u32>> {
+    sqlx::query_scalar::<_, Option<u32>>(
+        "SELECT a.length FROM soundbites s \
+         JOIN assets a ON a.id = s.asset_id \
+         WHERE s.id = ?",
+    )
+    .bind(id)
+    .fetch_optional(executor)
+    .await
+    .map(Option::flatten)
+    .map_err(DbError::from)
+}
+
 /// Appends the `WHERE` clause for the optional query, binding its values. Appends nothing for `None`.
 fn push_filters(builder: &mut QueryBuilder<MySql>, q: Option<&str>) {
     let mut conditions = WhereClause::new(builder);
