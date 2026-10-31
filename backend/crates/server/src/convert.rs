@@ -129,11 +129,13 @@ pub(crate) fn video_info(row: db::models::PerformanceVideoRow) -> VideoInfo {
     }
 }
 
-/// Combines a [`Soundbite`] with its artists and audio [`Asset`] into a [`SoundbiteResponse`].
+/// Combines a [`Soundbite`] with its artists, audio [`Asset`] and play count into a
+/// [`SoundbiteResponse`].
 pub(crate) fn soundbite_response(
     soundbite: Soundbite,
     artists: Vec<Artist>,
     asset: Option<Asset>,
+    play_count: u64,
 ) -> SoundbiteResponse {
     SoundbiteResponse {
         id: soundbite.id,
@@ -149,6 +151,7 @@ pub(crate) fn soundbite_response(
                 description: artist.description,
             })
             .collect(),
+        play_count,
         duration: asset.as_ref().and_then(|asset| asset.length),
         audio: asset.map(|asset| {
             asset_info_from_row(

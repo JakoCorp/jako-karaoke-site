@@ -3,7 +3,9 @@ use db::error::DbError;
 use db::models::artist::{Artist, NewArtist};
 use db::models::asset::{Asset, NewInternalAsset};
 use db::models::soundbite::{NewSoundbite, Soundbite, UpdateSoundbite};
+use db::queries::soundbites::SortKey;
 use db::queries::{artists, assets, soundbites};
+use db::sort::SortDirection;
 use sqlx::MySqlPool;
 use uuid::Uuid;
 
@@ -77,13 +79,32 @@ fn update_to(
     }
 }
 
-async fn search_ids(pool: &MySqlPool, q: Option<&str>, limit: u32, offset: u32) -> Vec<Uuid> {
-    soundbites::search(pool, q, limit, offset)
+async fn search_ids(
+    pool: &MySqlPool,
+    q: Option<&str>,
+    sort: SortKey,
+    direction: SortDirection,
+    limit: u32,
+    offset: u32,
+) -> Vec<Uuid> {
+    soundbites::search(pool, q, sort, direction, limit, offset)
         .await
         .unwrap()
         .into_iter()
         .map(|soundbite| soundbite.id)
         .collect()
+}
+
+async fn newest_first(pool: &MySqlPool, q: Option<&str>, limit: u32, offset: u32) -> Vec<Uuid> {
+    search_ids(
+        pool,
+        q,
+        SortKey::SoundbiteDate,
+        SortDirection::Desc,
+        limit,
+        offset,
+    )
+    .await
 }
 
 #[sqlx::test(migrator = "db::MIGRATOR")]
@@ -215,9 +236,22 @@ async fn search_orders_newest_first_and_matches_title_artist_and_id(pool: MySqlP
         .unwrap();
     let expected = vec![later.id, second.id, first.id, upload_b.id, upload_a.id];
 
-    assert_eq!(search_ids(&pool, None, 10, 0).await, expected);
-    assert_eq!(search_ids(&pool, None, 2, 1).await, expected[1..3]);
+    assert_eq!(newest_first(&pool, None, 10, 0).await, expected);
+    assert_eq!(newest_first(&pool, None, 2, 1).await, expected[1..3]);
     assert_eq!(soundbites::search_count(&pool, None).await.unwrap(), 5);
+
+    for sort in [
+        SortKey::SoundbiteDate,
+        SortKey::PlayCount,
+        SortKey::Duration,
+    ] {
+        let descending = search_ids(&pool, None, sort, SortDirection::Desc, 10, 0).await;
+        let mut ascending = search_ids(&pool, None, sort, SortDirection::Asc, 10, 0).await;
+
+        assert_eq!(descending, expected);
+        ascending.reverse();
+        assert_eq!(ascending, expected);
+    }
 
     let artist = create_artist(&pool, "artist_a").await;
     let mut conn = pool.acquire().await.unwrap();
@@ -233,7 +267,11 @@ async fn search_orders_newest_first_and_matches_title_artist_and_id(pool: MySqlP
         ("a", vec![second.id, first.id, upload_b.id, upload_a.id]),
         ("missing", vec![]),
     ] {
-        assert_eq!(search_ids(&pool, Some(q), 10, 0).await, expected, "q = {q}");
+        assert_eq!(
+            newest_first(&pool, Some(q), 10, 0).await,
+            expected,
+            "q = {q}"
+        );
         assert_eq!(
             soundbites::search_count(&pool, Some(q)).await.unwrap(),
             expected.len() as u64,

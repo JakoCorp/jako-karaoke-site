@@ -297,3 +297,17 @@ CREATE TABLE IF NOT EXISTS soundbite_artists (
     PRIMARY KEY (soundbite_id, artist_id),
     INDEX (artist_id)
 ) ENGINE = InnoDB;
+
+-- Soundbite plays
+-- One row per listening session of a user, counted once counted_at is set.
+-- A soundbite's play count is the number of its counted rows.
+CREATE TABLE IF NOT EXISTS soundbite_plays (
+    id BINARY(16) NOT NULL DEFAULT (UNHEX(REPLACE(UUID_V7(), '-', ''))),
+    soundbite_id BINARY(16) NOT NULL REFERENCES soundbites (id) ON DELETE CASCADE,
+    user_id BINARY(16) NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    started_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    counted_at TIMESTAMP NULL,
+    PRIMARY KEY (id),
+    INDEX (soundbite_id, counted_at),
+    INDEX (user_id, soundbite_id, counted_at)
+) ENGINE = InnoDB;

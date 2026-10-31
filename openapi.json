@@ -3721,11 +3721,29 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "Field to sort by. Defaults to `soundbite_date`.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/SoundbiteSort"
+            }
+          },
+          {
+            "name": "sort_dir",
+            "in": "query",
+            "description": "Sort direction. Defaults to `desc`.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/SortDir"
+            }
           }
         ],
         "responses": {
           "200": {
-            "description": "Paged list of soundbites, newest first",
+            "description": "Paged list of soundbites",
             "content": {
               "application/json": {
                 "schema": {
@@ -6922,7 +6940,8 @@
                 "id",
                 "title",
                 "soundbite_date",
-                "artists"
+                "artists",
+                "play_count"
               ],
               "properties": {
                 "artists": {
@@ -6956,6 +6975,12 @@
                   "type": "string",
                   "format": "uuid",
                   "description": "Unique identifier."
+                },
+                "play_count": {
+                  "type": "integer",
+                  "format": "int64",
+                  "description": "Number of times this soundbite has been played.",
+                  "minimum": 0
                 },
                 "soundbite_date": {
                   "type": "string",
@@ -7699,7 +7724,8 @@
           "id",
           "title",
           "soundbite_date",
-          "artists"
+          "artists",
+          "play_count"
         ],
         "properties": {
           "artists": {
@@ -7734,6 +7760,12 @@
             "format": "uuid",
             "description": "Unique identifier."
           },
+          "play_count": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Number of times this soundbite has been played.",
+            "minimum": 0
+          },
           "soundbite_date": {
             "type": "string",
             "format": "date",
@@ -7762,6 +7794,15 @@
             "description": "Display title."
           }
         }
+      },
+      "SoundbiteSort": {
+        "type": "string",
+        "description": "Field to sort soundbites by in list endpoints.",
+        "enum": [
+          "soundbite_date",
+          "play_count",
+          "duration"
+        ]
       },
       "StartPlayResponse": {
         "type": "object",
