@@ -272,14 +272,13 @@ CREATE TABLE IF NOT EXISTS playlist_performances (
 ) ENGINE = InnoDB;
 
 -- Soundbites
--- Short audio clips from streams, each backed by exactly one audio asset.
 --
 -- Stream and soundbite numbers are both NULL for soundbites that did not happen on a stream.
 CREATE TABLE IF NOT EXISTS soundbites (
     id BINARY(16) NOT NULL DEFAULT (UNHEX(REPLACE(UUID_V7(), '-', ''))),
     created_by BINARY(16) NULL REFERENCES users (id) ON DELETE SET NULL,
     title VARCHAR(256) NOT NULL,
-    asset_id BINARY(16) NOT NULL REFERENCES assets (id),
+    asset_id BINARY(16) NULL REFERENCES assets (id),
     soundbite_date DATE NOT NULL,
     stream_number TINYINT UNSIGNED NULL,
     soundbite_number SMALLINT UNSIGNED NULL,

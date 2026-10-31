@@ -1,6 +1,8 @@
 //! Query functions for the `assets` table.
 
-use sqlx::{Executor, MySql, MySqlConnection};
+use std::collections::HashMap;
+
+use sqlx::{Executor, MySql, MySqlConnection, QueryBuilder};
 use uuid::Uuid;
 
 use crate::error::DbError;
@@ -29,6 +31,36 @@ pub async fn get_by_id(
     .fetch_optional(executor)
     .await
     .map_err(DbError::from)
+}
+
+/// Fetches multiple assets by ID, keyed by asset ID.
+///
+/// IDs that do not exist are absent from the returned map.
+pub async fn get_by_ids(
+    executor: impl Executor<'_, Database = MySql>,
+    ids: &[Uuid],
+) -> Result<HashMap<Uuid, Asset>> {
+    if ids.is_empty() {
+        return Ok(HashMap::new());
+    }
+
+    let mut builder = QueryBuilder::new(concat!(
+        "SELECT ",
+        asset_columns!(),
+        " FROM assets WHERE id IN ("
+    ));
+    let mut separated = builder.separated(", ");
+    for id in ids {
+        separated.push_bind(id);
+    }
+    builder.push(")");
+
+    let assets: Vec<Asset> = builder
+        .build_query_as()
+        .fetch_all(executor)
+        .await
+        .map_err(DbError::from)?;
+    Ok(assets.into_iter().map(|asset| (asset.id, asset)).collect())
 }
 
 /// Fetches an internal asset by its SHA-256 hash. Used for deduplication on upload.
@@ -60,8 +92,10 @@ pub async fn reference_count(
             (SELECT COUNT(*) FROM artist_images WHERE asset_id = ?) + \
             (SELECT COUNT(*) FROM performance_audios WHERE asset_id = ?) + \
             (SELECT COUNT(*) FROM performance_videos WHERE asset_id = ?) + \
+            (SELECT COUNT(*) FROM soundbites WHERE asset_id = ?) + \
             (SELECT COUNT(*) FROM user_avatars WHERE asset_id = ?)",
     )
+    .bind(asset_id)
     .bind(asset_id)
     .bind(asset_id)
     .bind(asset_id)

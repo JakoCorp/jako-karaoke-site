@@ -12,6 +12,7 @@ pub mod performances;
 pub mod playlists;
 pub mod sessions;
 pub mod songs;
+pub mod soundbites;
 pub mod tags;
 pub mod user_avatars;
 pub mod user_settings;
