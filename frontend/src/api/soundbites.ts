@@ -32,4 +32,13 @@ export const soundbitesApi = {
       body: { file: "" } satisfies components["schemas"]["SoundbiteAudioUpload"],
       bodySerializer: multipartSerializer({ file }),
     }),
+
+  /** Opens a play session for the signed in user. */
+  startPlay: (id: string) => api.POST("/api/soundbites/{id}/plays", { params: { path: { id } } }),
+
+  /** Completes a play session once enough of the soundbite was listened to. */
+  completePlay: (id: string, playId: string) =>
+    api.POST("/api/soundbites/{id}/plays/{play_id}/complete", {
+      params: { path: { id, play_id: playId } },
+    }),
 };

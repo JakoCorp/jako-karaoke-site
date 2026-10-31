@@ -2,10 +2,9 @@ import { useState } from "react";
 
 import { unwrap } from "@/api/client";
 import { performancesApi } from "@/api/performances";
+import { PlayTracker } from "@/lib/play-tracker";
 import { useAuthStore } from "@/store/auth";
 import { selectCurrent, usePlayerStore } from "@/store/player";
-
-import { PlayTracker } from "./play-tracker";
 
 /** Creates the tracker that reports plays for the current track while the user is signed in and online. */
 export function usePlayTracker(): PlayTracker {

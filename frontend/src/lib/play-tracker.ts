@@ -2,7 +2,7 @@
 const MAX_LISTENED_STEP = 10;
 
 interface PlaySession {
-  readonly performanceId: string;
+  readonly targetId: string;
   state: "idle" | "starting" | "listening" | "untracked" | "completed";
   lastTime: number | null;
   listened: number;
@@ -12,18 +12,18 @@ interface PlaySession {
 
 /** What the tracker needs from its surroundings. */
 export interface PlayTrackerDeps {
-  /** Returns the performance whose plays can be recorded right now, or `null` when none can. */
+  /** Returns the item whose plays can be recorded right now, or `null` when none can. */
   getTargetId: () => string | null;
   /** Returns whether the user can currently hear the playback, muted playback earns no credit. */
   isAudible: () => boolean;
   /** Opens a play session on the server. */
-  start: (performanceId: string) => Promise<{ playId: string; requiredSeconds: number }>;
+  start: (targetId: string) => Promise<{ playId: string; requiredSeconds: number }>;
   /** Completes a play session on the server. */
-  complete: (performanceId: string, playId: string) => Promise<void>;
+  complete: (targetId: string, playId: string) => Promise<void>;
 }
 
 /**
- * Measures how long a track is actually listened to and reports a play once the server's
+ * Measures how long an item is actually listened to and reports a play once the server's
  * required listening time is reached.
  *
  * Only steady, audible playback progress counts, so seeking ahead or listening while muted
@@ -40,12 +40,12 @@ export class PlayTracker {
 
   /** Feeds a playback position update. */
   tick(currentTime: number): void {
-    const performanceId = this.deps.getTargetId();
-    if (performanceId === null) return;
+    const targetId = this.deps.getTargetId();
+    if (targetId === null) return;
 
-    if (this.session?.performanceId !== performanceId) {
+    if (this.session?.targetId !== targetId) {
       this.session = {
-        performanceId,
+        targetId,
         state: "idle",
         lastTime: null,
         listened: 0,
@@ -72,7 +72,7 @@ export class PlayTracker {
   private async open(session: PlaySession): Promise<void> {
     session.state = "starting";
     try {
-      const { playId, requiredSeconds } = await this.deps.start(session.performanceId);
+      const { playId, requiredSeconds } = await this.deps.start(session.targetId);
       session.playId = playId;
       session.requiredSeconds = requiredSeconds;
       session.state = "listening";
@@ -88,7 +88,7 @@ export class PlayTracker {
     if (session.listened < session.requiredSeconds) return;
 
     session.state = "completed";
-    void this.deps.complete(session.performanceId, session.playId).catch(() => {
+    void this.deps.complete(session.targetId, session.playId).catch(() => {
       // A failed completion is not retried, the play is simply not recorded.
     });
   }

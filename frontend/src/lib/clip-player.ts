@@ -1,5 +1,7 @@
 /** What the player reports back to its owner. */
 export interface ClipPlayerEvents {
+  /** Called with the playback position while the clip plays, and with its duration when it ends. */
+  onTimeUpdate: (currentTime: number) => void;
   /** Called when the clip plays to its end. */
   onEnded: () => void;
   /** Called when the clip cannot be loaded or played. */
@@ -18,7 +20,8 @@ export class ClipPlayer {
 
   constructor(events: ClipPlayerEvents) {
     this.events = events;
-    this.audio.addEventListener("ended", events.onEnded);
+    this.audio.addEventListener("timeupdate", this.handleTimeUpdate);
+    this.audio.addEventListener("ended", this.handleEnded);
     this.audio.addEventListener("error", events.onError);
   }
 
@@ -47,9 +50,20 @@ export class ClipPlayer {
   /** Stops playback and releases the audio resource. */
   destroy(): void {
     this.audio.pause();
-    this.audio.removeEventListener("ended", this.events.onEnded);
+    this.audio.removeEventListener("timeupdate", this.handleTimeUpdate);
+    this.audio.removeEventListener("ended", this.handleEnded);
     this.audio.removeEventListener("error", this.events.onError);
     this.audio.removeAttribute("src");
     this.audio.load();
   }
+
+  private readonly handleTimeUpdate = (): void => {
+    this.events.onTimeUpdate(this.audio.currentTime);
+  };
+
+  /** Reports the full duration first, because no position update arrives at the very end. */
+  private readonly handleEnded = (): void => {
+    if (Number.isFinite(this.audio.duration)) this.events.onTimeUpdate(this.audio.duration);
+    this.events.onEnded();
+  };
 }
