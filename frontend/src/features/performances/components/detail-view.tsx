@@ -1,5 +1,11 @@
 import { Dialog } from "@base-ui/react";
-import { ArrowSquareOutIcon, FilmStripIcon, PlayIcon, XIcon } from "@phosphor-icons/react";
+import {
+  ArrowSquareOutIcon,
+  FilmStripIcon,
+  PauseIcon,
+  PlayIcon,
+  XIcon,
+} from "@phosphor-icons/react";
 import { useState } from "react";
 import { Link } from "react-router";
 
@@ -30,11 +36,25 @@ export function PerformanceDetailView({ performance, lyricsContent }: Props) {
   const playQueue = usePlayerStore((s) => s.playQueue);
   const setCurrentAudioUrl = usePlayerStore((s) => s.setCurrentAudioUrl);
   const setPreferredAudioAssetId = usePlayerStore((s) => s.setPreferredAudioAssetId);
+  const pausePlayer = usePlayerStore((s) => s.pause);
   const resumePlayer = usePlayerStore((s) => s.resume);
   const current = usePlayerStore(selectCurrent);
   const currentAudioUrl = usePlayerStore((s) => s.currentAudioUrl);
   const isPlaying = usePlayerStore((s) => s.isPlaying);
   const [popupVideoId, setPopupVideoId] = useState<string | null>(null);
+
+  const isCurrent = current?.id === performance.id;
+  const isCurrentPlaying = isCurrent && isPlaying;
+
+  function handlePlay() {
+    if (!isCurrent) {
+      playQueue([performance], 0, { type: "single" });
+    } else if (isPlaying) {
+      pausePlayer();
+    } else {
+      resumePlayer();
+    }
+  }
 
   const coverImg = performance.songs[0]?.images.find((i) => i.kind === "cover_art");
   const coverImage = resolveAssetUrl(coverImg);
@@ -111,12 +131,14 @@ export function PerformanceDetailView({ performance, lyricsContent }: Props) {
             <button
               type="button"
               className="btn perf-detail-play-btn btn-primary"
-              onClick={() => {
-                playQueue([performance], 0, { type: "single" });
-              }}
+              onClick={handlePlay}
             >
-              <PlayIcon size={16} weight="fill" />
-              Play
+              {isCurrentPlaying ? (
+                <PauseIcon size={16} weight="fill" />
+              ) : (
+                <PlayIcon size={16} weight="fill" />
+              )}
+              {isCurrentPlaying ? "Pause" : "Play"}
             </button>
             <PerformanceDetailMenu performanceId={performance.id} />
           </div>
