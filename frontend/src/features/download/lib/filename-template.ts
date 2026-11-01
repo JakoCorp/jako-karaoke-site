@@ -46,16 +46,31 @@ export function performanceFilenameValues(detail: PerformanceResponse): Filename
 }
 
 /**
- * Renders a filename template into a safe filename.
+ * Turns text into a safe filename.
  *
  * Only letters, numbers, spaces and a small set of punctuation survive, every other character
  * becomes an underscore.
  *
- * Unknown tokens are therefore kept as plain text.
+ * An empty result falls back to `fallback` and the extension is appended when given.
+ */
+export function sanitizeFilename(text: string, fallback: string, extension?: string): string {
+  const name = text
+    .replace(DISALLOWED_FILENAME_CHARS, "_")
+    .replace(/ {2,}/g, " ")
+    .trim()
+    .slice(0, MAX_FILENAME_LENGTH)
+    .replace(/^[. ]+|[. ]+$/g, "");
+
+  const base = name === "" ? fallback : name;
+  return extension ? `${base}.${extension}` : base;
+}
+
+/**
+ * Renders a filename template into a safe filename.
  *
- * A token with an empty value is removed.
+ * Unknown tokens are kept as plain text, and a token with an empty value is removed.
  *
- * An empty result falls back to a generic name and the extension is appended when given.
+ * The result is sanitized by `sanitizeFilename`.
  */
 export function renderFilename(
   template: string,
@@ -68,13 +83,5 @@ export function renderFilename(
     return value === "" ? "" : hash + value;
   });
 
-  const name = rendered
-    .replace(DISALLOWED_FILENAME_CHARS, "_")
-    .replace(/ {2,}/g, " ")
-    .trim()
-    .slice(0, MAX_FILENAME_LENGTH)
-    .replace(/^[. ]+|[. ]+$/g, "");
-
-  const base = name === "" ? FALLBACK_FILENAME : name;
-  return extension ? `${base}.${extension}` : base;
+  return sanitizeFilename(rendered, FALLBACK_FILENAME, extension);
 }

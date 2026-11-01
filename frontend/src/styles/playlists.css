@@ -157,6 +157,15 @@
     outline-offset: -2px;
     border-radius: 0.25rem;
   }
+
+  &[data-disabled] {
+    opacity: 0.5;
+    cursor: default;
+  }
+
+  &[data-disabled]:hover {
+    background-color: transparent;
+  }
 }
 
 @utility card-menu-item--danger {

@@ -1,13 +1,21 @@
 import type { AudioInfo, PerformanceResponse } from "@/api/performances";
+import type { AssetInfo } from "@/api/types";
 
 /** A hosted audio asset that carries the SHA-256 needed to verify a download. */
-export type VerifiableAudio = AudioInfo & { storage_url: string; hash: string };
+export type VerifiableAudio = AssetInfo & { storage_url: string; hash: string };
+
+/** Returns whether an asset is hosted and has a hash, so a download of it can be verified. */
+export function isVerifiable(asset: AssetInfo): asset is VerifiableAudio {
+  return !!asset.storage_url && !!asset.hash;
+}
 
 /** Returns the primary hosted audio asset of a performance, if one can be downloaded. */
-export function findDownloadableAudio(detail: PerformanceResponse): VerifiableAudio | undefined {
+export function findDownloadableAudio(
+  detail: PerformanceResponse,
+): (AudioInfo & VerifiableAudio) | undefined {
   return detail.audio.find(
-    (audio): audio is VerifiableAudio =>
-      audio.kind === "primary" && !!audio.storage_url && !!audio.hash,
+    (audio): audio is AudioInfo & VerifiableAudio =>
+      audio.kind === "primary" && isVerifiable(audio),
   );
 }
 

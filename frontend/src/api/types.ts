@@ -3,6 +3,9 @@ import type { components, operations } from "./generated";
 /** Sort direction accepted by the sortable list endpoints. */
 export type SortDir = components["schemas"]["SortDir"];
 
+/** A hosted or external file as returned by the endpoints that carry audio, video or images. */
+export type AssetInfo = components["schemas"]["AssetInfo"];
+
 /** Query parameters of a generated operation, documented by the API spec. */
 export type QueryOf<Operation extends keyof operations> = NonNullable<
   operations[Operation]["parameters"]["query"]

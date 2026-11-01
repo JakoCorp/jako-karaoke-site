@@ -5,11 +5,11 @@ import { fetchVerifiedAudio, findDownloadableAudio } from "@/lib/verified-audio"
 
 import { performanceFilenameValues, renderFilename } from "./filename-template";
 import type { FilenameValues } from "./filename-template";
+import { extensionOf, saveBlob } from "./save-file";
 import { isTaggable, tagAudio } from "./tag-audio";
 import type { AudioTags } from "./tag-audio";
 
 const EMBEDDABLE_IMAGE_TYPES = new Set(["image/jpeg", "image/png"]);
-const OBJECT_URL_LIFETIME_MS = 60_000;
 
 /** Outcome of a completed download. */
 export interface DownloadResult {
@@ -17,12 +17,6 @@ export interface DownloadResult {
 
   /** True when tags were attempted but could not be written, so the file is untagged. */
   tagsFailed: boolean;
-}
-
-function extensionOf(url: string): string {
-  const name = new URL(url).pathname.split("/").pop() ?? "";
-  const dot = name.lastIndexOf(".");
-  return dot === -1 ? "" : name.slice(dot + 1).toLowerCase();
 }
 
 async function fetchCover(detail: PerformanceResponse): Promise<AudioTags["cover"]> {
@@ -57,19 +51,6 @@ function artistTag(values: FilenameValues, settings: DownloadSettings): string |
     settings.include_original_artists ? values.original_artist : "",
   ].filter((part) => part !== "");
   return parts.length > 0 ? parts.join(ARTIST_SEPARATOR) : undefined;
-}
-
-function saveBlob(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = filename;
-  document.body.append(anchor);
-  anchor.click();
-  anchor.remove();
-  window.setTimeout(() => {
-    URL.revokeObjectURL(url);
-  }, OBJECT_URL_LIFETIME_MS);
 }
 
 /**
