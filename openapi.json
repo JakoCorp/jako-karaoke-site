@@ -4859,12 +4859,12 @@
         ]
       }
     },
-    "/api/users/{id}/favorites": {
+    "/api/users/{id}/favorites/performances": {
       "get": {
         "tags": [
           "users"
         ],
-        "operationId": "get_user_favorites",
+        "operationId": "list_user_favorite_performances",
         "parameters": [
           {
             "name": "id",

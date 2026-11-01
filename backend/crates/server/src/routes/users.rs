@@ -1,5 +1,6 @@
 //! User endpoints and the `UsersApi` OpenAPI spec struct.
 
+pub(crate) mod favorites;
 pub(crate) mod plays;
 
 use axum::{
@@ -43,7 +44,7 @@ use crate::{
         update_user,
         list_user_playlists,
         get_user_playlists_containing_performance,
-        get_user_favorites,
+        favorites::performances::list_user_favorite_performances,
         list_user_capabilities,
         grant_capability,
         revoke_capability,
@@ -84,7 +85,10 @@ pub fn router() -> Router<AppState> {
             "/{id}/playlists/containing/{performance_id}",
             get(get_user_playlists_containing_performance),
         )
-        .route("/{id}/favorites", get(get_user_favorites))
+        .route(
+            "/{id}/favorites/performances",
+            get(favorites::performances::list_user_favorite_performances),
+        )
         .route(
             "/{id}/capabilities",
             get(list_user_capabilities).post(grant_capability),
@@ -316,48 +320,6 @@ pub(crate) async fn get_user_playlists_containing_performance(
     )
     .await?;
     Ok(Json(ids))
-}
-
-#[utoipa::path(
-    get,
-    path = "/api/users/{id}/favorites",
-    params(("id" = Uuid, Path, description = "User ID")),
-    responses(
-        (status = 200, description = "Ordered performances in this user's favorites playlist.", body = Vec<PlaylistEntry>),
-        (status = 403, description = "Forbidden", body = ErrorResponse),
-        (status = 404, description = "User not found", body = ErrorResponse),
-    ),
-    tag = "users"
-)]
-pub(crate) async fn get_user_favorites(
-    State(state): State<AppState>,
-    Path(id): Path<Uuid>,
-    auth: Option<AuthUser>,
-) -> Result<Json<Vec<PlaylistEntry>>, ApiError> {
-    if !can_view_private(&auth, id) {
-        return Err(ApiError::Forbidden);
-    }
-
-    queries::users::get_by_id(&state.pool, id)
-        .await?
-        .ok_or(ApiError::NotFound)?;
-
-    let playlist = queries::playlists::get_favorites_by_user(&state.pool, id)
-        .await?
-        .ok_or(ApiError::NotFound)?;
-
-    let rows = queries::playlists::get_performances_in_playlist(&state.pool, playlist.id).await?;
-    let added_ats: Vec<_> = rows.iter().map(|r| r.added_at).collect();
-    let performances: Vec<_> = rows.into_iter().map(|r| r.performance).collect();
-    let summaries =
-        crate::routes::performances::build_performance_summaries(&state.pool, performances).await?;
-    let items = summaries
-        .into_iter()
-        .zip(added_ats)
-        .map(|(summary, added_at)| convert::playlist_entry(summary, added_at))
-        .collect();
-
-    Ok(Json(items))
 }
 
 #[utoipa::path(
