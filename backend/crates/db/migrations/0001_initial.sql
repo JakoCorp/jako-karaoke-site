@@ -311,3 +311,11 @@ CREATE TABLE IF NOT EXISTS soundbite_plays (
     INDEX (soundbite_id, counted_at),
     INDEX (user_id, soundbite_id, counted_at)
 ) ENGINE = InnoDB;
+
+-- Soundbite favorites
+CREATE TABLE IF NOT EXISTS soundbite_favorites (
+    user_id BINARY(16) NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    soundbite_id BINARY(16) NOT NULL REFERENCES soundbites (id) ON DELETE CASCADE,
+    PRIMARY KEY (user_id, soundbite_id),
+    INDEX (soundbite_id)
+) ENGINE = InnoDB;

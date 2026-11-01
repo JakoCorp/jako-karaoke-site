@@ -7,7 +7,7 @@ use axum::{
     Json, Router,
     extract::{Path, Query, State},
     http::StatusCode,
-    routing::{get, patch},
+    routing::{get, patch, put},
 };
 use serde::Deserialize;
 use uuid::Uuid;
@@ -18,6 +18,7 @@ use api_types::{
     performances::PerformanceSummary,
     playlists::{PlaylistEntry, PlaylistKind, PlaylistResponse},
     plays::{UserPerformancePlayEntry, UserSoundbitePlayEntry},
+    soundbites::SoundbiteResponse,
     users::{GrantCapabilityRequest, UpdateUserRequest, UserSummary},
 };
 use db::{
@@ -33,6 +34,7 @@ use crate::{
     routes::{
         common::{SortDir, search_text},
         playlists::params::{PlaylistListParams, PlaylistSort},
+        soundbites::params::SoundbiteSort,
     },
     state::AppState,
 };
@@ -45,6 +47,10 @@ use crate::{
         list_user_playlists,
         get_user_playlists_containing_performance,
         favorites::performances::list_user_favorite_performances,
+        favorites::soundbites::list_user_favorite_soundbites,
+        favorites::soundbites::list_user_favorite_soundbite_ids,
+        favorites::soundbites::add_user_favorite_soundbite,
+        favorites::soundbites::remove_user_favorite_soundbite,
         list_user_capabilities,
         grant_capability,
         revoke_capability,
@@ -70,8 +76,11 @@ use crate::{
         PlaylistSort,
         SortDir,
         PerformanceSummary,
+        SoundbiteResponse,
+        SoundbiteSort,
         ErrorResponse,
         PagedResponse<PlaylistResponse>,
+        PagedResponse<SoundbiteResponse>,
     ))
 )]
 pub(crate) struct UsersApi;
@@ -88,6 +97,19 @@ pub fn router() -> Router<AppState> {
         .route(
             "/{id}/favorites/performances",
             get(favorites::performances::list_user_favorite_performances),
+        )
+        .route(
+            "/{id}/favorites/soundbites",
+            get(favorites::soundbites::list_user_favorite_soundbites),
+        )
+        .route(
+            "/{id}/favorites/soundbites/ids",
+            get(favorites::soundbites::list_user_favorite_soundbite_ids),
+        )
+        .route(
+            "/{id}/favorites/soundbites/{soundbite_id}",
+            put(favorites::soundbites::add_user_favorite_soundbite)
+                .delete(favorites::soundbites::remove_user_favorite_soundbite),
         )
         .route(
             "/{id}/capabilities",

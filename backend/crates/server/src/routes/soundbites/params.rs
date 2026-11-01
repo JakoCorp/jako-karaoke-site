@@ -24,7 +24,7 @@ impl From<SoundbiteSort> for SortKey {
     }
 }
 
-/// Query parameters for `GET /api/soundbites`.
+/// Query parameters for the soundbite list endpoints.
 #[derive(Debug, Clone, serde::Deserialize, utoipa::IntoParams)]
 #[into_params(parameter_in = Query)]
 pub(crate) struct SoundbiteListParams {
