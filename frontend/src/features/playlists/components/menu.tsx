@@ -1,35 +1,52 @@
 import { ContextMenu, Menu } from "@base-ui/react";
-import { DotsThreeVerticalIcon, TrashSimpleIcon } from "@phosphor-icons/react";
-import { useState } from "react";
+import { DotsThreeVerticalIcon } from "@phosphor-icons/react";
 
-import { ConfirmDialog } from "@/components/confirm-dialog";
+import type { PlaylistResponse } from "@/api/playlists";
 
-function MenuItems({ onRequestDelete }: { onRequestDelete: () => void }) {
+import { type PlaylistMenuAction, usePlaylistMenu } from "../use-playlist-menu";
+
+function itemClassName(action: PlaylistMenuAction) {
+  return action.danger ? "card-menu-item card-menu-item--danger" : "card-menu-item";
+}
+
+function MenuItems({ actions }: { actions: PlaylistMenuAction[] }) {
   return (
-    <Menu.Item className="card-menu-item card-menu-item--danger" onClick={onRequestDelete}>
-      <TrashSimpleIcon size={14} />
-      Delete
-    </Menu.Item>
+    <>
+      {actions.map((action) => (
+        <Menu.Item key={action.key} className={itemClassName(action)} onClick={action.onSelect}>
+          {action.icon}
+          {action.label}
+        </Menu.Item>
+      ))}
+    </>
   );
 }
 
-function ContextMenuItems({ onRequestDelete }: { onRequestDelete: () => void }) {
+function ContextMenuItems({ actions }: { actions: PlaylistMenuAction[] }) {
   return (
-    <ContextMenu.Item className="card-menu-item card-menu-item--danger" onClick={onRequestDelete}>
-      <TrashSimpleIcon size={14} />
-      Delete
-    </ContextMenu.Item>
+    <>
+      {actions.map((action) => (
+        <ContextMenu.Item
+          key={action.key}
+          className={itemClassName(action)}
+          onClick={action.onSelect}
+        >
+          {action.icon}
+          {action.label}
+        </ContextMenu.Item>
+      ))}
+    </>
   );
 }
 
 type CardMenuProps = {
-  playlistTitle: string;
+  playlist: PlaylistResponse;
   onDelete: () => void;
   children: React.ReactNode;
 };
 
-export function PlaylistCardMenu({ playlistTitle, onDelete, children }: CardMenuProps) {
-  const [confirmOpen, setConfirmOpen] = useState(false);
+export function PlaylistCardMenu({ playlist, onDelete, children }: CardMenuProps) {
+  const { actions, dialogs } = usePlaylistMenu({ playlist, onDelete });
 
   return (
     <>
@@ -38,12 +55,12 @@ export function PlaylistCardMenu({ playlistTitle, onDelete, children }: CardMenu
           {children}
           <Menu.Root>
             <Menu.Trigger className="playlist-card-menu-btn" aria-label="Playlist options">
-              <DotsThreeVerticalIcon size={16} />
+              <DotsThreeVerticalIcon size={18} />
             </Menu.Trigger>
             <Menu.Portal>
               <Menu.Positioner>
                 <Menu.Popup className="card-menu-popup">
-                  <MenuItems onRequestDelete={() => setConfirmOpen(true)} />
+                  <MenuItems actions={actions} />
                 </Menu.Popup>
               </Menu.Positioner>
             </Menu.Portal>
@@ -52,55 +69,41 @@ export function PlaylistCardMenu({ playlistTitle, onDelete, children }: CardMenu
         <ContextMenu.Portal>
           <ContextMenu.Positioner>
             <ContextMenu.Popup className="card-menu-popup">
-              <ContextMenuItems onRequestDelete={() => setConfirmOpen(true)} />
+              <ContextMenuItems actions={actions} />
             </ContextMenu.Popup>
           </ContextMenu.Positioner>
         </ContextMenu.Portal>
       </ContextMenu.Root>
-      <ConfirmDialog
-        open={confirmOpen}
-        onOpenChange={setConfirmOpen}
-        onConfirm={onDelete}
-        title="Delete playlist?"
-        description={`"${playlistTitle}" will be permanently deleted.`}
-        confirmLabel="Delete"
-        variant="danger"
-      />
+      {dialogs}
     </>
   );
 }
 
 type DetailMenuProps = {
-  playlistTitle: string;
-  onDelete: () => void;
+  playlist: PlaylistResponse;
+  onDelete?: () => void;
 };
 
-export function PlaylistDetailMenu({ playlistTitle, onDelete }: DetailMenuProps) {
-  const [confirmOpen, setConfirmOpen] = useState(false);
+export function PlaylistDetailMenu({ playlist, onDelete }: DetailMenuProps) {
+  const { actions, dialogs } = usePlaylistMenu({ playlist, onDelete });
+
+  if (actions.length === 0) return null;
 
   return (
     <>
       <Menu.Root>
         <Menu.Trigger className="playlist-detail-menu-btn" aria-label="Playlist options">
-          <DotsThreeVerticalIcon size={18} />
+          <DotsThreeVerticalIcon size={20} />
         </Menu.Trigger>
         <Menu.Portal>
           <Menu.Positioner>
             <Menu.Popup className="card-menu-popup">
-              <MenuItems onRequestDelete={() => setConfirmOpen(true)} />
+              <MenuItems actions={actions} />
             </Menu.Popup>
           </Menu.Positioner>
         </Menu.Portal>
       </Menu.Root>
-      <ConfirmDialog
-        open={confirmOpen}
-        onOpenChange={setConfirmOpen}
-        onConfirm={onDelete}
-        title="Delete playlist?"
-        description={`"${playlistTitle}" will be permanently deleted.`}
-        confirmLabel="Delete"
-        variant="danger"
-      />
+      {dialogs}
     </>
   );
 }

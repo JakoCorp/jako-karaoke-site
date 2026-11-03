@@ -22,8 +22,7 @@ export function PlaylistDetailPage() {
   return (
     <PlaylistDetailView
       playlistId={id!}
-      title={playlist?.title ?? ""}
-      description={playlist?.description}
+      playlist={playlist}
       entries={entries ?? []}
       isLoading={playlistLoading || entriesLoading}
       isOwner={isOwner}

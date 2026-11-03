@@ -50,8 +50,6 @@ pub struct UpdatePlaylistRequest {
     pub title: String,
     /// Optional freeform description.
     pub description: Option<String>,
-    /// Determines visibility rules and creation permissions.
-    pub kind: PlaylistKind,
     /// When false, only the creator and users with `playlists:view_private` can access this playlist.
     pub is_public: bool,
 }

@@ -2482,6 +2482,16 @@
               }
             }
           },
+          "400": {
+            "description": "Blank or overlong title",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorized",
             "content": {
@@ -2605,6 +2615,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PlaylistResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Blank or overlong title, or a favorites playlist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -8957,7 +8977,6 @@
         "description": "Request body for `PUT /api/playlists/{id}`.",
         "required": [
           "title",
-          "kind",
           "is_public"
         ],
         "properties": {
@@ -8971,10 +8990,6 @@
           "is_public": {
             "type": "boolean",
             "description": "When false, only the creator and users with `playlists:view_private` can access this playlist."
-          },
-          "kind": {
-            "$ref": "#/components/schemas/PlaylistKind",
-            "description": "Determines visibility rules and creation permissions."
           },
           "title": {
             "type": "string",
