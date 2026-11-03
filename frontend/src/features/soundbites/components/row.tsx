@@ -68,7 +68,9 @@ export function SoundbiteRow({ soundbite, isActive, onToggle }: Props) {
         </div>
         <div className="perf-row-info">
           <span className="perf-row-title">{soundbite.title}</span>
-          <span className="perf-row-sub">{artists}</span>
+        </div>
+        <div className="soundbite-row-artists" title={artists}>
+          {artists}
         </div>
         <div className="perf-row-plays">{soundbite.play_count.toLocaleString()}</div>
         <div className="perf-row-duration">

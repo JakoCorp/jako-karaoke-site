@@ -81,6 +81,7 @@ export function SoundbiteBrowser({ favoritesOf }: Props) {
         <div className="soundbite-row-header">
           <div />
           <div className="perf-header-label">Title</div>
+          <div className="perf-header-label">Featuring</div>
           <SortHeader
             label="Plays"
             field="play_count"
