@@ -94,6 +94,7 @@
   --color-border-accent: color-mix(in srgb, var(--color-pink) 40%, transparent);
 
   --color-playing: var(--color-green);
+  --color-favorite: var(--color-pink);
 
   --color-sidebar: #3c313d;
   --color-sidebar-fg: var(--color-green);

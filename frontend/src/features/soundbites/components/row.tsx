@@ -1,4 +1,4 @@
-import { FileArrowDownIcon, PlayIcon, StopIcon } from "@phosphor-icons/react";
+import { FileArrowDownIcon, HeartIcon, PlayIcon, StopIcon } from "@phosphor-icons/react";
 import type { KeyboardEvent } from "react";
 
 import type { SoundbiteResponse } from "@/api/soundbites";
@@ -7,6 +7,8 @@ import type { RowMenuItemDef } from "@/components/row-context-menu";
 import { useSoundbiteDownloadAction } from "@/features/download";
 import { resolveAssetUrl } from "@/lib/asset-url";
 import { formatDate, formatDuration } from "@/lib/format";
+
+import { useSoundbiteFavoriteAction } from "../use-soundbite-favorite";
 
 interface Props {
   soundbite: SoundbiteResponse;
@@ -24,12 +26,19 @@ function keepSpaceKey(event: KeyboardEvent) {
  * its right and the right click menu act on the soundbite.
  */
 export function SoundbiteRow({ soundbite, isActive, onToggle }: Props) {
+  const favorite = useSoundbiteFavoriteAction(soundbite);
   const download = useSoundbiteDownloadAction(soundbite);
   const audioUrl = resolveAssetUrl(soundbite.audio);
   const artists = soundbite.artists.map((artist) => artist.name).join(" & ");
   const hasStreamPosition = soundbite.stream_number != null && soundbite.soundbite_number != null;
+  const heartWeight = favorite.isFavorite ? "fill" : "regular";
 
   const items: RowMenuItemDef[] = [
+    {
+      icon: <HeartIcon size={14} weight={heartWeight} />,
+      label: favorite.label,
+      onClick: favorite.toggle,
+    },
     {
       icon: <FileArrowDownIcon size={14} />,
       label: download.label,
@@ -79,6 +88,17 @@ export function SoundbiteRow({ soundbite, isActive, onToggle }: Props) {
         </div>
       </button>
       <div className="soundbite-row-actions">
+        <button
+          type="button"
+          className="soundbite-row-action"
+          aria-label={`Favorite ${soundbite.title}`}
+          aria-pressed={favorite.isFavorite}
+          data-tooltip={favorite.label}
+          onClick={favorite.toggle}
+          onKeyDown={keepSpaceKey}
+        >
+          <HeartIcon size={16} weight={heartWeight} />
+        </button>
         <button
           type="button"
           className="soundbite-row-action"

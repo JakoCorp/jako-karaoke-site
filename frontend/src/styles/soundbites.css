@@ -90,4 +90,9 @@
     cursor: default;
     opacity: 0.35;
   }
+
+  &[aria-pressed="true"],
+  &[aria-pressed="true"]:hover:not(:disabled) {
+    color: var(--color-favorite);
+  }
 }
