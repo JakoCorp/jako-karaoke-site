@@ -1,15 +1,20 @@
-import type { PerformanceSortField } from "@/api/performances";
 import type { SortDir } from "@/api/types";
 
-interface SortHeaderProps {
+interface SortHeaderProps<Field extends string> {
   label: string;
-  field: PerformanceSortField;
-  sort: PerformanceSortField;
+  field: Field;
+  sort: Field;
   sortDir: SortDir;
-  onSort: (field: PerformanceSortField) => void;
+  onSort: (field: Field) => void;
 }
 
-export function SortHeader({ label, field, sort, sortDir, onSort }: SortHeaderProps) {
+export function SortHeader<Field extends string>({
+  label,
+  field,
+  sort,
+  sortDir,
+  onSort,
+}: SortHeaderProps<Field>) {
   const isActive = sort === field;
   return (
     <button

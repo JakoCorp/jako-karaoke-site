@@ -61,6 +61,8 @@ pub struct SoundbiteResponse {
     pub artists: Vec<ArtistInfo>,
     /// The audio file of this soundbite. Absent until audio is uploaded.
     pub audio: Option<AssetInfo>,
+    /// Number of times this soundbite has been played.
+    pub play_count: u64,
     /// Duration in seconds, when it could be determined from the audio file.
     pub duration: Option<u32>,
 }

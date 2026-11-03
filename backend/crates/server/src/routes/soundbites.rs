@@ -2,12 +2,13 @@
 
 pub(crate) mod audio;
 mod params;
+pub(crate) mod plays;
 
 use axum::{
     Json, Router,
     extract::{DefaultBodyLimit, Path, Query, State},
     http::StatusCode,
-    routing::{get, put},
+    routing::{get, post, put},
 };
 use uuid::Uuid;
 
@@ -15,6 +16,7 @@ use api_types::{
     assets::AssetInfo,
     common::{ArtistInfo, ErrorResponse},
     pagination::PagedResponse,
+    plays::{CompletePlayResponse, SoundbitePlayer, StartPlayResponse},
     soundbites::{CreateSoundbiteRequest, SoundbiteResponse, UpdateSoundbiteRequest},
 };
 use db::{
@@ -30,10 +32,10 @@ use crate::{
     capabilities, convert,
     error::ApiError,
     pagination,
-    routes::common::{search_text, validate_stream_position},
+    routes::common::{SortDir, search_text, validate_stream_position},
     state::AppState,
 };
-use params::SoundbiteListParams;
+use params::{SoundbiteListParams, SoundbiteSort};
 
 /// Folder of the file store that holds soundbite audio.
 const AUDIO_SUBFOLDER: &str = "soundbites";
@@ -50,16 +52,25 @@ const MAX_TITLE_CHARS: usize = 256;
         update_soundbite,
         delete_soundbite,
         audio::upload_soundbite_audio,
+        plays::list_soundbite_plays,
+        plays::start_soundbite_play,
+        plays::complete_soundbite_play,
     ),
     components(schemas(
         SoundbiteResponse,
         CreateSoundbiteRequest,
         UpdateSoundbiteRequest,
+        SoundbiteSort,
+        SortDir,
         ArtistInfo,
         AssetInfo,
         audio::SoundbiteAudioUpload,
+        StartPlayResponse,
+        CompletePlayResponse,
+        SoundbitePlayer,
         ErrorResponse,
         PagedResponse<SoundbiteResponse>,
+        PagedResponse<SoundbitePlayer>,
     ))
 )]
 pub(crate) struct SoundbitesApi;
@@ -71,6 +82,14 @@ pub fn router() -> Router<AppState> {
         .route(
             "/{id}/audio",
             put(audio::upload_soundbite_audio).layer(DefaultBodyLimit::max(MAX_UPLOAD_BYTES)),
+        )
+        .route(
+            "/{id}/plays",
+            get(plays::list_soundbite_plays).post(plays::start_soundbite_play),
+        )
+        .route(
+            "/{id}/plays/{play_id}/complete",
+            post(plays::complete_soundbite_play),
         )
 }
 
@@ -92,7 +111,7 @@ fn validate_title(title: &str) -> Result<String, ApiError> {
     Ok(title.to_string())
 }
 
-/// Hydrates a list of soundbites with their artists and audio for use in list responses.
+/// Hydrates a list of soundbites with their artists, audio and play counts for list responses.
 async fn build_soundbite_responses(
     pool: &MySqlPool,
     soundbites: Vec<Soundbite>,
@@ -100,9 +119,10 @@ async fn build_soundbite_responses(
     let soundbite_ids: Vec<Uuid> = soundbites.iter().map(|s| s.id).collect();
     let asset_ids: Vec<Uuid> = soundbites.iter().filter_map(|s| s.asset_id).collect();
 
-    let (mut artists_by_soundbite, assets_by_id) = tokio::try_join!(
+    let (mut artists_by_soundbite, assets_by_id, play_counts) = tokio::try_join!(
         queries::soundbites::get_artists_batch(pool, &soundbite_ids),
         queries::assets::get_by_ids(pool, &asset_ids),
+        queries::soundbite_plays::counts_batch(pool, &soundbite_ids),
     )?;
 
     soundbites
@@ -120,13 +140,16 @@ async fn build_soundbite_responses(
             let artists = artists_by_soundbite
                 .remove(&soundbite.id)
                 .unwrap_or_default();
-            Ok(convert::soundbite_response(soundbite, artists, asset))
+            let play_count = play_counts.get(&soundbite.id).copied().unwrap_or(0);
+            Ok(convert::soundbite_response(
+                soundbite, artists, asset, play_count,
+            ))
         })
         .collect()
 }
 
 async fn hydrate(pool: &MySqlPool, soundbite: Soundbite) -> Result<SoundbiteResponse, ApiError> {
-    let (mut artists_by_soundbite, asset) = tokio::try_join!(
+    let (mut artists_by_soundbite, asset, play_count) = tokio::try_join!(
         queries::soundbites::get_artists_batch(pool, std::slice::from_ref(&soundbite.id)),
         async {
             match soundbite.asset_id {
@@ -134,6 +157,7 @@ async fn hydrate(pool: &MySqlPool, soundbite: Soundbite) -> Result<SoundbiteResp
                 None => Ok(None),
             }
         },
+        queries::soundbite_plays::count_for_soundbite(pool, soundbite.id),
     )?;
     if soundbite.asset_id.is_some() && asset.is_none() {
         return Err(missing_audio());
@@ -141,7 +165,9 @@ async fn hydrate(pool: &MySqlPool, soundbite: Soundbite) -> Result<SoundbiteResp
     let artists = artists_by_soundbite
         .remove(&soundbite.id)
         .unwrap_or_default();
-    Ok(convert::soundbite_response(soundbite, artists, asset))
+    Ok(convert::soundbite_response(
+        soundbite, artists, asset, play_count,
+    ))
 }
 
 #[utoipa::path(
@@ -149,7 +175,7 @@ async fn hydrate(pool: &MySqlPool, soundbite: Soundbite) -> Result<SoundbiteResp
     path = "/api/soundbites",
     params(SoundbiteListParams),
     responses(
-        (status = 200, description = "Paged list of soundbites, newest first", body = PagedResponse<SoundbiteResponse>),
+        (status = 200, description = "Paged list of soundbites", body = PagedResponse<SoundbiteResponse>),
     ),
     tag = "soundbites"
 )]
@@ -160,9 +186,10 @@ pub(crate) async fn list_soundbites(
     let (limit, offset) = pagination::limit_offset(params.page, params.per_page);
     let q = search_text(params.q.as_deref());
 
+    let (sort, direction) = params.order();
     let (total, soundbites) = tokio::try_join!(
         queries::soundbites::search_count(&state.pool, q),
-        queries::soundbites::search(&state.pool, q, limit, offset),
+        queries::soundbites::search(&state.pool, q, sort, direction, limit, offset),
     )?;
 
     let items = build_soundbite_responses(&state.pool, soundbites).await?;

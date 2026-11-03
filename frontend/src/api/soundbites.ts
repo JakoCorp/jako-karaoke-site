@@ -7,7 +7,10 @@ import type { QueryOf } from "./types";
 /** Query parameters of the soundbite list endpoint. */
 export type SoundbiteListParams = QueryOf<"list_soundbites">;
 
+export type SoundbiteSortField = components["schemas"]["SoundbiteSort"];
+
 export type SoundbiteResponse = components["schemas"]["SoundbiteResponse"];
+export type SoundbitePlayer = components["schemas"]["SoundbitePlayer"];
 
 /** Soundbite endpoints. */
 export const soundbitesApi = {
@@ -31,5 +34,20 @@ export const soundbitesApi = {
       params: { path: { id } },
       body: { file: "" } satisfies components["schemas"]["SoundbiteAudioUpload"],
       bodySerializer: multipartSerializer({ file }),
+    }),
+
+  /** Returns a paginated list of the users who played a soundbite, most plays first. */
+  listPlayers: (id: string, page: number, perPage: number) =>
+    api.GET("/api/soundbites/{id}/plays", {
+      params: { path: { id }, query: { page, per_page: perPage } },
+    }),
+
+  /** Opens a play session for the signed in user. */
+  startPlay: (id: string) => api.POST("/api/soundbites/{id}/plays", { params: { path: { id } } }),
+
+  /** Completes a play session once enough of the soundbite was listened to. */
+  completePlay: (id: string, playId: string) =>
+    api.POST("/api/soundbites/{id}/plays/{play_id}/complete", {
+      params: { path: { id, play_id: playId } },
     }),
 };

@@ -5,7 +5,7 @@ import { useState } from "react";
 import type { PerformanceSummary } from "@/api/performances";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { usePerformance, usePerformancePlayers } from "@/hooks/api/performances";
-import { useRemoveUserPlays } from "@/hooks/api/users";
+import { useRemoveUserPerformancePlays } from "@/hooks/api/users";
 import { errorMessage } from "@/lib/error-message";
 import { formatDate } from "@/lib/format";
 
@@ -27,7 +27,7 @@ function PlayersList({ performance }: { performance: PerformanceSummary }) {
   const [removal, setRemoval] = useState<Removal | null>(null);
   const players = usePerformancePlayers(performance.id, page);
   const { data: detail } = usePerformance(performance.id);
-  const remove = useRemoveUserPlays();
+  const remove = useRemoveUserPerformancePlays();
 
   const lastPage = players.data
     ? Math.max(1, Math.ceil(players.data.total / players.data.per_page))

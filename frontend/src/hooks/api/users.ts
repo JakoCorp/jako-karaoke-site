@@ -3,6 +3,7 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tansta
 import { authApi, toAuthUser } from "@/api/auth";
 import { ensureOk, unwrap } from "@/api/client";
 import { usersApi } from "@/api/users";
+import { soundbiteKeys } from "@/hooks/api/soundbites";
 import { errorMessage } from "@/lib/error-message";
 import { toast } from "@/lib/toast";
 import { useAuthStore } from "@/store/auth";
@@ -11,8 +12,11 @@ export const userKeys = {
   all: () => ["users"] as const,
   list: (q?: string) => ["users", "infinite", q] as const,
   capabilities: (id: string) => ["users", "capabilities", id] as const,
-  plays: (id: string, page: number) => ["users", "plays", id, page] as const,
-  allPlays: (id: string) => ["users", "plays", id] as const,
+  performancePlays: (id: string, page: number) =>
+    ["users", "plays", "performances", id, page] as const,
+  allPerformancePlays: (id: string) => ["users", "plays", "performances", id] as const,
+  soundbitePlays: (id: string, page: number) => ["users", "plays", "soundbites", id, page] as const,
+  allSoundbitePlays: (id: string) => ["users", "plays", "soundbites", id] as const,
 };
 
 const PLAYS_PER_PAGE = 20;
@@ -40,16 +44,24 @@ export function useUserCapabilities(userId: string | undefined) {
   });
 }
 
-export function useUserPlays(userId: string | undefined, page: number) {
+export function useUserPerformancePlays(userId: string | undefined, page: number, enabled = true) {
   return useQuery({
-    queryKey: userKeys.plays(userId ?? "", page),
-    queryFn: async () => unwrap(await usersApi.listPlays(userId!, page, PLAYS_PER_PAGE)),
-    enabled: !!userId,
+    queryKey: userKeys.performancePlays(userId ?? "", page),
+    queryFn: async () => unwrap(await usersApi.listPerformancePlays(userId!, page, PLAYS_PER_PAGE)),
+    enabled: !!userId && enabled,
+  });
+}
+
+export function useUserSoundbitePlays(userId: string | undefined, page: number, enabled = true) {
+  return useQuery({
+    queryKey: userKeys.soundbitePlays(userId ?? "", page),
+    queryFn: async () => unwrap(await usersApi.listSoundbitePlays(userId!, page, PLAYS_PER_PAGE)),
+    enabled: !!userId && enabled,
   });
 }
 
 /** Removes a user's counted plays on one performance, or all of them when `performanceId` is null. */
-export function useRemoveUserPlays() {
+export function useRemoveUserPerformancePlays() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({
@@ -61,14 +73,40 @@ export function useRemoveUserPlays() {
     }) => {
       const result =
         performanceId === null
-          ? await usersApi.deletePlays(userId)
-          : await usersApi.deletePerformancePlays(userId, performanceId);
+          ? await usersApi.deleteAllPerformancePlays(userId)
+          : await usersApi.deletePlaysOnPerformance(userId, performanceId);
       ensureOk(result);
     },
     onSuccess: async (_data, { userId }) => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: userKeys.allPlays(userId) }),
+        queryClient.invalidateQueries({ queryKey: userKeys.allPerformancePlays(userId) }),
         queryClient.invalidateQueries({ queryKey: ["performances"] }),
+      ]);
+      toast.success("Plays removed");
+    },
+    onError: (error) => {
+      toast.error("Could not remove plays", {
+        description: errorMessage(error, "Something went wrong."),
+      });
+    },
+  });
+}
+
+/** Removes a user's counted plays on one soundbite, or all of them when `soundbiteId` is null. */
+export function useRemoveUserSoundbitePlays() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ userId, soundbiteId }: { userId: string; soundbiteId: string | null }) => {
+      const result =
+        soundbiteId === null
+          ? await usersApi.deleteAllSoundbitePlays(userId)
+          : await usersApi.deletePlaysOnSoundbite(userId, soundbiteId);
+      ensureOk(result);
+    },
+    onSuccess: async (_data, { userId }) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: userKeys.allSoundbitePlays(userId) }),
+        queryClient.invalidateQueries({ queryKey: soundbiteKeys.all() }),
       ]);
       toast.success("Plays removed");
     },

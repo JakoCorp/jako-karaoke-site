@@ -11,7 +11,9 @@ use uuid::Uuid;
 use crate::error::DbError;
 use crate::models::artist::Artist;
 use crate::models::soundbite::{NewSoundbite, Soundbite, UpdateSoundbite};
+use crate::queries::soundbite_plays::PLAY_COUNT_EXPR;
 use crate::search::{WhereClause, like_pattern, push_text_or_id};
+use crate::sort::SortDirection;
 
 type Result<T> = std::result::Result<T, DbError>;
 
@@ -22,9 +24,10 @@ macro_rules! soundbite_columns {
     };
 }
 
-/// Newest first, with every tie broken chronologically in the same direction.
-const ORDER_NEWEST_FIRST: &str =
-    " ORDER BY soundbite_date DESC, stream_number DESC, soundbite_number DESC, id DESC";
+/// SQL expression for the audio length of the row in an unaliased `soundbites` table.
+///
+/// Meant for `ORDER BY` in queries on `soundbites`.
+const DURATION_EXPR: &str = "(SELECT a.length FROM assets a WHERE a.id = soundbites.asset_id)";
 
 /// Maps a unique index violation to [`DbError::Conflict`].
 fn map_write_error(error: sqlx::Error) -> DbError {
@@ -50,6 +53,23 @@ pub async fn get_by_id(
     .map_err(DbError::from)
 }
 
+/// Returns the length in seconds of a soundbite's audio, if it has one with a known length.
+pub async fn audio_length(
+    executor: impl Executor<'_, Database = MySql>,
+    id: Uuid,
+) -> Result<Option<u32>> {
+    sqlx::query_scalar::<_, Option<u32>>(
+        "SELECT a.length FROM soundbites s \
+         JOIN assets a ON a.id = s.asset_id \
+         WHERE s.id = ?",
+    )
+    .bind(id)
+    .fetch_optional(executor)
+    .await
+    .map(Option::flatten)
+    .map_err(DbError::from)
+}
+
 /// Appends the `WHERE` clause for the optional query, binding its values. Appends nothing for `None`.
 fn push_filters(builder: &mut QueryBuilder<MySql>, q: Option<&str>) {
     let mut conditions = WhereClause::new(builder);
@@ -68,21 +88,64 @@ fn push_filters(builder: &mut QueryBuilder<MySql>, q: Option<&str>) {
     }
 }
 
-/// Returns a page of soundbites, newest first.
+/// Field a soundbite list is sorted by.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SortKey {
+    /// Chronological by soundbite date, then stream and soundbite number.
+    SoundbiteDate,
+    /// Number of counted plays.
+    PlayCount,
+    /// Length of the audio. Soundbites without a known length sort as the shortest.
+    Duration,
+}
+
+/// Columns that break ties, and fully order the list when sorting by date.
+const DATE_ORDER_COLUMNS: [&str; 4] = ["soundbite_date", "stream_number", "soundbite_number", "id"];
+
+/// Appends the `ORDER BY` clause. Ties are broken chronologically in the same direction.
+fn push_order(builder: &mut QueryBuilder<MySql>, sort: SortKey, direction: SortDirection) {
+    let direction = direction.as_sql();
+    builder.push(" ORDER BY ");
+
+    let expression = match sort {
+        SortKey::SoundbiteDate => None,
+        SortKey::PlayCount => Some(PLAY_COUNT_EXPR),
+        SortKey::Duration => Some(DURATION_EXPR),
+    };
+    if let Some(expression) = expression {
+        builder
+            .push(expression)
+            .push(" ")
+            .push(direction)
+            .push(", ");
+    }
+
+    let mut columns = builder.separated(", ");
+    for column in DATE_ORDER_COLUMNS {
+        columns
+            .push(column)
+            .push_unseparated(" ")
+            .push_unseparated(direction);
+    }
+}
+
+/// Returns a page of soundbites sorted by `sort` in `direction`.
 ///
 /// When `q` is `Some`, results are filtered by a case insensitive substring match against the
 /// title and any linked artist name, or by an exact match when `q` is the soundbite id.
 pub async fn search(
     executor: impl Executor<'_, Database = MySql>,
     q: Option<&str>,
+    sort: SortKey,
+    direction: SortDirection,
     limit: u32,
     offset: u32,
 ) -> Result<Vec<Soundbite>> {
     let mut builder =
         QueryBuilder::new(concat!("SELECT ", soundbite_columns!(), " FROM soundbites"));
     push_filters(&mut builder, q);
+    push_order(&mut builder, sort, direction);
     builder
-        .push(ORDER_NEWEST_FIRST)
         .push(" LIMIT ")
         .push_bind(limit)
         .push(" OFFSET ")
