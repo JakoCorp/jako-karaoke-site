@@ -32,7 +32,7 @@ use crate::{
     capabilities, convert,
     error::ApiError,
     pagination,
-    routes::common::{SortDir, search_text, validate_stream_position},
+    routes::common::{SortDir, search_text, validate_stream_position, validate_title},
     state::AppState,
 };
 use params::{SoundbiteListParams, SoundbiteSort};
@@ -41,8 +41,6 @@ use params::{SoundbiteListParams, SoundbiteSort};
 const AUDIO_SUBFOLDER: &str = "soundbites";
 
 const MAX_UPLOAD_BYTES: usize = 50 * 1024 * 1024;
-
-const MAX_TITLE_CHARS: usize = 256;
 
 #[derive(utoipa::OpenApi)]
 #[openapi(
@@ -95,20 +93,6 @@ pub fn router() -> Router<AppState> {
 
 fn missing_audio() -> ApiError {
     ApiError::Internal("soundbite audio asset is missing".to_string())
-}
-
-/// Trims the title and rejects a blank or overlong one.
-fn validate_title(title: &str) -> Result<String, ApiError> {
-    let title = title.trim();
-    if title.is_empty() {
-        return Err(ApiError::BadRequest("title must not be blank".to_string()));
-    }
-    if title.chars().count() > MAX_TITLE_CHARS {
-        return Err(ApiError::BadRequest(format!(
-            "title must be at most {MAX_TITLE_CHARS} characters"
-        )));
-    }
-    Ok(title.to_string())
 }
 
 /// Hydrates a list of soundbites with their artists, audio and play counts for list responses.

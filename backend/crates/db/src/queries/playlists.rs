@@ -209,17 +209,14 @@ pub async fn update(
     id: Uuid,
     upd: &UpdatePlaylist,
 ) -> Result<Option<Playlist>> {
-    sqlx::query(
-        "UPDATE playlists SET title = ?, description = ?, kind = ?, is_public = ? WHERE id = ?",
-    )
-    .bind(&upd.title)
-    .bind(&upd.description)
-    .bind(&upd.kind)
-    .bind(upd.is_public)
-    .bind(id)
-    .execute(&mut *conn)
-    .await
-    .map_err(DbError::from)?;
+    sqlx::query("UPDATE playlists SET title = ?, description = ?, is_public = ? WHERE id = ?")
+        .bind(&upd.title)
+        .bind(&upd.description)
+        .bind(upd.is_public)
+        .bind(id)
+        .execute(&mut *conn)
+        .await
+        .map_err(DbError::from)?;
     get_by_id(&mut *conn, id).await
 }
 
