@@ -1,15 +1,19 @@
 import { useState } from "react";
 
 import { FavoritesPlaylistTab } from "@/features/playlists";
+import { FavoriteSoundbitesTab } from "@/features/soundbites";
 import { useAuthStore } from "@/store/auth";
 
-type FavoritesTab = "playlist";
+type FavoritesTab = "performances" | "soundbites";
 
-const TABS: { id: FavoritesTab; label: string }[] = [{ id: "playlist", label: "Performances" }];
+const TABS: { id: FavoritesTab; label: string }[] = [
+  { id: "performances", label: "Performances" },
+  { id: "soundbites", label: "Soundbites" },
+];
 
 export function FavoritesPage() {
   const user = useAuthStore((s) => s.user);
-  const [activeTab, setActiveTab] = useState<FavoritesTab>("playlist");
+  const [activeTab, setActiveTab] = useState<FavoritesTab>("performances");
 
   if (!user) {
     return <div className="page-empty">Sign in to see your favorites.</div>;
@@ -33,7 +37,8 @@ export function FavoritesPage() {
           </button>
         ))}
       </div>
-      {activeTab === "playlist" && <FavoritesPlaylistTab userId={user.id} />}
+      {activeTab === "performances" && <FavoritesPlaylistTab userId={user.id} />}
+      {activeTab === "soundbites" && <FavoriteSoundbitesTab userId={user.id} />}
     </div>
   );
 }

@@ -12,6 +12,7 @@ import { soundbitesApi } from "@/api/soundbites";
 import type { SoundbiteListParams } from "@/api/soundbites";
 import type { WithoutPaging } from "@/api/types";
 import { usersApi } from "@/api/users";
+import type { FavoriteSoundbiteListParams } from "@/api/users";
 import { errorMessage } from "@/lib/error-message";
 import { toast } from "@/lib/toast";
 
@@ -20,6 +21,8 @@ export const soundbiteKeys = {
   list: (params?: SoundbiteListParams) => ["soundbites", "list", params] as const,
   players: (id: string, page: number) => ["soundbites", "players", id, page] as const,
   favorites: (userId: string) => ["soundbites", "favorites", userId] as const,
+  favoriteList: (userId: string, params?: FavoriteSoundbiteListParams) =>
+    ["soundbites", "favorites", userId, "list", params] as const,
   favoriteIds: (userId: string) => ["soundbites", "favorites", userId, "ids"] as const,
 };
 
@@ -33,11 +36,22 @@ function favoriteIdsQueryOptions(userId: string | null) {
 
 const PLAYERS_PER_PAGE = 20;
 
-export function useSoundbites(params?: SoundbiteListParams) {
+export function useSoundbites(params?: SoundbiteListParams, enabled = true) {
   return useQuery({
     queryKey: soundbiteKeys.list(params),
     queryFn: async () => unwrap(await soundbitesApi.list(params)),
     placeholderData: keepPreviousData,
+    enabled,
+  });
+}
+
+/** The soundbites a user has favorited. Pass a null user to skip the request. */
+export function useFavoriteSoundbites(userId: string | null, params?: FavoriteSoundbiteListParams) {
+  return useQuery({
+    queryKey: soundbiteKeys.favoriteList(userId ?? "", params),
+    queryFn: async () => unwrap(await usersApi.listFavoriteSoundbites(userId!, params)),
+    placeholderData: keepPreviousData,
+    enabled: !!userId,
   });
 }
 
