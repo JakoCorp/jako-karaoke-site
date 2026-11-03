@@ -1,7 +1,7 @@
 //! Soundbite CRUD handlers and the `SoundbitesApi` OpenAPI spec struct.
 
 pub(crate) mod audio;
-mod params;
+pub(crate) mod params;
 pub(crate) mod plays;
 
 use axum::{
@@ -23,7 +23,7 @@ use db::{
     MySqlPool,
     error::DbError,
     models::{NewSoundbite, Soundbite, UpdateSoundbite},
-    queries,
+    queries::{self, soundbites::SoundbiteFilter},
 };
 
 use crate::{
@@ -112,7 +112,7 @@ fn validate_title(title: &str) -> Result<String, ApiError> {
 }
 
 /// Hydrates a list of soundbites with their artists, audio and play counts for list responses.
-async fn build_soundbite_responses(
+pub(crate) async fn build_soundbite_responses(
     pool: &MySqlPool,
     soundbites: Vec<Soundbite>,
 ) -> Result<Vec<SoundbiteResponse>, ApiError> {
@@ -184,12 +184,15 @@ pub(crate) async fn list_soundbites(
     Query(params): Query<SoundbiteListParams>,
 ) -> Result<Json<PagedResponse<SoundbiteResponse>>, ApiError> {
     let (limit, offset) = pagination::limit_offset(params.page, params.per_page);
-    let q = search_text(params.q.as_deref());
+    let filter = SoundbiteFilter {
+        q: search_text(params.q.as_deref()),
+        ..SoundbiteFilter::default()
+    };
 
     let (sort, direction) = params.order();
     let (total, soundbites) = tokio::try_join!(
-        queries::soundbites::search_count(&state.pool, q),
-        queries::soundbites::search(&state.pool, q, sort, direction, limit, offset),
+        queries::soundbites::search_count(&state.pool, filter),
+        queries::soundbites::search(&state.pool, filter, sort, direction, limit, offset),
     )?;
 
     let items = build_soundbite_responses(&state.pool, soundbites).await?;

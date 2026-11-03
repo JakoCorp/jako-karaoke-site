@@ -9,6 +9,9 @@ export type UserSoundbitePlayEntry = components["schemas"]["UserSoundbitePlayEnt
 /** Query parameters of the user search endpoint. */
 export type UserListParams = QueryOf<"search_users">;
 
+/** Query parameters of the favorite soundbites list endpoint. */
+export type FavoriteSoundbiteListParams = QueryOf<"list_user_favorite_soundbites">;
+
 /** User endpoints. */
 export const usersApi = {
   /** Returns a paginated list of users matching an optional username substring or id. */
@@ -67,6 +70,28 @@ export const usersApi = {
   /** Removes a user's counted plays on one soundbite. */
   deletePlaysOnSoundbite: (userId: string, soundbiteId: string) =>
     api.DELETE("/api/users/{id}/plays/soundbites/{soundbite_id}", {
+      params: { path: { id: userId, soundbite_id: soundbiteId } },
+    }),
+
+  /** Returns a paginated, optionally searched list of the soundbites a user has marked as a favorite. */
+  listFavoriteSoundbites: (userId: string, params?: FavoriteSoundbiteListParams) =>
+    api.GET("/api/users/{id}/favorites/soundbites", {
+      params: { path: { id: userId }, query: params },
+    }),
+
+  /** Returns the IDs of every soundbite a user has marked as a favorite. */
+  listFavoriteSoundbiteIds: (userId: string) =>
+    api.GET("/api/users/{id}/favorites/soundbites/ids", { params: { path: { id: userId } } }),
+
+  /** Marks a soundbite as a favorite of a user. */
+  addFavoriteSoundbite: (userId: string, soundbiteId: string) =>
+    api.PUT("/api/users/{id}/favorites/soundbites/{soundbite_id}", {
+      params: { path: { id: userId, soundbite_id: soundbiteId } },
+    }),
+
+  /** Removes a soundbite from the favorites of a user. */
+  removeFavoriteSoundbite: (userId: string, soundbiteId: string) =>
+    api.DELETE("/api/users/{id}/favorites/soundbites/{soundbite_id}", {
       params: { path: { id: userId, soundbite_id: soundbiteId } },
     }),
 };

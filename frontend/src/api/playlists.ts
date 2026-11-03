@@ -29,8 +29,8 @@ export const playlists = {
     api.GET("/api/users/{id}/playlists", { params: { path: { id: userId }, query: params } }),
 
   /** Returns the ordered entries in a user's favorites playlist. */
-  getFavorites: (userId: string) =>
-    api.GET("/api/users/{id}/favorites", { params: { path: { id: userId } } }),
+  getFavoritePerformances: (userId: string) =>
+    api.GET("/api/users/{id}/favorites/performances", { params: { path: { id: userId } } }),
 
   /** Creates a new playlist. */
   create: (body: CreatePlaylistRequest) => api.POST("/api/playlists", { body }),
