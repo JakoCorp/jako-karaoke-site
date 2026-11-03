@@ -43,7 +43,7 @@ use crate::{
     error::ApiError,
     filters::parse_filters,
     pagination,
-    routes::common::{SortDir, search_text},
+    routes::common::{SortDir, search_text, validate_stream_position},
     state::AppState,
 };
 use params::{PerformanceListParams, PerformanceSort};
@@ -299,19 +299,6 @@ fn tag_pairs(assignments: &[PerformanceTagAssignment]) -> Vec<(Uuid, &str)> {
         .collect()
 }
 
-/// Rejects a stream number without a performance number, or the reverse.
-fn validate_stream_position(
-    stream_number: Option<u8>,
-    performance_number: Option<u16>,
-) -> Result<(), ApiError> {
-    if stream_number.is_some() == performance_number.is_some() {
-        return Ok(());
-    }
-    Err(ApiError::BadRequest(
-        "stream_number and performance_number must be provided together".to_string(),
-    ))
-}
-
 #[utoipa::path(
     get,
     path = "/api/performances",
@@ -394,7 +381,11 @@ pub(crate) async fn create_performance(
     {
         return Err(ApiError::Forbidden);
     }
-    validate_stream_position(req.stream_number, req.performance_number)?;
+    validate_stream_position(
+        req.stream_number,
+        req.performance_number,
+        "performance_number",
+    )?;
     let mut tx = state.pool.begin().await.map_err(DbError::Sqlx)?;
 
     let lyrics_id = match req.lyrics {
@@ -456,7 +447,11 @@ pub(crate) async fn update_performance(
     {
         return Err(ApiError::Forbidden);
     }
-    validate_stream_position(req.stream_number, req.performance_number)?;
+    validate_stream_position(
+        req.stream_number,
+        req.performance_number,
+        "performance_number",
+    )?;
     let mut tx = state.pool.begin().await.map_err(DbError::Sqlx)?;
 
     let perf = queries::performances::update(

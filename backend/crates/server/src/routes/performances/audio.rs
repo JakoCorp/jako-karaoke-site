@@ -5,7 +5,6 @@ use axum::{
     extract::{Multipart, Path, State},
     http::StatusCode,
 };
-use sha2::{Digest, Sha256};
 use tracing::error;
 use uuid::Uuid;
 
@@ -15,13 +14,17 @@ use api_types::{
 };
 use db::{
     error::DbError,
-    models::{NewExternalAsset, NewInternalAsset, NewPerformanceAudio},
+    models::{NewExternalAsset, NewPerformanceAudio},
     queries,
 };
 
 use crate::{
-    assets, auth::middleware::AuthUser, capabilities, convert, error::ApiError, media,
-    state::AppState, youtube,
+    assets::{self, UploadedAudio},
+    auth::middleware::AuthUser,
+    capabilities, convert,
+    error::ApiError,
+    state::AppState,
+    youtube,
 };
 
 /// Placeholder schema for audio multipart upload bodies.
@@ -38,13 +41,8 @@ pub(crate) struct AudioUpload {
 }
 
 struct AudioFields {
-    data: Vec<u8>,
-    content_type: String,
-    filename: Option<String>,
+    upload: UploadedAudio,
     kind: String,
-    title: Option<String>,
-    credits: Option<String>,
-    source_url: Option<String>,
 }
 
 async fn read_audio_fields(multipart: &mut Multipart) -> Result<AudioFields, ApiError> {
@@ -111,13 +109,15 @@ async fn read_audio_fields(multipart: &mut Multipart) -> Result<AudioFields, Api
     }
 
     Ok(AudioFields {
-        data: data.ok_or_else(|| ApiError::BadRequest("missing 'file' field".into()))?,
-        content_type,
-        filename,
+        upload: UploadedAudio {
+            data: data.ok_or_else(|| ApiError::BadRequest("missing 'file' field".into()))?,
+            content_type,
+            filename,
+            title,
+            credits,
+            source_url,
+        },
         kind: kind.ok_or_else(|| ApiError::BadRequest("missing 'kind' field".into()))?,
-        title,
-        credits,
-        source_url,
     })
 }
 
@@ -164,34 +164,9 @@ pub(crate) async fn upload_audio(
 
     let fields = read_audio_fields(&mut multipart).await?;
     let kind = validate_audio_kind(&fields.kind)?;
-    let title = fields.title.or_else(|| fields.filename.clone());
-    let ext = media::resolve_ext(
-        media::MediaKind::Audio,
-        &fields.content_type,
-        fields.filename.as_deref(),
-    )?;
-    let hash = hex::encode(Sha256::digest(&fields.data));
+    let asset = assets::save_audio(&state, "audio", fields.upload).await?;
 
     let mut conn = state.pool.acquire().await.map_err(DbError::Sqlx)?;
-    let asset = if let Some(existing) = queries::assets::get_by_hash(&state.pool, &hash).await? {
-        existing
-    } else {
-        let saved = state.store.save("audio", ext, &fields.data).await?;
-        queries::assets::create_internal(
-            &mut conn,
-            &NewInternalAsset {
-                title,
-                credits: fields.credits,
-                source_url: fields.source_url,
-                hash,
-                storage_url: saved.storage_url,
-                internal_path: Some(saved.internal_path),
-                length: media::audio_length(&fields.data),
-            },
-        )
-        .await?
-    };
-
     if kind == AudioKind::Primary.as_str() {
         queries::performance_audios::unset_primary(&mut *conn, id).await?;
     }

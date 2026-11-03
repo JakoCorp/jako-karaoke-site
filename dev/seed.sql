@@ -14,6 +14,7 @@ INSERT IGNORE INTO user_capabilities (user_id, capability) VALUES
 (UNHEX('01000000000000000000000000000001'), 'songs:manage_any'),
 (UNHEX('01000000000000000000000000000001'), 'tags:manage_any'),
 (UNHEX('01000000000000000000000000000001'), 'performances:manage_any'),
+(UNHEX('01000000000000000000000000000001'), 'soundbites:manage_any'),
 (UNHEX('01000000000000000000000000000001'), 'playlists:view_private'),
 (UNHEX('01000000000000000000000000000001'), 'playlists:create_official'),
 (UNHEX('01000000000000000000000000000001'), 'playlists:create_favorites'),

@@ -20,6 +20,7 @@
 @import "./styles/search.css";
 @import "./styles/settings.css";
 @import "./styles/songs.css";
+@import "./styles/soundbites.css";
 @import "./styles/toast.css";
 
 *:focus-visible {

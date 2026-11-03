@@ -10,6 +10,7 @@ import { MyPlaylistsPage, PlaylistDetailPage, PublicPlaylistsPage } from "@/feat
 import { SearchPage } from "@/features/search";
 import { SettingsPage } from "@/features/settings";
 import { SongDetailPage } from "@/features/songs";
+import { SoundbitesPage } from "@/features/soundbites";
 import { RootErrorBoundary } from "@/layouts/root-error-boundary";
 import { RootLayout } from "@/layouts/root-layout";
 
@@ -32,6 +33,7 @@ export const router = createBrowserRouter([
       { path: "search", element: <SearchPage /> },
       { path: "settings", element: <SettingsPage /> },
       { path: "song/:id", element: <SongDetailPage /> },
+      { path: "soundbites", element: <SoundbitesPage /> },
     ],
   },
 ]);

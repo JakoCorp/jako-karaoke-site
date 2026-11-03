@@ -1,4 +1,5 @@
 import {
+  FileAudioIcon,
   GlobeIcon,
   HardDriveIcon,
   HeartIcon,
@@ -52,6 +53,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           onClick={onClose}
         />
         <NavItem to="/artists" label="Artists" icon={MicrophoneIcon} onClick={onClose} />
+        <NavItem to="/soundbites" label="Soundbites" icon={FileAudioIcon} onClick={onClose} />
         <NavItem to="/about" label="About" icon={InfoIcon} onClick={onClose} />
         <div className="nav-divider" />
 

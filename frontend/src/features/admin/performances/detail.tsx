@@ -26,9 +26,9 @@ import { useAuthStore } from "@/store/auth";
 import { MediaEditSection, type StagingMediaItem } from "../components/media-edit-section";
 import { MediaList } from "../components/media-list";
 import { ItemPicker, TagPicker, type TagAssignment } from "../components/pickers";
+import { parseStreamPosition } from "../components/stream-position";
 import { resolveTagAssignments } from "../components/tag-utils";
 import { PlayersDialog } from "./players-dialog";
-import { parseStreamPosition } from "./stream-position";
 
 export function PerformanceDetailPanel({
   performance,
@@ -65,7 +65,11 @@ export function PerformanceDetailPanel({
 
   const queryClient = useQueryClient();
   const isFormOpen = isCreating || isEditing;
-  const streamPosition = parseStreamPosition(editStreamNumber, editPerformanceNumber);
+  const streamPosition = parseStreamPosition(
+    editStreamNumber,
+    editPerformanceNumber,
+    "performance number",
+  );
 
   const { data: performanceDetail } = usePerformance(performance?.id ?? "", !isCreating);
   const { data: allSongs } = useSongs({ per_page: 200 }, isFormOpen);
@@ -84,7 +88,7 @@ export function PerformanceDetailPanel({
       const { data, error: apiError } = await performancesApi.create({
         performance_date: editDate,
         stream_number: streamPosition.stream_number,
-        performance_number: streamPosition.performance_number,
+        performance_number: streamPosition.position_number,
         stream_time: parseStreamTime(editStreamTimeInput) ?? undefined,
         song_ids: editSongIds,
         singer_ids: editSingerIds,
@@ -137,7 +141,7 @@ export function PerformanceDetailPanel({
       const { error: apiError } = await performancesApi.update(performance.id, {
         performance_date: editDate,
         stream_number: streamPosition.stream_number,
-        performance_number: streamPosition.performance_number,
+        performance_number: streamPosition.position_number,
         stream_time: parseStreamTime(editStreamTimeInput) ?? undefined,
         song_ids: editSongIds,
         singer_ids: editSingerIds,

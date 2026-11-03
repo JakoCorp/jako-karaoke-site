@@ -270,3 +270,30 @@ CREATE TABLE IF NOT EXISTS playlist_performances (
     PRIMARY KEY (playlist_id, performance_id),
     INDEX (performance_id)
 ) ENGINE = InnoDB;
+
+-- Soundbites
+--
+-- Stream and soundbite numbers are both NULL for soundbites that did not happen on a stream.
+CREATE TABLE IF NOT EXISTS soundbites (
+    id BINARY(16) NOT NULL DEFAULT (UNHEX(REPLACE(UUID_V7(), '-', ''))),
+    created_by BINARY(16) NULL REFERENCES users (id) ON DELETE SET NULL,
+    title VARCHAR(256) NOT NULL,
+    asset_id BINARY(16) NULL REFERENCES assets (id),
+    soundbite_date DATE NOT NULL,
+    stream_number TINYINT UNSIGNED NULL,
+    soundbite_number SMALLINT UNSIGNED NULL,
+    PRIMARY KEY (id),
+    INDEX (soundbite_date),
+    INDEX (asset_id),
+    UNIQUE INDEX (soundbite_date, stream_number, soundbite_number),
+    CONSTRAINT soundbites_stream_position CHECK ((stream_number IS NULL) = (soundbite_number IS NULL))
+) ENGINE = InnoDB;
+
+-- Soundbite <-> Artist (M2M)
+-- The artists a soundbite pertains to.
+CREATE TABLE IF NOT EXISTS soundbite_artists (
+    soundbite_id BINARY(16) NOT NULL REFERENCES soundbites (id) ON DELETE CASCADE,
+    artist_id BINARY(16) NOT NULL REFERENCES artists (id) ON DELETE CASCADE,
+    PRIMARY KEY (soundbite_id, artist_id),
+    INDEX (artist_id)
+) ENGINE = InnoDB;

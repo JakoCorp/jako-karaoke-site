@@ -1,6 +1,6 @@
 import { parseStreamTime } from "@/lib/format";
 
-import { parseStreamPosition } from "./stream-position";
+import { parseStreamPosition } from "../components/stream-position";
 
 type PerformanceTagKind = "instrument" | "modifier" | "misc";
 
@@ -147,7 +147,7 @@ export function parseImportCsv(text: string): ParseImportCsvResult {
       );
     }
 
-    const position = parseStreamPosition(streamNumStr, perfNumStr);
+    const position = parseStreamPosition(streamNumStr, perfNumStr, "performance number");
     if (!position.ok) {
       rowErrors.push(`Row ${String(rowNum)}: ${position.message}`);
     }
@@ -197,17 +197,17 @@ export function parseImportCsv(text: string): ParseImportCsvResult {
     const tripletKey =
       position.stream_number === null
         ? null
-        : `${dateStr}|${String(position.stream_number)}|${String(position.performance_number)}`;
+        : `${dateStr}|${String(position.stream_number)}|${String(position.position_number)}`;
     if (tripletKey !== null && seenTriplets.has(tripletKey)) {
       errors.push(
-        `Row ${String(rowNum)}: duplicate (${dateStr}, stream ${String(position.stream_number)}, perf ${String(position.performance_number)}) — already appears earlier in this file.`,
+        `Row ${String(rowNum)}: duplicate (${dateStr}, stream ${String(position.stream_number)}, perf ${String(position.position_number)}) — already appears earlier in this file.`,
       );
     } else {
       if (tripletKey !== null) seenTriplets.add(tripletKey);
       rows.push({
         performance_date: dateStr,
         stream_number: position.stream_number,
-        performance_number: position.performance_number,
+        performance_number: position.position_number,
         stream_time: streamTimeSecs,
         title: titleStr || null,
         song_titles: songTitles,

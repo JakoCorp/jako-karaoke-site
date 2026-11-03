@@ -9,8 +9,8 @@ use crate::{
     auth::AuthApi,
     routes::{
         artists::ArtistsApi, capabilities::CapabilitiesApi, filters::FiltersApi,
-        performances::PerformancesApi, playlists::PlaylistsApi, songs::SongsApi, tags::TagsApi,
-        users::UsersApi,
+        performances::PerformancesApi, playlists::PlaylistsApi, songs::SongsApi,
+        soundbites::SoundbitesApi, tags::TagsApi, users::UsersApi,
     },
     state::AppState,
 };
@@ -23,6 +23,7 @@ pub fn openapi_spec() -> utoipa::openapi::OpenApi {
     spec.merge(PerformancesApi::openapi());
     spec.merge(PlaylistsApi::openapi());
     spec.merge(SongsApi::openapi());
+    spec.merge(SoundbitesApi::openapi());
     spec.merge(TagsApi::openapi());
     spec.merge(UsersApi::openapi());
     spec.merge(AuthApi::openapi());

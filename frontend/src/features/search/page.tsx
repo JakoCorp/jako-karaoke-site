@@ -4,6 +4,7 @@ import { useSearchParams } from "react-router";
 import type { PerformanceSortField } from "@/api/performances";
 import type { SortDir } from "@/api/types";
 import { FilterInput } from "@/components/filter-input/filter-input";
+import { Pagination } from "@/components/pagination";
 import { PerformanceRow, SortHeader } from "@/features/performances";
 import { useFilterCatalog } from "@/hooks/api/filter-catalog";
 import { usePerformances } from "@/hooks/api/performances";
@@ -328,55 +329,13 @@ export function SearchPage() {
         )}
       </div>
 
-      {totalPages > 1 && (
-        <div className="search-pagination">
-          <button
-            className="page-btn"
-            disabled={page <= 1}
-            onClick={() => {
-              updateSearch({ page: page - 1 });
-            }}
-            aria-label="Previous page"
-          >
-            ‹
-          </button>
-          {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
-            const pageNum = getPageWindow(page, totalPages)[i];
-            if (pageNum === undefined) return null;
-            return (
-              <button
-                key={pageNum}
-                className={pageNum === page ? "page-btn page-btn--active" : "page-btn"}
-                onClick={() => {
-                  updateSearch({ page: pageNum });
-                }}
-                aria-current={pageNum === page ? "page" : undefined}
-              >
-                {pageNum}
-              </button>
-            );
-          })}
-          <button
-            className="page-btn"
-            disabled={page >= totalPages}
-            onClick={() => {
-              updateSearch({ page: page + 1 });
-            }}
-            aria-label="Next page"
-          >
-            ›
-          </button>
-        </div>
-      )}
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        onPageChange={(nextPage) => {
+          updateSearch({ page: nextPage });
+        }}
+      />
     </div>
   );
-}
-
-/** Returns up to 7 page numbers centered around the current page. */
-function getPageWindow(current: number, total: number): number[] {
-  const half = 3;
-  let start = Math.max(1, current - half);
-  const end = Math.min(total, start + 6);
-  start = Math.max(1, end - 6);
-  return Array.from({ length: end - start + 1 }, (_, i) => start + i);
 }
