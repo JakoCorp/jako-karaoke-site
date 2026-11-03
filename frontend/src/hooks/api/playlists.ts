@@ -1,7 +1,12 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ApiError, ensureOk, unwrap } from "@/api/client";
-import { type CreatePlaylistRequest, type PlaylistListParams, playlists } from "@/api/playlists";
+import {
+  type CreatePlaylistRequest,
+  type PlaylistListParams,
+  type UpdatePlaylistRequest,
+  playlists,
+} from "@/api/playlists";
 import { errorMessage } from "@/lib/error-message";
 import { toast } from "@/lib/toast";
 
@@ -180,6 +185,21 @@ export function useDeletePlaylist() {
       toast.error("Could not delete playlist", {
         description: errorMessage(error, "Something went wrong."),
       });
+    },
+  });
+}
+
+/** Updates a playlist's title, description and visibility. Failures are left to the caller. */
+export function useUpdatePlaylist() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: UpdatePlaylistRequest }) =>
+      playlists.update(id, body).then(unwrap),
+    onSuccess: (playlist) => {
+      queryClient.setQueryData(playlistKeys.detail(playlist.id), playlist);
+      void queryClient.invalidateQueries({ queryKey: ["playlists", "infinite"] });
+      void queryClient.invalidateQueries({ queryKey: ["playlists", "picker"] });
+      toast.success("Playlist updated", { description: playlist.title });
     },
   });
 }

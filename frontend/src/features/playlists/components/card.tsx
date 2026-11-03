@@ -2,6 +2,7 @@ import { Link } from "react-router";
 
 import type { PlaylistResponse } from "@/api/playlists";
 
+import { playlistPath } from "../lib/playlist-link";
 import { PlaylistCardMenu } from "./menu";
 
 interface Props {
@@ -14,7 +15,7 @@ export function PlaylistCard({ playlist, showVisibility = false, onDelete }: Pro
   const count = playlist.performance_count;
 
   const cardContent = (
-    <Link to={`/playlist/${playlist.id}`} className="playlist-card">
+    <Link to={playlistPath(playlist.id)} className="playlist-card">
       <div className="playlist-card-title" title={playlist.title}>
         {playlist.title}
       </div>
@@ -32,7 +33,7 @@ export function PlaylistCard({ playlist, showVisibility = false, onDelete }: Pro
 
   if (onDelete) {
     return (
-      <PlaylistCardMenu playlistTitle={playlist.title} onDelete={onDelete}>
+      <PlaylistCardMenu playlist={playlist} onDelete={onDelete}>
         {cardContent}
       </PlaylistCardMenu>
     );

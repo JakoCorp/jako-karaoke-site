@@ -8,6 +8,7 @@ import { useAuthStore } from "@/store/auth";
 import { CreatePlaylistDialog } from "../components/create-playlist-dialog";
 import { PlaylistGrid } from "../components/grid";
 import { PlaylistSearchControls } from "../components/search-controls";
+import { playlistPath } from "../lib/playlist-link";
 import { usePlaylistSearch } from "../use-playlist-search";
 
 export function MyPlaylistsPage() {
@@ -66,7 +67,7 @@ export function MyPlaylistsPage() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         onCreated={(playlist) => {
-          void navigate(`/playlist/${playlist.id}`);
+          void navigate(playlistPath(playlist.id));
         }}
       />
     </div>

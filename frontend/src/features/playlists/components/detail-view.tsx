@@ -1,12 +1,11 @@
-import type { PlaylistEntry } from "@/api/playlists";
+import type { PlaylistEntry, PlaylistResponse } from "@/api/playlists";
 
 import { PlaylistDetailMenu } from "./menu";
 import { PlaylistPerfTable } from "./perf-table";
 
 interface Props {
   playlistId: string;
-  title: string;
-  description?: string | null;
+  playlist?: PlaylistResponse;
   entries: PlaylistEntry[];
   isLoading?: boolean;
   isOwner?: boolean;
@@ -15,21 +14,22 @@ interface Props {
 
 export function PlaylistDetailView({
   playlistId,
-  title,
-  description,
+  playlist,
   entries,
   isLoading = false,
   isOwner = false,
   onDelete,
 }: Props) {
+  const title = playlist?.title ?? "";
+
   return (
     <div>
       <div className="page-header">
         <div className="playlist-detail-title-row">
           <div className="page-title">{title}</div>
-          {onDelete && <PlaylistDetailMenu playlistTitle={title} onDelete={onDelete} />}
+          {playlist && <PlaylistDetailMenu playlist={playlist} onDelete={onDelete} />}
         </div>
-        {description && <div className="playlist-detail-sub">{description}</div>}
+        {playlist?.description && <div className="playlist-detail-sub">{playlist.description}</div>}
       </div>
       {isLoading ? (
         <div className="page-empty">Loading…</div>
