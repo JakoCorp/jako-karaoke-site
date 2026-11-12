@@ -30,7 +30,7 @@ use crate::{
     capabilities, convert,
     error::ApiError,
     pagination,
-    routes::common::{SortDir, search_text},
+    routes::common::{SortDir, search_text, validate_title},
     state::AppState,
 };
 use params::{PlaylistListParams, PlaylistSort};
@@ -168,6 +168,7 @@ pub(crate) async fn get_playlist(
     request_body = CreatePlaylistRequest,
     responses(
         (status = 201, description = "Created playlist", body = PlaylistResponse),
+        (status = 400, description = "Blank or overlong title", body = ErrorResponse),
         (status = 401, description = "Unauthorized", body = ErrorResponse),
         (status = 403, description = "Forbidden", body = ErrorResponse),
         (status = 409, description = "User already owns 100 playlists", body = ErrorResponse),
@@ -185,6 +186,7 @@ pub(crate) async fn create_playlist(
     {
         return Err(ApiError::Forbidden);
     }
+    let title = validate_title(&req.title)?;
 
     let mut tx = state.pool.begin().await.map_err(DbError::Sqlx)?;
     if req.kind == PlaylistKind::User {
@@ -199,7 +201,7 @@ pub(crate) async fn create_playlist(
     let playlist = queries::playlists::create(
         &mut tx,
         &NewPlaylist {
-            title: req.title,
+            title,
             description: req.description,
             kind: req.kind.as_str().to_owned(),
             is_public: req.is_public,
@@ -221,6 +223,7 @@ pub(crate) async fn create_playlist(
     request_body = UpdatePlaylistRequest,
     responses(
         (status = 200, description = "Updated playlist", body = PlaylistResponse),
+        (status = 400, description = "Blank or overlong title, or a favorites playlist", body = ErrorResponse),
         (status = 401, description = "Unauthorized", body = ErrorResponse),
         (status = 403, description = "Forbidden", body = ErrorResponse),
         (status = 404, description = "Not found", body = ErrorResponse),
@@ -245,15 +248,20 @@ pub(crate) async fn update_playlist(
     if !can_manage {
         return Err(ApiError::Forbidden);
     }
+    if existing.kind == PlaylistKind::Favorites.as_str() {
+        return Err(ApiError::BadRequest(
+            "favorites playlists cannot be edited".to_owned(),
+        ));
+    }
+    let title = validate_title(&req.title)?;
 
     let mut conn = state.pool.acquire().await.map_err(DbError::Sqlx)?;
     let playlist = queries::playlists::update(
         &mut conn,
         id,
         &UpdatePlaylist {
-            title: req.title,
+            title,
             description: req.description,
-            kind: req.kind.as_str().to_owned(),
             is_public: req.is_public,
         },
     )

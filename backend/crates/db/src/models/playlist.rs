@@ -43,6 +43,5 @@ pub struct NewPlaylist {
 pub struct UpdatePlaylist {
     pub title: String,
     pub description: Option<String>,
-    pub kind: String,
     pub is_public: bool,
 }

@@ -6,6 +6,7 @@ export type PlaylistResponse = components["schemas"]["PlaylistResponse"];
 export type PlaylistEntry = components["schemas"]["PlaylistEntry"];
 export type PlaylistKind = components["schemas"]["PlaylistKind"];
 export type CreatePlaylistRequest = components["schemas"]["CreatePlaylistRequest"];
+export type UpdatePlaylistRequest = components["schemas"]["UpdatePlaylistRequest"];
 
 export type PlaylistSortField = components["schemas"]["PlaylistSort"];
 
@@ -34,6 +35,10 @@ export const playlists = {
 
   /** Creates a new playlist. */
   create: (body: CreatePlaylistRequest) => api.POST("/api/playlists", { body }),
+
+  /** Replaces a playlist's title, description and visibility. */
+  update: (id: string, body: UpdatePlaylistRequest) =>
+    api.PUT("/api/playlists/{id}", { params: { path: { id } }, body }),
 
   /** Appends performances to a playlist. */
   addPerformances: (id: string, performanceIds: string[]) =>
