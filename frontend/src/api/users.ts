@@ -3,6 +3,7 @@ import type { components } from "./generated";
 import type { QueryOf } from "./types";
 
 export type UserSummary = components["schemas"]["UserSummary"];
+export type AdminUserSummary = components["schemas"]["AdminUserSummary"];
 export type UserPerformancePlayEntry = components["schemas"]["UserPerformancePlayEntry"];
 export type UserSoundbitePlayEntry = components["schemas"]["UserSoundbitePlayEntry"];
 
@@ -23,6 +24,14 @@ export const usersApi = {
       params: { path: { id: userId } },
       body: { username } satisfies components["schemas"]["UpdateUserRequest"],
     }),
+
+  /** Suspends a user, ending their sessions and blocking sign in. Requires `capabilities:manage`. */
+  suspend: (userId: string) =>
+    api.PUT("/api/users/{id}/suspension", { params: { path: { id: userId } } }),
+
+  /** Lifts a user's suspension. Requires `capabilities:manage`. */
+  unsuspend: (userId: string) =>
+    api.DELETE("/api/users/{id}/suspension", { params: { path: { id: userId } } }),
 
   /** Returns capabilities assigned to a user. */
   listCapabilities: (userId: string) =>

@@ -16,7 +16,7 @@ use axum::{
     Json, Router,
     extract::{DefaultBodyLimit, State},
     http::StatusCode,
-    response::{IntoResponse, Response},
+    response::{IntoResponse, Redirect, Response},
     routing::{get, post, put},
 };
 use axum_extra::extract::CookieJar;
@@ -27,7 +27,11 @@ use api_types::{
     common::ErrorResponse,
     settings::{DownloadSettings, UpdateUserSettingsRequest, UserSettingsResponse},
 };
-use db::{error::DbError, models::NewUser, queries};
+use db::{
+    error::DbError,
+    models::{NewUser, User},
+    queries,
+};
 use tracing::warn;
 
 use crate::{error::ApiError, state::AppState};
@@ -48,6 +52,27 @@ pub(crate) fn validate_username(username: &str) -> Result<(), ApiError> {
         ));
     }
     Ok(())
+}
+
+/// Finishes a provider callback for an existing user by issuing a session and redirecting to the
+/// frontend.
+///
+/// A suspended user gets no session and is redirected with `?suspended=true` instead.
+pub(crate) async fn complete_sign_in(
+    state: &AppState,
+    jar: CookieJar,
+    user: &User,
+) -> Result<(CookieJar, Redirect), ApiError> {
+    let frontend_url = &state.config.frontend_url;
+    if user.suspended_at.is_some() {
+        let suspended_url = format!("{}/?suspended=true", frontend_url.trim_end_matches('/'));
+        return Ok((jar, Redirect::to(&suspended_url)));
+    }
+    let session_token = session::issue(&state.pool, user.id).await?;
+    Ok((
+        jar.add(session::session_cookie(session_token)),
+        Redirect::to(frontend_url),
+    ))
 }
 
 /// The UUID of the seeded dev admin user (`user_a` in `dev/seed.sql`).
@@ -271,6 +296,9 @@ async fn dev_login(
     let user = queries::users::get_by_id(&state.pool, DEV_ADMIN_USER_ID)
         .await?
         .ok_or(ApiError::NotFound)?;
+    if user.suspended_at.is_some() {
+        return Err(ApiError::Forbidden);
+    }
 
     let capabilities = queries::capabilities::list_for_user(&state.pool, user.id).await?;
 

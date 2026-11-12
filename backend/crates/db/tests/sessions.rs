@@ -43,6 +43,43 @@ async fn session_roundtrip(pool: MySqlPool) {
 }
 
 #[sqlx::test(migrator = "db::MIGRATOR")]
+async fn suspended_users_have_no_valid_sessions(pool: MySqlPool) {
+    let user_id = create_user(&pool).await;
+    let expires_at = Utc::now() + Duration::hours(1);
+    sessions::create(&pool, "token_a", user_id, expires_at)
+        .await
+        .unwrap();
+    sessions::create(&pool, "token_b", user_id, expires_at)
+        .await
+        .unwrap();
+    let mut conn = pool.acquire().await.unwrap();
+
+    users::suspend(&mut conn, user_id).await.unwrap();
+    assert!(
+        sessions::get_valid(&pool, "token_a")
+            .await
+            .unwrap()
+            .is_none()
+    );
+
+    users::unsuspend(&mut conn, user_id).await.unwrap();
+    assert!(
+        sessions::get_valid(&pool, "token_a")
+            .await
+            .unwrap()
+            .is_some()
+    );
+
+    assert_eq!(sessions::delete_for_user(&pool, user_id).await.unwrap(), 2);
+    assert!(
+        sessions::get_valid(&pool, "token_b")
+            .await
+            .unwrap()
+            .is_none()
+    );
+}
+
+#[sqlx::test(migrator = "db::MIGRATOR")]
 async fn expired_sessions_are_hidden_and_purged(pool: MySqlPool) {
     let user_id = create_user(&pool).await;
     let valid = Utc::now() + Duration::hours(1);

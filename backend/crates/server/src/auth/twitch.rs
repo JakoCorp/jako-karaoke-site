@@ -148,12 +148,7 @@ pub(crate) async fn callback(
     rm_csrf.set_path("/");
 
     if let Some(user) = queries::users::get_by_twitch_id(&state.pool, twitch_id).await? {
-        let session_token = super::session::issue(&state.pool, user.id).await?;
-        return Ok((
-            jar.remove(rm_csrf)
-                .add(super::session::session_cookie(session_token)),
-            Redirect::to(&state.config.frontend_url),
-        ));
+        return super::complete_sign_in(&state, jar.remove(rm_csrf), &user).await;
     }
 
     let pending_token = super::session::generate_token();

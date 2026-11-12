@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS users (
     twitch_id BIGINT UNSIGNED NULL,
     discord_id BIGINT UNSIGNED NULL,
     username_changed_at DATETIME NULL,
+    suspended_at DATETIME NULL,
     PRIMARY KEY (id),
     UNIQUE INDEX (username),
     UNIQUE INDEX (twitch_id),

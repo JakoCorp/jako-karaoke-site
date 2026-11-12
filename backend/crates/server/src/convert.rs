@@ -12,7 +12,7 @@ use api_types::{
     songs::SongImageInfo,
     soundbites::SoundbiteResponse,
     tags::TagResponse,
-    users::UserSummary,
+    users::{AdminUserSummary, UserSummary},
 };
 use db::{
     models::{
@@ -167,6 +167,15 @@ pub(crate) fn soundbite_response(
                 asset.hash,
             )
         }),
+    }
+}
+
+/// Converts a user projection to an [`AdminUserSummary`].
+pub(crate) fn admin_user_summary(user: db::models::UserSummary) -> AdminUserSummary {
+    AdminUserSummary {
+        id: user.id,
+        username: user.username,
+        suspended_at: user.suspended_at,
     }
 }
 

@@ -7,6 +7,7 @@ interface ConfirmDialogProps {
   title?: string;
   description?: string;
   confirmLabel?: string;
+  pendingLabel?: string;
   variant?: "primary" | "danger";
   isPending?: boolean;
   error?: string | null;
@@ -19,6 +20,7 @@ export function ConfirmDialog({
   title = "Are you sure?",
   description,
   confirmLabel = "Yes",
+  pendingLabel = "Deleting…",
   variant = "primary",
   isPending = false,
   error,
@@ -48,7 +50,7 @@ export function ConfirmDialog({
               Cancel
             </AlertDialog.Close>
             <button type="button" className={confirmClass} onClick={onConfirm} disabled={isPending}>
-              {isPending ? "Deleting…" : confirmLabel}
+              {isPending ? pendingLabel : confirmLabel}
             </button>
           </div>
         </AlertDialog.Popup>

@@ -1,16 +1,28 @@
 //! User request and response types for admin endpoints.
 
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-/// A minimal user projection returned by user search endpoints.
+/// A minimal user projection.
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct UserSummary {
     /// Unique identifier.
     pub id: Uuid,
     /// Display name chosen during registration.
     pub username: String,
+}
+
+/// A user with their account status, returned by the user management endpoints.
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct AdminUserSummary {
+    /// Unique identifier.
+    pub id: Uuid,
+    /// Display name chosen during registration.
+    pub username: String,
+    /// When the account was suspended. Absent when the account is not suspended.
+    pub suspended_at: Option<DateTime<Utc>>,
 }
 
 /// Request body for `PATCH /api/users/{id}`.

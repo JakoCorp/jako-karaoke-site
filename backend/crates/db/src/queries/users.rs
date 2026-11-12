@@ -12,7 +12,7 @@ type Result<T> = std::result::Result<T, DbError>;
 /// Column list matching the fields of [`User`].
 macro_rules! user_columns {
     () => {
-        "id, username, twitch_id, discord_id, username_changed_at"
+        "id, username, twitch_id, discord_id, username_changed_at, suspended_at"
     };
 }
 
@@ -116,7 +116,7 @@ pub async fn search(
     limit: u32,
     offset: u32,
 ) -> Result<Vec<UserSummary>> {
-    let mut builder = QueryBuilder::new("SELECT id, username FROM users");
+    let mut builder = QueryBuilder::new("SELECT id, username, suspended_at FROM users");
     push_filters(&mut builder, q);
     builder
         .push(" ORDER BY username LIMIT ")
@@ -190,6 +190,35 @@ pub async fn update_username(conn: &mut MySqlConnection, id: Uuid, username: &st
         Err(sqlx::Error::Database(e)) if e.is_unique_violation() => Err(DbError::Conflict),
         Err(e) => Err(DbError::Sqlx(e)),
     }
+}
+
+/// Suspends a user and returns the updated row. Suspending an already suspended user keeps the
+/// original suspension time.
+///
+/// # Errors
+///
+/// Returns [`DbError::NotFound`] if the user does not exist.
+pub async fn suspend(conn: &mut MySqlConnection, id: Uuid) -> Result<User> {
+    sqlx::query(
+        "UPDATE users SET suspended_at = COALESCE(suspended_at, UTC_TIMESTAMP()) WHERE id = ?",
+    )
+    .bind(id)
+    .execute(&mut *conn)
+    .await?;
+    get_by_id(&mut *conn, id).await?.ok_or(DbError::NotFound)
+}
+
+/// Lifts a user's suspension and returns the updated row.
+///
+/// # Errors
+///
+/// Returns [`DbError::NotFound`] if the user does not exist.
+pub async fn unsuspend(conn: &mut MySqlConnection, id: Uuid) -> Result<User> {
+    sqlx::query("UPDATE users SET suspended_at = NULL WHERE id = ?")
+        .bind(id)
+        .execute(&mut *conn)
+        .await?;
+    get_by_id(&mut *conn, id).await?.ok_or(DbError::NotFound)
 }
 
 /// Deletes a user by ID. Returns `true` if a row was deleted.
