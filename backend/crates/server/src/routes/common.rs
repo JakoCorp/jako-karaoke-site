@@ -12,10 +12,16 @@ pub(crate) fn search_text(q: Option<&str>) -> Option<&str> {
 /// Longest title accepted for titled resources, matching their `VARCHAR(256)` columns.
 const MAX_TITLE_CHARS: usize = 256;
 
-/// Trims the title and rejects a blank or overlong one.
-pub(crate) fn validate_title(title: &str) -> Result<String, ApiError> {
-    let title = title.trim();
-    if title.is_empty() {
+/// Returns the title as it is stored, without surrounding whitespace.
+pub(crate) fn normalize_title(title: &str) -> String {
+    title.trim().to_string()
+}
+
+/// Rejects a blank or overlong title.
+///
+/// Callers pass the [`normalize_title`] result, since that is the value stored.
+pub(crate) fn validate_title(title: &str) -> Result<(), ApiError> {
+    if title.trim().is_empty() {
         return Err(ApiError::BadRequest("title must not be blank".to_string()));
     }
     if title.chars().count() > MAX_TITLE_CHARS {
@@ -23,7 +29,7 @@ pub(crate) fn validate_title(title: &str) -> Result<String, ApiError> {
             "title must be at most {MAX_TITLE_CHARS} characters"
         )));
     }
-    Ok(title.to_string())
+    Ok(())
 }
 
 /// Rejects a stream number without a position number, or the reverse.

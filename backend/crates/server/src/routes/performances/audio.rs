@@ -121,7 +121,7 @@ async fn read_audio_fields(multipart: &mut Multipart) -> Result<AudioFields, Api
     })
 }
 
-fn validate_audio_kind(kind: &str) -> Result<&'static str, ApiError> {
+fn parse_audio_kind(kind: &str) -> Result<&'static str, ApiError> {
     match kind.trim() {
         "primary" => Ok(AudioKind::Primary.as_str()),
         "misc" => Ok(AudioKind::Misc.as_str()),
@@ -163,7 +163,7 @@ pub(crate) async fn upload_audio(
         .ok_or(ApiError::NotFound)?;
 
     let fields = read_audio_fields(&mut multipart).await?;
-    let kind = validate_audio_kind(&fields.kind)?;
+    let kind = parse_audio_kind(&fields.kind)?;
     let asset = assets::save_audio(&state, "audio", fields.upload).await?;
 
     let mut conn = state.pool.acquire().await.map_err(DbError::Sqlx)?;
@@ -214,7 +214,7 @@ pub(crate) async fn add_audio_link(
         .await?
         .ok_or(ApiError::NotFound)?;
 
-    let kind = validate_audio_kind(&body.kind)?;
+    let kind = parse_audio_kind(&body.kind)?;
     let length = youtube::video_length(&state, &body.external_url).await;
     let mut conn = state.pool.acquire().await.map_err(DbError::Sqlx)?;
     let asset = queries::assets::create_external(
@@ -276,7 +276,7 @@ pub(crate) async fn update_audio_kind(
         return Err(ApiError::Forbidden);
     }
 
-    let kind = validate_audio_kind(&body.kind)?;
+    let kind = parse_audio_kind(&body.kind)?;
     let mut conn = state.pool.acquire().await.map_err(DbError::Sqlx)?;
     if kind == AudioKind::Primary.as_str() {
         queries::performance_audios::unset_primary(&mut *conn, id).await?;

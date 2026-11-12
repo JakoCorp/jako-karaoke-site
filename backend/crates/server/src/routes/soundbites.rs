@@ -32,7 +32,9 @@ use crate::{
     capabilities, convert,
     error::ApiError,
     pagination,
-    routes::common::{SortDir, search_text, validate_stream_position, validate_title},
+    routes::common::{
+        SortDir, normalize_title, search_text, validate_stream_position, validate_title,
+    },
     state::AppState,
 };
 use params::{SoundbiteListParams, SoundbiteSort};
@@ -214,7 +216,8 @@ pub(crate) async fn create_soundbite(
     {
         return Err(ApiError::Forbidden);
     }
-    let title = validate_title(&req.title)?;
+    let title = normalize_title(&req.title);
+    validate_title(&title)?;
     validate_stream_position(req.stream_number, req.soundbite_number, "soundbite_number")?;
     let mut tx = state.pool.begin().await.map_err(DbError::Sqlx)?;
 
@@ -268,7 +271,8 @@ pub(crate) async fn update_soundbite(
     {
         return Err(ApiError::Forbidden);
     }
-    let title = validate_title(&req.title)?;
+    let title = normalize_title(&req.title);
+    validate_title(&title)?;
     validate_stream_position(req.stream_number, req.soundbite_number, "soundbite_number")?;
     let mut tx = state.pool.begin().await.map_err(DbError::Sqlx)?;
 
