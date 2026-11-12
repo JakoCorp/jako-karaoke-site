@@ -12,6 +12,7 @@ pub mod performances;
 pub mod playlists;
 pub mod sessions;
 pub mod songs;
+pub mod soundbite_favorites;
 pub mod soundbite_plays;
 pub mod soundbites;
 pub mod tags;

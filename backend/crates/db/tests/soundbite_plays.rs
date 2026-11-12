@@ -2,7 +2,7 @@ use chrono::NaiveDate;
 use db::models::asset::NewInternalAsset;
 use db::models::soundbite::{NewSoundbite, Soundbite};
 use db::models::user::{NewUser, User};
-use db::queries::soundbites::SortKey;
+use db::queries::soundbites::{SortKey, SoundbiteFilter};
 use db::queries::{assets, soundbite_plays, soundbites, users};
 use db::sort::SortDirection;
 use sqlx::MySqlPool;
@@ -70,7 +70,7 @@ async fn count_play(pool: &MySqlPool, soundbite_id: Uuid, user_id: Uuid) {
 }
 
 async fn sorted_ids(pool: &MySqlPool, sort: SortKey, direction: SortDirection) -> Vec<Uuid> {
-    soundbites::search(pool, None, sort, direction, 10, 0)
+    soundbites::search(pool, SoundbiteFilter::default(), sort, direction, 10, 0)
         .await
         .unwrap()
         .into_iter()

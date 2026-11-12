@@ -12,6 +12,7 @@ type MenuActionItem = {
   label: string;
   onClick: () => void;
   variant?: "danger";
+  disabled?: boolean;
   /** When set, clicking the item opens a confirm dialog before calling onClick. */
   confirm?: { title: string; description?: string; confirmLabel?: string };
 };
@@ -33,6 +34,8 @@ interface Props {
   /** CSS class applied to the ContextMenu.Trigger element (e.g. "perf-row"). */
   triggerClassName: string;
   menuBtnAriaLabel?: string;
+  /** Whether to render the inline triple-dot button next to the children. Defaults to true. */
+  menuButton?: boolean;
   children: ReactNode;
   onTriggerClick?: () => void;
 }
@@ -46,6 +49,7 @@ export function RowContextMenu({
   items,
   triggerClassName,
   menuBtnAriaLabel = "Options",
+  menuButton = true,
   children,
   onTriggerClick,
 }: Props) {
@@ -80,14 +84,19 @@ export function RowContextMenu({
 
       if (surface === "context") {
         return (
-          <ContextMenu.Item key={idx} className={className} onClick={handleClick}>
+          <ContextMenu.Item
+            key={idx}
+            className={className}
+            disabled={item.disabled}
+            onClick={handleClick}
+          >
             {item.icon}
             {item.label}
           </ContextMenu.Item>
         );
       }
       return (
-        <Menu.Item key={idx} className={className} onClick={handleClick}>
+        <Menu.Item key={idx} className={className} disabled={item.disabled} onClick={handleClick}>
           {item.icon}
           {item.label}
         </Menu.Item>
@@ -100,20 +109,22 @@ export function RowContextMenu({
       <ContextMenu.Root>
         <ContextMenu.Trigger className={triggerClassName} onClick={onTriggerClick}>
           {children}
-          <Menu.Root>
-            <Menu.Trigger
-              className="perf-row-menu-btn"
-              aria-label={menuBtnAriaLabel}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <DotsThreeVerticalIcon size={16} />
-            </Menu.Trigger>
-            <Menu.Portal>
-              <Menu.Positioner>
-                <Menu.Popup className="card-menu-popup">{renderItems("menu")}</Menu.Popup>
-              </Menu.Positioner>
-            </Menu.Portal>
-          </Menu.Root>
+          {menuButton && (
+            <Menu.Root>
+              <Menu.Trigger
+                className="perf-row-menu-btn"
+                aria-label={menuBtnAriaLabel}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <DotsThreeVerticalIcon size={16} />
+              </Menu.Trigger>
+              <Menu.Portal>
+                <Menu.Positioner>
+                  <Menu.Popup className="card-menu-popup">{renderItems("menu")}</Menu.Popup>
+                </Menu.Positioner>
+              </Menu.Portal>
+            </Menu.Root>
+          )}
         </ContextMenu.Trigger>
         <ContextMenu.Portal>
           <ContextMenu.Positioner>

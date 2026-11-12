@@ -14,7 +14,7 @@ export const playlistKeys = {
   all: () => ["playlists"] as const,
   detail: (id: string) => ["playlists", "detail", id] as const,
   performances: (id: string) => ["playlists", "performances", id] as const,
-  favorites: (userId: string) => ["playlists", "favorites", userId] as const,
+  favoritePerformances: (userId: string) => ["playlists", "favorites", userId] as const,
 };
 
 export function usePlaylist(id: string) {
@@ -67,10 +67,10 @@ export function usePlaylistEntries(playlistId: string) {
   });
 }
 
-export function useUserFavorites(userId: string | null) {
+export function useUserFavoritePerformances(userId: string | null) {
   return useQuery({
-    queryKey: playlistKeys.favorites(userId ?? ""),
-    queryFn: async () => unwrap(await playlists.getFavorites(userId!)),
+    queryKey: playlistKeys.favoritePerformances(userId ?? ""),
+    queryFn: async () => unwrap(await playlists.getFavoritePerformances(userId!)),
     enabled: !!userId,
   });
 }

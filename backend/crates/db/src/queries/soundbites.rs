@@ -70,11 +70,33 @@ pub async fn audio_length(
     .map_err(DbError::from)
 }
 
-/// Appends the `WHERE` clause for the optional query, binding its values. Appends nothing for `None`.
-fn push_filters(builder: &mut QueryBuilder<MySql>, q: Option<&str>) {
+/// Filters applied by [`search`] and [`search_count`]. Every set field must match.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct SoundbiteFilter<'a> {
+    /// Case insensitive substring matched against the title and any linked artist name, or the
+    /// soundbite id matched exactly.
+    pub q: Option<&'a str>,
+    /// Only soundbites this user has marked as a favorite.
+    pub favorited_by: Option<Uuid>,
+}
+
+/// Appends the `WHERE` clause for `filter`, binding its values. Appends nothing for an empty filter.
+fn push_filters(builder: &mut QueryBuilder<MySql>, filter: SoundbiteFilter<'_>) {
     let mut conditions = WhereClause::new(builder);
 
-    if let Some(q) = q {
+    if let Some(user_id) = filter.favorited_by {
+        conditions
+            .condition()
+            .push(
+                "EXISTS (SELECT 1 FROM soundbite_favorites \
+                 WHERE soundbite_favorites.soundbite_id = soundbites.id \
+                 AND soundbite_favorites.user_id = ",
+            )
+            .push_bind(user_id)
+            .push(")");
+    }
+
+    if let Some(q) = filter.q {
         let builder = conditions.condition();
         builder.push("id IN (SELECT id FROM soundbites WHERE ");
         push_text_or_id(builder, "title", q);
@@ -129,13 +151,10 @@ fn push_order(builder: &mut QueryBuilder<MySql>, sort: SortKey, direction: SortD
     }
 }
 
-/// Returns a page of soundbites sorted by `sort` in `direction`.
-///
-/// When `q` is `Some`, results are filtered by a case insensitive substring match against the
-/// title and any linked artist name, or by an exact match when `q` is the soundbite id.
+/// Returns a page of soundbites matching `filter`, sorted by `sort` in `direction`.
 pub async fn search(
     executor: impl Executor<'_, Database = MySql>,
-    q: Option<&str>,
+    filter: SoundbiteFilter<'_>,
     sort: SortKey,
     direction: SortDirection,
     limit: u32,
@@ -143,7 +162,7 @@ pub async fn search(
 ) -> Result<Vec<Soundbite>> {
     let mut builder =
         QueryBuilder::new(concat!("SELECT ", soundbite_columns!(), " FROM soundbites"));
-    push_filters(&mut builder, q);
+    push_filters(&mut builder, filter);
     push_order(&mut builder, sort, direction);
     builder
         .push(" LIMIT ")
@@ -158,13 +177,13 @@ pub async fn search(
         .map_err(DbError::from)
 }
 
-/// Returns the total number of soundbites matching the optional query.
+/// Returns the total number of soundbites matching `filter`.
 pub async fn search_count(
     executor: impl Executor<'_, Database = MySql>,
-    q: Option<&str>,
+    filter: SoundbiteFilter<'_>,
 ) -> Result<u64> {
     let mut builder = QueryBuilder::new("SELECT COUNT(*) FROM soundbites");
-    push_filters(&mut builder, q);
+    push_filters(&mut builder, filter);
 
     builder
         .build_query_scalar::<i64>()
