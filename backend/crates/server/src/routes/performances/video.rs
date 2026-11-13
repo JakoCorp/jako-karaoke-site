@@ -121,7 +121,7 @@ async fn read_video_fields(multipart: &mut Multipart) -> Result<VideoFields, Api
     })
 }
 
-fn validate_video_kind(kind: &str) -> Result<&'static str, ApiError> {
+fn parse_video_kind(kind: &str) -> Result<&'static str, ApiError> {
     match kind.trim() {
         "clip" => Ok(VideoKind::Clip.as_str()),
         "vod" => Ok(VideoKind::Vod.as_str()),
@@ -164,7 +164,7 @@ pub(crate) async fn upload_video(
         .ok_or(ApiError::NotFound)?;
 
     let fields = read_video_fields(&mut multipart).await?;
-    let kind = validate_video_kind(&fields.kind)?;
+    let kind = parse_video_kind(&fields.kind)?;
     let title = fields.title.or_else(|| fields.filename.clone());
     let ext = media::resolve_ext(
         media::MediaKind::Video,
@@ -237,7 +237,7 @@ pub(crate) async fn add_video_link(
         .await?
         .ok_or(ApiError::NotFound)?;
 
-    let kind = validate_video_kind(&body.kind)?;
+    let kind = parse_video_kind(&body.kind)?;
     let mut conn = state.pool.acquire().await.map_err(DbError::Sqlx)?;
     let asset = queries::assets::create_external(
         &mut conn,
@@ -295,7 +295,7 @@ pub(crate) async fn update_video_kind(
         return Err(ApiError::Forbidden);
     }
 
-    let kind = validate_video_kind(&body.kind)?;
+    let kind = parse_video_kind(&body.kind)?;
     let mut conn = state.pool.acquire().await.map_err(DbError::Sqlx)?;
     let updated = queries::performance_videos::update_kind(&mut *conn, id, asset_id, kind).await?;
     if !updated {

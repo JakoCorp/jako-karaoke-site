@@ -30,7 +30,7 @@ use crate::{
     capabilities, convert,
     error::ApiError,
     pagination,
-    routes::common::{SortDir, search_text, validate_title},
+    routes::common::{SortDir, normalize_title, search_text, validate_title},
     state::AppState,
 };
 use params::{PlaylistListParams, PlaylistSort};
@@ -186,7 +186,8 @@ pub(crate) async fn create_playlist(
     {
         return Err(ApiError::Forbidden);
     }
-    let title = validate_title(&req.title)?;
+    let title = normalize_title(&req.title);
+    validate_title(&title)?;
 
     let mut tx = state.pool.begin().await.map_err(DbError::Sqlx)?;
     if req.kind == PlaylistKind::User {
@@ -253,7 +254,8 @@ pub(crate) async fn update_playlist(
             "favorites playlists cannot be edited".to_owned(),
         ));
     }
-    let title = validate_title(&req.title)?;
+    let title = normalize_title(&req.title);
+    validate_title(&title)?;
 
     let mut conn = state.pool.acquire().await.map_err(DbError::Sqlx)?;
     let playlist = queries::playlists::update(
