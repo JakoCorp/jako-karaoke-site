@@ -11,11 +11,11 @@
     "dev": "pnpm -C frontend dev"
   },
   "devDependencies": {
-    "@j178/prek": "^0.5.5",
-    "eslint-plugin-better-tailwindcss": "^4.9.0",
-    "oxfmt": "^0.66.0",
-    "oxlint": "^1.87.0",
-    "oxlint-tsgolint": "^7.0.2003",
+    "@j178/prek": "^0.5.10",
+    "eslint-plugin-better-tailwindcss": "^4.11.0",
+    "oxfmt": "^0.78.0",
+    "oxlint": "^1.93.0",
+    "oxlint-tsgolint": "^7.0.2006",
     "tsx": "^4.23.15"
   },
   "devEngines": {
