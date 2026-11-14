@@ -19,7 +19,7 @@ use api_types::{
     playlists::{PlaylistEntry, PlaylistKind, PlaylistResponse},
     plays::{UserPerformancePlayEntry, UserSoundbitePlayEntry},
     soundbites::SoundbiteResponse,
-    users::{GrantCapabilityRequest, UpdateUserRequest, UserSummary},
+    users::{AdminUserSummary, GrantCapabilityRequest, UpdateUserRequest, UserSummary},
 };
 use db::{
     error::DbError,
@@ -44,6 +44,8 @@ use crate::{
     paths(
         search_users,
         update_user,
+        suspend_user,
+        unsuspend_user,
         list_user_playlists,
         get_user_playlists_containing_performance,
         favorites::performances::list_user_favorite_performances,
@@ -67,7 +69,8 @@ use crate::{
         UserSoundbitePlayEntry,
         PagedResponse<UserSoundbitePlayEntry>,
         UserSummary,
-        PagedResponse<UserSummary>,
+        AdminUserSummary,
+        PagedResponse<AdminUserSummary>,
         UpdateUserRequest,
         GrantCapabilityRequest,
         PlaylistResponse,
@@ -89,6 +92,7 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .route("/", get(search_users))
         .route("/{id}", patch(update_user))
+        .route("/{id}/suspension", put(suspend_user).delete(unsuspend_user))
         .route("/{id}/playlists", get(list_user_playlists))
         .route(
             "/{id}/playlists/containing/{performance_id}",
@@ -165,7 +169,7 @@ pub(crate) struct UserSearchParams {
     path = "/api/users",
     params(UserSearchParams),
     responses(
-        (status = 200, description = "Paginated users matching the search query, or all users when `q` is omitted", body = PagedResponse<UserSummary>),
+        (status = 200, description = "Paginated users matching the search query, or all users when `q` is omitted", body = PagedResponse<AdminUserSummary>),
         (status = 401, description = "Unauthorized", body = ErrorResponse),
         (status = 403, description = "Forbidden", body = ErrorResponse),
     ),
@@ -176,7 +180,7 @@ pub(crate) async fn search_users(
     State(state): State<AppState>,
     auth: AuthUser,
     Query(params): Query<UserSearchParams>,
-) -> Result<Json<PagedResponse<UserSummary>>, ApiError> {
+) -> Result<Json<PagedResponse<AdminUserSummary>>, ApiError> {
     if !auth
         .capabilities
         .contains(capabilities::CAPABILITIES_MANAGE)
@@ -190,13 +194,7 @@ pub(crate) async fn search_users(
         queries::users::search_count(&state.pool, q),
     )?;
 
-    let items = users
-        .into_iter()
-        .map(|u| UserSummary {
-            id: u.id,
-            username: u.username,
-        })
-        .collect();
+    let items = users.into_iter().map(convert::admin_user_summary).collect();
     Ok(Json(PagedResponse {
         items,
         total,
@@ -211,7 +209,7 @@ pub(crate) async fn search_users(
     params(("id" = Uuid, Path, description = "User ID")),
     request_body = UpdateUserRequest,
     responses(
-        (status = 200, description = "Updated user", body = UserSummary),
+        (status = 200, description = "Updated user", body = AdminUserSummary),
         (status = 400, description = "Invalid username", body = ErrorResponse),
         (status = 401, description = "Unauthorized", body = ErrorResponse),
         (status = 403, description = "Forbidden", body = ErrorResponse),
@@ -226,7 +224,7 @@ pub(crate) async fn update_user(
     auth: AuthUser,
     Path(id): Path<Uuid>,
     Json(req): Json<UpdateUserRequest>,
-) -> Result<Json<UserSummary>, ApiError> {
+) -> Result<Json<AdminUserSummary>, ApiError> {
     if !auth
         .capabilities
         .contains(capabilities::CAPABILITIES_MANAGE)
@@ -240,10 +238,7 @@ pub(crate) async fn update_user(
         .ok_or(ApiError::NotFound)?;
 
     if user.username == req.username {
-        return Ok(Json(UserSummary {
-            id: user.id,
-            username: user.username,
-        }));
+        return Ok(Json(convert::admin_user_summary(user.into())));
     }
 
     let mut tx = state.pool.begin().await.map_err(DbError::Sqlx)?;
@@ -256,10 +251,73 @@ pub(crate) async fn update_user(
     queries::playlists::retitle_favorites(&mut *tx, id, &updated.username).await?;
     tx.commit().await.map_err(DbError::Sqlx)?;
 
-    Ok(Json(UserSummary {
-        id: updated.id,
-        username: updated.username,
-    }))
+    Ok(Json(convert::admin_user_summary(updated.into())))
+}
+
+#[utoipa::path(
+    put,
+    path = "/api/users/{id}/suspension",
+    params(("id" = Uuid, Path, description = "User ID")),
+    responses(
+        (status = 200, description = "Suspended user. Their sessions are ended and they cannot sign in until the suspension is lifted", body = AdminUserSummary),
+        (status = 400, description = "Cannot suspend yourself", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden", body = ErrorResponse),
+        (status = 404, description = "User not found", body = ErrorResponse),
+    ),
+    tag = "users",
+    security(("session" = []))
+)]
+pub(crate) async fn suspend_user(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Path(id): Path<Uuid>,
+) -> Result<Json<AdminUserSummary>, ApiError> {
+    if !auth
+        .capabilities
+        .contains(capabilities::CAPABILITIES_MANAGE)
+    {
+        return Err(ApiError::Forbidden);
+    }
+    if auth.user_id == id {
+        return Err(ApiError::BadRequest("cannot suspend yourself".into()));
+    }
+
+    let mut tx = state.pool.begin().await.map_err(DbError::Sqlx)?;
+    let user = queries::users::suspend(&mut tx, id).await?;
+    queries::sessions::delete_for_user(&mut *tx, id).await?;
+    tx.commit().await.map_err(DbError::Sqlx)?;
+
+    Ok(Json(convert::admin_user_summary(user.into())))
+}
+
+#[utoipa::path(
+    delete,
+    path = "/api/users/{id}/suspension",
+    params(("id" = Uuid, Path, description = "User ID")),
+    responses(
+        (status = 200, description = "User whose suspension is lifted", body = AdminUserSummary),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden", body = ErrorResponse),
+        (status = 404, description = "User not found", body = ErrorResponse),
+    ),
+    tag = "users",
+    security(("session" = []))
+)]
+pub(crate) async fn unsuspend_user(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Path(id): Path<Uuid>,
+) -> Result<Json<AdminUserSummary>, ApiError> {
+    if !auth
+        .capabilities
+        .contains(capabilities::CAPABILITIES_MANAGE)
+    {
+        return Err(ApiError::Forbidden);
+    }
+    let mut conn = state.pool.acquire().await.map_err(DbError::Sqlx)?;
+    let user = queries::users::unsuspend(&mut conn, id).await?;
+    Ok(Json(convert::admin_user_summary(user.into())))
 }
 
 #[utoipa::path(

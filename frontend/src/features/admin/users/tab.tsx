@@ -2,9 +2,15 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
 
 import { ensureOk } from "@/api/client";
-import { usersApi, type UserSummary } from "@/api/users";
+import { usersApi, type AdminUserSummary } from "@/api/users";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { useCapabilities } from "@/hooks/api/capabilities";
-import { useInfiniteUsers, useUserCapabilities, userKeys } from "@/hooks/api/users";
+import {
+  useInfiniteUsers,
+  useSetUserSuspended,
+  useUserCapabilities,
+  userKeys,
+} from "@/hooks/api/users";
 import { useDebounced } from "@/hooks/use-debounced";
 import { useInfiniteSentinel } from "@/hooks/use-infinite-sentinel";
 import { errorMessage } from "@/lib/error-message";
@@ -16,11 +22,14 @@ import { RenameDialog } from "./rename-dialog";
 
 export function UsersAdminTab() {
   const [searchInput, setSearchInput] = useState("");
-  const [selectedUser, setSelectedUser] = useState<UserSummary | null>(null);
+  const [selectedUser, setSelectedUser] = useState<AdminUserSummary | null>(null);
   const [isGrantingAll, setIsGrantingAll] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
   const [isViewingPlays, setIsViewingPlays] = useState(false);
+  const [isConfirmingSuspension, setIsConfirmingSuspension] = useState(false);
   const canManagePlays = useAuthStore((state) => state.hasCapability("plays:manage_any"));
+  const signedInUserId = useAuthStore((state) => state.user?.id);
+  const suspension = useSetUserSuspended();
 
   const debouncedQuery = useDebounced(searchInput.trim());
 
@@ -99,6 +108,19 @@ export function UsersAdminTab() {
     }
   }
 
+  function handleConfirmSuspension() {
+    if (!selectedUser) return;
+    suspension.mutate(
+      { userId: selectedUser.id, suspended: !selectedUser.suspended_at },
+      {
+        onSuccess: (user) => {
+          setSelectedUser(user);
+          setIsConfirmingSuspension(false);
+        },
+      },
+    );
+  }
+
   const isMutating = grantMutation.isPending || revokeMutation.isPending || isGrantingAll;
 
   return (
@@ -130,6 +152,7 @@ export function UsersAdminTab() {
                 }}
               >
                 @{u.username}
+                {u.suspended_at && <div className="admin-item-sub">Suspended</div>}
               </button>
             </li>
           ))}
@@ -170,7 +193,50 @@ export function UsersAdminTab() {
               >
                 Grant All
               </button>
+              <button
+                className="btn btn-secondary"
+                onClick={() => {
+                  suspension.reset();
+                  setIsConfirmingSuspension(true);
+                }}
+                disabled={selectedUser.id === signedInUserId}
+                title={
+                  selectedUser.id === signedInUserId ? "You cannot suspend yourself." : undefined
+                }
+              >
+                {selectedUser.suspended_at ? "Unsuspend" : "Suspend"}
+              </button>
             </div>
+            {selectedUser.suspended_at && (
+              <p className="admin-item-sub">
+                Suspended on {new Date(selectedUser.suspended_at).toLocaleDateString()}. This user
+                cannot sign in.
+              </p>
+            )}
+            <ConfirmDialog
+              open={isConfirmingSuspension}
+              onOpenChange={setIsConfirmingSuspension}
+              onConfirm={handleConfirmSuspension}
+              title={
+                selectedUser.suspended_at
+                  ? `Unsuspend @${selectedUser.username}?`
+                  : `Suspend @${selectedUser.username}?`
+              }
+              description={
+                selectedUser.suspended_at
+                  ? "They will be able to sign in again."
+                  : "They will be signed out and cannot sign in until the suspension is lifted. Their plays, playlists and favorites are kept."
+              }
+              confirmLabel={selectedUser.suspended_at ? "Unsuspend" : "Suspend"}
+              pendingLabel="Saving…"
+              variant={selectedUser.suspended_at ? "primary" : "danger"}
+              isPending={suspension.isPending}
+              error={
+                suspension.isError
+                  ? errorMessage(suspension.error, "Could not update the suspension.")
+                  : null
+              }
+            />
             <RenameDialog
               user={selectedUser}
               open={isRenaming}

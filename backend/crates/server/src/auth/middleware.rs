@@ -17,7 +17,8 @@ use super::session;
 ///
 /// Add `auth: AuthUser` as a handler parameter to protect a route. Axum calls
 /// [`FromRequestParts`] before the handler body runs; a missing, invalid, or
-/// expired session cookie returns `401` before the handler is reached.
+/// expired session cookie, or one that belongs to a suspended user, returns
+/// `401` before the handler is reached.
 ///
 /// Capabilities are looked up fresh on every request.
 pub struct AuthUser {

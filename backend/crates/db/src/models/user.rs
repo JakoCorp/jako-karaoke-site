@@ -15,6 +15,7 @@ pub struct User {
     pub twitch_id: Option<u64>,
     pub discord_id: Option<u64>,
     pub username_changed_at: Option<DateTime<Utc>>,
+    pub suspended_at: Option<DateTime<Utc>>,
 }
 
 /// Input for creating a new user.
@@ -30,4 +31,15 @@ pub struct NewUser {
 pub struct UserSummary {
     pub id: Uuid,
     pub username: String,
+    pub suspended_at: Option<DateTime<Utc>>,
+}
+
+impl From<User> for UserSummary {
+    fn from(user: User) -> Self {
+        Self {
+            id: user.id,
+            username: user.username,
+            suspended_at: user.suspended_at,
+        }
+    }
 }

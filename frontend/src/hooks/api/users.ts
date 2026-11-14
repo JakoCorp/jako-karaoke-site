@@ -118,6 +118,19 @@ export function useRemoveUserSoundbitePlays() {
   });
 }
 
+/** Suspends or unsuspends a user as an admin and refreshes the cached user lists. */
+export function useSetUserSuspended() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ userId, suspended }: { userId: string; suspended: boolean }) =>
+      unwrap(suspended ? await usersApi.suspend(userId) : await usersApi.unsuspend(userId)),
+    onSuccess: async (user) => {
+      await queryClient.invalidateQueries({ queryKey: userKeys.all() });
+      toast.success(user.suspended_at ? "User suspended" : "Suspension lifted");
+    },
+  });
+}
+
 /**
  * Changes another user's username as an admin and refreshes the cached user lists.
  *

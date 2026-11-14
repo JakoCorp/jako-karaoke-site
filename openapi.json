@@ -4532,7 +4532,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PagedResponse_UserSummary"
+                  "$ref": "#/components/schemas/PagedResponse_AdminUserSummary"
                 }
               }
             }
@@ -4599,7 +4599,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UserSummary"
+                  "$ref": "#/components/schemas/AdminUserSummary"
                 }
               }
             }
@@ -5824,6 +5824,148 @@
         ]
       }
     },
+    "/api/users/{id}/suspension": {
+      "put": {
+        "tags": [
+          "users"
+        ],
+        "operationId": "suspend_user",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "User ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Suspended user. Their sessions are ended and they cannot sign in until the suspension is lifted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserSummary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Cannot suspend yourself",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "users"
+        ],
+        "operationId": "unsuspend_user",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "User ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User whose suspension is lifted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserSummary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      }
+    },
     "/auth/claim": {
       "post": {
         "tags": [
@@ -6417,6 +6559,33 @@
               "null"
             ],
             "description": "Display label for this link."
+          }
+        }
+      },
+      "AdminUserSummary": {
+        "type": "object",
+        "description": "A user with their account status, returned by the user management endpoints.",
+        "required": [
+          "id",
+          "username"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique identifier."
+          },
+          "suspended_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the account was suspended. Absent when the account is not suspended."
+          },
+          "username": {
+            "type": "string",
+            "description": "Display name chosen during registration."
           }
         }
       },
@@ -7264,6 +7433,67 @@
           }
         }
       },
+      "PagedResponse_AdminUserSummary": {
+        "type": "object",
+        "description": "Generic envelope returned by all paginated list endpoints.",
+        "required": [
+          "items",
+          "total",
+          "page",
+          "per_page"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "A user with their account status, returned by the user management endpoints.",
+              "required": [
+                "id",
+                "username"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "Unique identifier."
+                },
+                "suspended_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time",
+                  "description": "When the account was suspended. Absent when the account is not suspended."
+                },
+                "username": {
+                  "type": "string",
+                  "description": "Display name chosen during registration."
+                }
+              }
+            },
+            "description": "Items on the current page."
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The page that was returned, 1-indexed.",
+            "minimum": 0
+          },
+          "per_page": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Items per page as applied by the server (may be less than requested if capped).",
+            "minimum": 0
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Total number of matching items across all pages.",
+            "minimum": 0
+          }
+        }
+      },
       "PagedResponse_ArtistSummary": {
         "type": "object",
         "description": "Generic envelope returned by all paginated list endpoints.",
@@ -7977,59 +8207,6 @@
                   "format": "int64",
                   "description": "Number of counted plays by the user on this soundbite.",
                   "minimum": 0
-                }
-              }
-            },
-            "description": "Items on the current page."
-          },
-          "page": {
-            "type": "integer",
-            "format": "int32",
-            "description": "The page that was returned, 1-indexed.",
-            "minimum": 0
-          },
-          "per_page": {
-            "type": "integer",
-            "format": "int32",
-            "description": "Items per page as applied by the server (may be less than requested if capped).",
-            "minimum": 0
-          },
-          "total": {
-            "type": "integer",
-            "format": "int64",
-            "description": "Total number of matching items across all pages.",
-            "minimum": 0
-          }
-        }
-      },
-      "PagedResponse_UserSummary": {
-        "type": "object",
-        "description": "Generic envelope returned by all paginated list endpoints.",
-        "required": [
-          "items",
-          "total",
-          "page",
-          "per_page"
-        ],
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "description": "A minimal user projection returned by user search endpoints.",
-              "required": [
-                "id",
-                "username"
-              ],
-              "properties": {
-                "id": {
-                  "type": "string",
-                  "format": "uuid",
-                  "description": "Unique identifier."
-                },
-                "username": {
-                  "type": "string",
-                  "description": "Display name chosen during registration."
                 }
               }
             },
@@ -9225,7 +9402,7 @@
       },
       "UserSummary": {
         "type": "object",
-        "description": "A minimal user projection returned by user search endpoints.",
+        "description": "A minimal user projection.",
         "required": [
           "id",
           "username"

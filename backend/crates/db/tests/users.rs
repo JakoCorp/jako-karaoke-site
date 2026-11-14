@@ -1,7 +1,9 @@
+use chrono::Duration;
 use db::error::DbError;
 use db::models::user::{NewUser, User};
 use db::queries::users;
 use sqlx::MySqlPool;
+use uuid::Uuid;
 
 fn new_user(username: &str) -> NewUser {
     NewUser {
@@ -51,6 +53,33 @@ async fn rename_rejects_taken_names_and_records_change_time(pool: MySqlPool) {
         .unwrap();
     assert_eq!(renamed.username, "user_c");
     assert!(renamed.username_changed_at.is_some());
+}
+
+#[sqlx::test(migrator = "db::MIGRATOR")]
+async fn suspend_keeps_first_time_and_unsuspend_clears_it(pool: MySqlPool) {
+    let user = create_user(&pool, "user_a").await;
+    assert!(user.suspended_at.is_none());
+    let mut conn = pool.acquire().await.unwrap();
+
+    let suspended = users::suspend(&mut conn, user.id).await.unwrap();
+    let first_suspended_at = suspended.suspended_at.unwrap() - Duration::days(1);
+    sqlx::query("UPDATE users SET suspended_at = ? WHERE id = ?")
+        .bind(first_suspended_at)
+        .bind(user.id)
+        .execute(&pool)
+        .await
+        .unwrap();
+
+    let again = users::suspend(&mut conn, user.id).await.unwrap();
+    assert_eq!(again.suspended_at, Some(first_suspended_at));
+    let listed = users::search(&pool, None, 10, 0).await.unwrap();
+    assert_eq!(listed[0].suspended_at, Some(first_suspended_at));
+
+    let lifted = users::unsuspend(&mut conn, user.id).await.unwrap();
+    assert!(lifted.suspended_at.is_none());
+
+    let missing = users::suspend(&mut conn, Uuid::nil()).await;
+    assert!(matches!(missing, Err(DbError::NotFound)));
 }
 
 #[sqlx::test(migrator = "db::MIGRATOR")]

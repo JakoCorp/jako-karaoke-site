@@ -2,19 +2,25 @@ import { Dialog } from "@base-ui/react";
 import { XIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 
-import type { UserSummary } from "@/api/users";
+import type { AdminUserSummary } from "@/api/users";
 import { useUpdateUsername } from "@/hooks/api/users";
 import { errorMessage } from "@/lib/error-message";
 import { USERNAME_PATTERN, USERNAME_RULES_MESSAGE } from "@/lib/username";
 
 interface Props {
-  user: UserSummary;
+  user: AdminUserSummary;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onRenamed: (user: UserSummary) => void;
+  onRenamed: (user: AdminUserSummary) => void;
 }
 
-function RenameForm({ user, onDone }: { user: UserSummary; onDone: (user: UserSummary) => void }) {
+function RenameForm({
+  user,
+  onDone,
+}: {
+  user: AdminUserSummary;
+  onDone: (user: AdminUserSummary) => void;
+}) {
   const update = useUpdateUsername();
   const [username, setUsername] = useState(user.username);
   const [validationError, setValidationError] = useState<string | null>(null);

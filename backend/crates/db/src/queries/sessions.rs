@@ -26,14 +26,16 @@ pub async fn create(
         .map_err(DbError::from)
 }
 
-/// Fetches a session by ID, returning `None` if it is missing or expired.
+/// Fetches a session by ID, returning `None` if it is missing, expired, or belongs to a
+/// suspended user.
 pub async fn get_valid(
     executor: impl Executor<'_, Database = MySql>,
     id: &str,
 ) -> Result<Option<Session>> {
     sqlx::query_as::<_, Session>(
-        "SELECT id, user_id, created_at, expires_at FROM sessions \
-         WHERE id = ? AND expires_at > UTC_TIMESTAMP()",
+        "SELECT s.id, s.user_id, s.created_at, s.expires_at FROM sessions s \
+         JOIN users u ON u.id = s.user_id \
+         WHERE s.id = ? AND s.expires_at > UTC_TIMESTAMP() AND u.suspended_at IS NULL",
     )
     .bind(id)
     .fetch_optional(executor)
@@ -48,6 +50,19 @@ pub async fn delete(executor: impl Executor<'_, Database = MySql>, id: &str) -> 
         .execute(executor)
         .await
         .map(|_| ())
+        .map_err(DbError::from)
+}
+
+/// Deletes every session of a user, returning the number of rows removed.
+pub async fn delete_for_user(
+    executor: impl Executor<'_, Database = MySql>,
+    user_id: Uuid,
+) -> Result<u64> {
+    sqlx::query("DELETE FROM sessions WHERE user_id = ?")
+        .bind(user_id)
+        .execute(executor)
+        .await
+        .map(|r| r.rows_affected())
         .map_err(DbError::from)
 }
 
