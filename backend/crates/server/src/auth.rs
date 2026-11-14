@@ -6,6 +6,7 @@
 
 pub(crate) mod account;
 pub(crate) mod avatar;
+pub(crate) mod callback;
 pub(crate) mod discord;
 pub(crate) mod middleware;
 pub(crate) mod session;
@@ -16,22 +17,18 @@ use axum::{
     Json, Router,
     extract::{DefaultBodyLimit, State},
     http::StatusCode,
-    response::{IntoResponse, Redirect, Response},
+    response::{IntoResponse, Response},
     routing::{get, post, put},
 };
 use axum_extra::extract::CookieJar;
 use cookie::Cookie;
 
 use api_types::{
-    auth::{ClaimRequest, MeResponse, UpdateMeRequest},
+    auth::{ClaimRequest, MeResponse, PendingSignupResponse, UpdateMeRequest},
     common::ErrorResponse,
     settings::{DownloadSettings, UpdateUserSettingsRequest, UserSettingsResponse},
 };
-use db::{
-    error::DbError,
-    models::{NewUser, User},
-    queries,
-};
+use db::{error::DbError, models::NewUser, queries};
 use tracing::warn;
 
 use crate::{error::ApiError, state::AppState};
@@ -54,27 +51,6 @@ pub(crate) fn validate_username(username: &str) -> Result<(), ApiError> {
     Ok(())
 }
 
-/// Finishes a provider callback for an existing user by issuing a session and redirecting to the
-/// frontend.
-///
-/// A suspended user gets no session and is redirected with `?suspended=true` instead.
-pub(crate) async fn complete_sign_in(
-    state: &AppState,
-    jar: CookieJar,
-    user: &User,
-) -> Result<(CookieJar, Redirect), ApiError> {
-    let frontend_url = &state.config.frontend_url;
-    if user.suspended_at.is_some() {
-        let suspended_url = format!("{}/?suspended=true", frontend_url.trim_end_matches('/'));
-        return Ok((jar, Redirect::to(&suspended_url)));
-    }
-    let session_token = session::issue(&state.pool, user.id).await?;
-    Ok((
-        jar.add(session::session_cookie(session_token)),
-        Redirect::to(frontend_url),
-    ))
-}
-
 /// The UUID of the seeded dev admin user (`user_a` in `dev/seed.sql`).
 const DEV_ADMIN_USER_ID: uuid::Uuid = uuid::Uuid::from_bytes([
     0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
@@ -87,7 +63,7 @@ const DEV_ADMIN_USER_ID: uuid::Uuid = uuid::Uuid::from_bytes([
         twitch::callback,
         discord::initiate,
         discord::callback,
-        pending_check,
+        pending_signup,
         claim,
         me,
         account::update_me,
@@ -100,6 +76,7 @@ const DEV_ADMIN_USER_ID: uuid::Uuid = uuid::Uuid::from_bytes([
     components(schemas(
         ClaimRequest,
         MeResponse,
+        PendingSignupResponse,
         UpdateMeRequest,
         DownloadSettings,
         UpdateUserSettingsRequest,
@@ -117,7 +94,7 @@ pub fn router(dev_auth: bool) -> Router<AppState> {
         .route("/twitch/callback", get(twitch::callback))
         .route("/discord", get(discord::initiate))
         .route("/discord/callback", get(discord::callback))
-        .route("/pending", get(pending_check))
+        .route("/pending", get(pending_signup))
         .route("/claim", post(claim))
         .route("/me", get(me).patch(account::update_me))
         .route(
@@ -141,25 +118,27 @@ pub fn router(dev_auth: bool) -> Router<AppState> {
     get,
     path = "/auth/pending",
     responses(
-        (status = 204, description = "Valid pending signup session exists"),
+        (status = 200, description = "Valid pending signup exists", body = PendingSignupResponse),
         (status = 404, description = "No pending signup or session expired"),
     ),
     tag = "auth"
 )]
-async fn pending_check(
+async fn pending_signup(
     State(state): State<AppState>,
     jar: CookieJar,
-) -> Result<StatusCode, ApiError> {
+) -> Result<Json<PendingSignupResponse>, ApiError> {
     let token = jar
         .get("oauth_pending")
         .map(|c| c.value().to_owned())
         .ok_or(ApiError::NotFound)?;
 
-    queries::pending_oauth::get(&state.pool, &token)
+    let pending = queries::pending_oauth::get(&state.pool, &token)
         .await?
         .ok_or(ApiError::NotFound)?;
 
-    Ok(StatusCode::NO_CONTENT)
+    Ok(Json(PendingSignupResponse {
+        suggested_username: pending.suggested_username,
+    }))
 }
 
 #[utoipa::path(

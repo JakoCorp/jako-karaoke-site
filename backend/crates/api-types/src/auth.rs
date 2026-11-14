@@ -15,6 +15,13 @@ pub struct ClaimRequest {
     pub username: String,
 }
 
+/// Response body for `GET /auth/pending`.
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct PendingSignupResponse {
+    /// Handle from the provider, offered as the default username.
+    pub suggested_username: String,
+}
+
 /// Response body for `GET /auth/me`.
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct MeResponse {

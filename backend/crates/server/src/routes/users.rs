@@ -259,7 +259,7 @@ pub(crate) async fn update_user(
     path = "/api/users/{id}/suspension",
     params(("id" = Uuid, Path, description = "User ID")),
     responses(
-        (status = 200, description = "Suspended user. Their sessions are ended and they cannot sign in until the suspension is lifted", body = AdminUserSummary),
+        (status = 200, description = "Suspended user, their sessions are ended", body = AdminUserSummary),
         (status = 400, description = "Cannot suspend yourself", body = ErrorResponse),
         (status = 401, description = "Unauthorized", body = ErrorResponse),
         (status = 403, description = "Forbidden", body = ErrorResponse),
@@ -296,7 +296,7 @@ pub(crate) async fn suspend_user(
     path = "/api/users/{id}/suspension",
     params(("id" = Uuid, Path, description = "User ID")),
     responses(
-        (status = 200, description = "User whose suspension is lifted", body = AdminUserSummary),
+        (status = 200, description = "Unsuspended user", body = AdminUserSummary),
         (status = 401, description = "Unauthorized", body = ErrorResponse),
         (status = 403, description = "Forbidden", body = ErrorResponse),
         (status = 404, description = "User not found", body = ErrorResponse),
