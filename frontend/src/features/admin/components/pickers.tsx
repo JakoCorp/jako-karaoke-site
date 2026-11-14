@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import { useState } from "react";
 
 import type { TagResponse } from "@/api/tags";
@@ -6,83 +5,6 @@ import type { TagResponse } from "@/api/tags";
 export type TagAssignment<K extends string> =
   | { type: "existing"; tagId: string; kind: K }
   | { type: "pending"; pendingName: string; kind: K };
-
-export function ItemPicker<T extends { id: string }>({
-  label,
-  allItems,
-  selectedIds,
-  onToggle,
-  searchPlaceholder,
-  getLabel,
-  renderDropdownItem,
-}: {
-  label: string;
-  allItems: T[];
-  selectedIds: string[];
-  onToggle: (id: string) => void;
-  searchPlaceholder: string;
-  getLabel: (item: T) => string;
-  renderDropdownItem?: (item: T) => ReactNode;
-}) {
-  const [search, setSearch] = useState("");
-
-  const filtered = allItems.filter(
-    (item) =>
-      !selectedIds.includes(item.id) && getLabel(item).toLowerCase().includes(search.toLowerCase()),
-  );
-
-  const selected = allItems.filter((item) => selectedIds.includes(item.id));
-
-  return (
-    <div className="form-field">
-      <span className="form-label">{label}</span>
-      {selected.length > 0 && (
-        <div className="admin-pills">
-          {selected.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className="admin-pill"
-              onClick={() => {
-                onToggle(item.id);
-              }}
-            >
-              {getLabel(item)} ×
-            </button>
-          ))}
-        </div>
-      )}
-      <input
-        type="search"
-        className="form-input"
-        placeholder={searchPlaceholder}
-        value={search}
-        onChange={(event) => {
-          setSearch(event.target.value);
-        }}
-      />
-      {search.trim() !== "" && (
-        <ul className="admin-multiselect-list">
-          {filtered.length === 0 && <li className="admin-multiselect-empty">No results</li>}
-          {filtered.map((item) => (
-            <li key={item.id}>
-              <button
-                type="button"
-                className="admin-picker-item"
-                onClick={() => {
-                  onToggle(item.id);
-                  setSearch("");
-                }}
-              >
-                {renderDropdownItem ? renderDropdownItem(item) : getLabel(item)}
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}
 
 export function TagPicker<K extends string>({
   allTags,

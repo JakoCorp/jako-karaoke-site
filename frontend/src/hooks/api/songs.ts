@@ -21,7 +21,7 @@ export function useSongs(params?: SongListParams, enabled = true) {
 }
 
 /** Infinite scroll query for the songs list. Appends pages as the user scrolls. */
-export function useInfiniteSongs(params?: WithoutPaging<SongListParams>) {
+export function useInfiniteSongs(params?: WithoutPaging<SongListParams>, enabled = true) {
   const SONGS_PER_PAGE = 24;
 
   return useInfiniteQuery({
@@ -33,6 +33,7 @@ export function useInfiniteSongs(params?: WithoutPaging<SongListParams>) {
       const fetched = allPages.length * SONGS_PER_PAGE;
       return fetched < lastPage.total ? allPages.length + 1 : undefined;
     },
+    enabled,
   });
 }
 

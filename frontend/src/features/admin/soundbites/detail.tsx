@@ -1,10 +1,10 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
+import type { ArtistInfo } from "@/api/artists";
 import { ensureOk, unwrap } from "@/api/client";
 import { soundbitesApi, type SoundbiteResponse } from "@/api/soundbites";
 import { ConfirmDialog } from "@/components/confirm-dialog";
-import { useArtists } from "@/hooks/api/artists";
 import { soundbiteKeys } from "@/hooks/api/soundbites";
 import { resolveAssetUrl } from "@/lib/asset-url";
 import { failureMessage } from "@/lib/error-message";
@@ -12,7 +12,7 @@ import { formatDate } from "@/lib/format";
 import { useAuthStore } from "@/store/auth";
 
 import { assetLabel } from "../components/asset-utils";
-import { ItemPicker } from "../components/pickers";
+import { ArtistPicker } from "../components/entity-pickers";
 import { SingleAudioField } from "../components/single-audio-field";
 import { parseStreamPosition } from "../components/stream-position";
 import { SoundbitePlayersDialog } from "./players-dialog";
@@ -41,7 +41,7 @@ export function SoundbiteDetailPanel({
   const [editDate, setEditDate] = useState("");
   const [editStreamNumber, setEditStreamNumber] = useState("");
   const [editSoundbiteNumber, setEditSoundbiteNumber] = useState("");
-  const [editArtistIds, setEditArtistIds] = useState<string[]>([]);
+  const [editArtists, setEditArtists] = useState<ArtistInfo[]>([]);
   const [editFile, setEditFile] = useState<File | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -53,8 +53,6 @@ export function SoundbiteDetailPanel({
     "soundbite number",
   );
 
-  const { data: allArtists } = useArtists({ per_page: 200 }, isFormOpen);
-
   const createMutation = useMutation({
     mutationFn: async () => {
       if (!streamPosition.ok) throw new Error(streamPosition.message);
@@ -65,7 +63,7 @@ export function SoundbiteDetailPanel({
           soundbite_date: editDate,
           stream_number: streamPosition.stream_number,
           soundbite_number: streamPosition.position_number,
-          artist_ids: editArtistIds,
+          artist_ids: editArtists.map((artist) => artist.id),
         }),
       );
       unwrap(await soundbitesApi.uploadAudio(created.id, editFile));
@@ -91,7 +89,7 @@ export function SoundbiteDetailPanel({
           soundbite_date: editDate,
           stream_number: streamPosition.stream_number,
           soundbite_number: streamPosition.position_number,
-          artist_ids: editArtistIds,
+          artist_ids: editArtists.map((artist) => artist.id),
         }),
       );
       if (editFile === null) return updated;
@@ -130,7 +128,7 @@ export function SoundbiteDetailPanel({
     setEditSoundbiteNumber(
       soundbite.soundbite_number != null ? String(soundbite.soundbite_number) : "",
     );
-    setEditArtistIds(soundbite.artists.map((artist) => artist.id));
+    setEditArtists(soundbite.artists);
     setEditFile(null);
     setFormError(null);
     setIsEditing(true);
@@ -145,14 +143,6 @@ export function SoundbiteDetailPanel({
   function chooseFile(file: File | null) {
     setEditFile(file);
     if (file !== null && editTitle.trim() === "") setEditTitle(withoutExtension(file.name));
-  }
-
-  function toggleArtist(artistId: string) {
-    setEditArtistIds((previous) =>
-      previous.includes(artistId)
-        ? previous.filter((id) => id !== artistId)
-        : [...previous, artistId],
-    );
   }
 
   if (isFormOpen) {
@@ -260,14 +250,7 @@ export function SoundbiteDetailPanel({
             />
             {!streamPosition.ok && <p className="form-error">{streamPosition.message}</p>}
           </div>
-          <ItemPicker
-            label="Artists"
-            allItems={allArtists?.items ?? []}
-            selectedIds={editArtistIds}
-            onToggle={toggleArtist}
-            searchPlaceholder="Search artists…"
-            getLabel={(artist) => artist.name}
-          />
+          <ArtistPicker label="Artists" selected={editArtists} onChange={setEditArtists} />
           {formError !== null && <p className="form-error">{formError}</p>}
         </div>
       </>
