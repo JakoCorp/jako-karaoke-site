@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-/// A minimal user projection.
+/// A minimal user projection embedded in other responses.
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct UserSummary {
     /// Unique identifier.
@@ -21,7 +21,7 @@ pub struct AdminUserSummary {
     pub id: Uuid,
     /// Display name chosen during registration.
     pub username: String,
-    /// When the account was suspended. Absent when the account is not suspended.
+    /// When the account was suspended. Absent when active.
     pub suspended_at: Option<DateTime<Utc>>,
 }
 

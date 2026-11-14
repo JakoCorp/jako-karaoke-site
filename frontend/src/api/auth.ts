@@ -30,8 +30,8 @@ export const authApi = {
   /** Returns the currently authenticated user, or null if no session is active. */
   me: () => api.GET("/auth/me", {}),
 
-  /** Returns 204 if a valid pending OAuth signup session exists, 404 otherwise. */
-  checkPending: () => api.GET("/auth/pending", {}),
+  /** Returns the pending OAuth signup, or 404 if none is valid. */
+  getPending: () => api.GET("/auth/pending", {}),
 
   /**
    * Completes an OAuth signup by claiming a username.

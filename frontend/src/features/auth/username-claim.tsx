@@ -7,34 +7,36 @@ import { unwrap } from "@/api/client";
 import { errorMessage } from "@/lib/error-message";
 import { useAuthStore } from "@/store/auth";
 
+/** Lets a new user pick a username. Shown when the callback redirects with `?auth=claim`. */
 export function UsernameClaim() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const setUser = useAuthStore((state) => state.setUser);
 
-  const suggested = searchParams.get("username");
+  const isClaiming = searchParams.get("auth") === "claim";
 
   const [ready, setReady] = useState(false);
-  const [username, setUsername] = useState(() => suggested ?? "");
+  const [username, setUsername] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (suggested === null) return;
+    if (!isClaiming) return;
 
-    const verify = async () => {
-      const { response } = await authApi.checkPending();
-      if (response.ok) {
+    const loadPending = async () => {
+      const { data } = await authApi.getPending();
+      if (data) {
+        setUsername(data.suggested_username);
         setReady(true);
       } else {
         void navigate("/", { replace: true });
       }
     };
 
-    void verify();
-  }, [suggested, navigate]);
+    void loadPending();
+  }, [isClaiming, navigate]);
 
-  if (suggested === null || !ready) return null;
+  if (!isClaiming || !ready) return null;
 
   async function handleSubmit() {
     setSubmitting(true);

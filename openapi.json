@@ -5844,7 +5844,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Suspended user. Their sessions are ended and they cannot sign in until the suspension is lifted",
+            "description": "Suspended user, their sessions are ended",
             "content": {
               "application/json": {
                 "schema": {
@@ -5919,7 +5919,7 @@
         ],
         "responses": {
           "200": {
-            "description": "User whose suspension is lifted",
+            "description": "Unsuspended user",
             "content": {
               "application/json": {
                 "schema": {
@@ -6066,7 +6066,7 @@
         ],
         "responses": {
           "302": {
-            "description": "Redirect to frontend on success"
+            "description": "Redirect to frontend, with `?auth=claim` for a new user or `?auth=suspended` for a suspended account"
           },
           "400": {
             "description": "Missing or invalid OAuth state"
@@ -6326,10 +6326,17 @@
         "tags": [
           "auth"
         ],
-        "operationId": "pending_check",
+        "operationId": "pending_signup",
         "responses": {
-          "204": {
-            "description": "Valid pending signup session exists"
+          "200": {
+            "description": "Valid pending signup exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PendingSignupResponse"
+                }
+              }
+            }
           },
           "404": {
             "description": "No pending signup or session expired"
@@ -6378,7 +6385,7 @@
         ],
         "responses": {
           "302": {
-            "description": "Redirect to frontend on success"
+            "description": "Redirect to frontend, with `?auth=claim` for a new user or `?auth=suspended` for a suspended account"
           },
           "400": {
             "description": "Missing or invalid OAuth state"
@@ -6581,7 +6588,7 @@
               "null"
             ],
             "format": "date-time",
-            "description": "When the account was suspended. Absent when the account is not suspended."
+            "description": "When the account was suspended. Absent when active."
           },
           "username": {
             "type": "string",
@@ -7464,7 +7471,7 @@
                     "null"
                   ],
                   "format": "date-time",
-                  "description": "When the account was suspended. Absent when the account is not suspended."
+                  "description": "When the account was suspended. Absent when active."
                 },
                 "username": {
                   "type": "string",
@@ -8229,6 +8236,19 @@
             "format": "int64",
             "description": "Total number of matching items across all pages.",
             "minimum": 0
+          }
+        }
+      },
+      "PendingSignupResponse": {
+        "type": "object",
+        "description": "Response body for `GET /auth/pending`.",
+        "required": [
+          "suggested_username"
+        ],
+        "properties": {
+          "suggested_username": {
+            "type": "string",
+            "description": "Handle from the provider, offered as the default username."
           }
         }
       },
@@ -9402,7 +9422,7 @@
       },
       "UserSummary": {
         "type": "object",
-        "description": "A minimal user projection.",
+        "description": "A minimal user projection embedded in other responses.",
         "required": [
           "id",
           "username"

@@ -1,12 +1,12 @@
 import { Dialog } from "@base-ui/react";
 import { useNavigate, useSearchParams } from "react-router";
 
-/** Tells a suspended user why sign in failed. Shown when the callback redirects with `?suspended=true`. */
+/** Tells a suspended user why sign in failed. Shown when the callback redirects with `?auth=suspended`. */
 export function SuspendedNotice() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  if (searchParams.get("suspended") !== "true") return null;
+  if (searchParams.get("auth") !== "suspended") return null;
 
   return (
     <Dialog.Root
