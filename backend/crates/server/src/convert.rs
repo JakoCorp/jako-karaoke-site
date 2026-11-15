@@ -12,11 +12,12 @@ use api_types::{
     songs::SongImageInfo,
     soundbites::SoundbiteResponse,
     tags::TagResponse,
-    users::{AdminUserSummary, UserSummary},
+    users::{AdminUserSummary, SuspensionResponse, UserSummary},
 };
 use db::{
     models::{
-        Artist, Asset, Soundbite, SoundbitePlayerRow, Tag, UserSoundbitePlayRow, playlist::Playlist,
+        Artist, Asset, Soundbite, SoundbitePlayerRow, Tag, UserSoundbitePlayRow, UserSuspensionRow,
+        playlist::Playlist,
     },
     queries::{artists::ArtistImageRow, songs::SongImageRow},
 };
@@ -176,6 +177,22 @@ pub(crate) fn admin_user_summary(user: db::models::UserSummary) -> AdminUserSumm
         id: user.id,
         username: user.username,
         suspended_at: user.suspended_at,
+    }
+}
+
+/// Converts a [`UserSuspensionRow`] to a [`SuspensionResponse`].
+pub(crate) fn suspension_response(row: UserSuspensionRow) -> SuspensionResponse {
+    let admin = |id: Option<uuid::Uuid>, username: Option<String>| {
+        id.zip(username)
+            .map(|(id, username)| UserSummary { id, username })
+    };
+    SuspensionResponse {
+        id: row.id,
+        reason: row.reason,
+        suspended_at: row.suspended_at,
+        suspended_by: admin(row.suspended_by, row.suspended_by_username),
+        lifted_at: row.lifted_at,
+        lifted_by: admin(row.lifted_by, row.lifted_by_username),
     }
 }
 

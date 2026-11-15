@@ -72,6 +72,19 @@ CREATE TABLE IF NOT EXISTS user_capabilities (
     PRIMARY KEY (user_id, capability)
 ) ENGINE = InnoDB;
 
+-- User Suspensions
+CREATE TABLE IF NOT EXISTS user_suspensions (
+    id BINARY(16) NOT NULL DEFAULT (UNHEX(REPLACE(UUID_V7(), '-', ''))),
+    user_id BINARY(16) NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    suspended_by BINARY(16) NULL REFERENCES users (id) ON DELETE SET NULL,
+    reason VARCHAR(500) NOT NULL,
+    suspended_at DATETIME NOT NULL,
+    lifted_by BINARY(16) NULL REFERENCES users (id) ON DELETE SET NULL,
+    lifted_at DATETIME NULL,
+    PRIMARY KEY (id),
+    INDEX (user_id, suspended_at)
+) ENGINE = InnoDB;
+
 -- Sessions
 -- id is the SHA256 hash (hex) of the opaque session token issued to the client.
 CREATE TABLE IF NOT EXISTS sessions (

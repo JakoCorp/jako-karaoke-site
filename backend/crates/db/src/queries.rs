@@ -18,4 +18,5 @@ pub mod soundbites;
 pub mod tags;
 pub mod user_avatars;
 pub mod user_settings;
+pub mod user_suspensions;
 pub mod users;

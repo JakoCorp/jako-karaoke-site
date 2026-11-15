@@ -25,6 +25,30 @@ pub struct AdminUserSummary {
     pub suspended_at: Option<DateTime<Utc>>,
 }
 
+/// Request body for `PUT /api/users/{id}/suspension`.
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct SuspendUserRequest {
+    /// Why the account is suspended, max 500 chars.
+    pub reason: String,
+}
+
+/// A suspension of a user, returned by `GET /api/users/{id}/suspensions`.
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct SuspensionResponse {
+    /// Unique identifier.
+    pub id: Uuid,
+    /// Why the account was suspended.
+    pub reason: String,
+    /// When the suspension started.
+    pub suspended_at: DateTime<Utc>,
+    /// Admin who suspended the account. Absent when that account was deleted.
+    pub suspended_by: Option<UserSummary>,
+    /// When the suspension was lifted. Absent while it is in effect.
+    pub lifted_at: Option<DateTime<Utc>>,
+    /// Admin who lifted the suspension. Absent while it is in effect or when that account was deleted.
+    pub lifted_by: Option<UserSummary>,
+}
+
 /// Request body for `PATCH /api/users/{id}`.
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct UpdateUserRequest {

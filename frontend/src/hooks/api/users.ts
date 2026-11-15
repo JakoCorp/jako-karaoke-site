@@ -12,6 +12,7 @@ export const userKeys = {
   all: () => ["users"] as const,
   list: (q?: string) => ["users", "infinite", q] as const,
   capabilities: (id: string) => ["users", "capabilities", id] as const,
+  suspensions: (id: string) => ["users", "suspensions", id] as const,
   performancePlays: (id: string, page: number) =>
     ["users", "plays", "performances", id, page] as const,
   allPerformancePlays: (id: string) => ["users", "plays", "performances", id] as const,
@@ -40,6 +41,14 @@ export function useUserCapabilities(userId: string | undefined) {
   return useQuery({
     queryKey: userKeys.capabilities(userId ?? ""),
     queryFn: async () => unwrap(await usersApi.listCapabilities(userId!)),
+    enabled: !!userId,
+  });
+}
+
+export function useUserSuspensions(userId: string | undefined) {
+  return useQuery({
+    queryKey: userKeys.suspensions(userId ?? ""),
+    queryFn: async () => unwrap(await usersApi.listSuspensions(userId!)),
     enabled: !!userId,
   });
 }
@@ -118,15 +127,27 @@ export function useRemoveUserSoundbitePlays() {
   });
 }
 
-/** Suspends or unsuspends a user as an admin and refreshes the cached user lists. */
-export function useSetUserSuspended() {
+/** Suspends a user as an admin, recording the reason, and refreshes the cached user data. */
+export function useSuspendUser() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ userId, suspended }: { userId: string; suspended: boolean }) =>
-      unwrap(suspended ? await usersApi.suspend(userId) : await usersApi.unsuspend(userId)),
-    onSuccess: async (user) => {
+    mutationFn: async ({ userId, reason }: { userId: string; reason: string }) =>
+      unwrap(await usersApi.suspend(userId, reason)),
+    onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: userKeys.all() });
-      toast.success(user.suspended_at ? "User suspended" : "Suspension lifted");
+      toast.success("User suspended");
+    },
+  });
+}
+
+/** Lifts a user's suspension as an admin and refreshes the cached user data. */
+export function useUnsuspendUser() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (userId: string) => unwrap(await usersApi.unsuspend(userId)),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: userKeys.all() });
+      toast.success("Suspension lifted");
     },
   });
 }

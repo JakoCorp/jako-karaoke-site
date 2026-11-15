@@ -5842,6 +5842,16 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SuspendUserRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "Suspended user, their sessions are ended",
@@ -5854,11 +5864,86 @@
             }
           },
           "400": {
-            "description": "Cannot suspend yourself",
+            "description": "Blank or overlong reason, or suspending yourself",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "User is already suspended",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "users"
+        ],
+        "operationId": "unsuspend_user",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "User ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Unsuspended user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserSummary"
                 }
               }
             }
@@ -5899,12 +5984,14 @@
             "session": []
           }
         ]
-      },
-      "delete": {
+      }
+    },
+    "/api/users/{id}/suspensions": {
+      "get": {
         "tags": [
           "users"
         ],
-        "operationId": "unsuspend_user",
+        "operationId": "list_user_suspensions",
         "parameters": [
           {
             "name": "id",
@@ -5919,11 +6006,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Unsuspended user",
+            "description": "Suspensions of this user, newest first",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AdminUserSummary"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SuspensionResponse"
+                  }
                 }
               }
             }
@@ -8954,6 +9044,74 @@
             "format": "int32",
             "description": "Seconds of listening required before the play can be completed.",
             "minimum": 0
+          }
+        }
+      },
+      "SuspendUserRequest": {
+        "type": "object",
+        "description": "Request body for `PUT /api/users/{id}/suspension`.",
+        "required": [
+          "reason"
+        ],
+        "properties": {
+          "reason": {
+            "type": "string",
+            "description": "Why the account is suspended, max 500 chars."
+          }
+        }
+      },
+      "SuspensionResponse": {
+        "type": "object",
+        "description": "A suspension of a user, returned by `GET /api/users/{id}/suspensions`.",
+        "required": [
+          "id",
+          "reason",
+          "suspended_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique identifier."
+          },
+          "lifted_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the suspension was lifted. Absent while it is in effect."
+          },
+          "lifted_by": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UserSummary",
+                "description": "Admin who lifted the suspension. Absent while it is in effect or when that account was deleted."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why the account was suspended."
+          },
+          "suspended_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the suspension started."
+          },
+          "suspended_by": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UserSummary",
+                "description": "Admin who suspended the account. Absent when that account was deleted."
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },

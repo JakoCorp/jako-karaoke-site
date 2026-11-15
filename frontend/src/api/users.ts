@@ -4,6 +4,7 @@ import type { QueryOf } from "./types";
 
 export type UserSummary = components["schemas"]["UserSummary"];
 export type AdminUserSummary = components["schemas"]["AdminUserSummary"];
+export type SuspensionResponse = components["schemas"]["SuspensionResponse"];
 export type UserPerformancePlayEntry = components["schemas"]["UserPerformancePlayEntry"];
 export type UserSoundbitePlayEntry = components["schemas"]["UserSoundbitePlayEntry"];
 
@@ -26,12 +27,19 @@ export const usersApi = {
     }),
 
   /** Suspends a user, ending their sessions and blocking sign in. Requires `capabilities:manage`. */
-  suspend: (userId: string) =>
-    api.PUT("/api/users/{id}/suspension", { params: { path: { id: userId } } }),
+  suspend: (userId: string, reason: string) =>
+    api.PUT("/api/users/{id}/suspension", {
+      params: { path: { id: userId } },
+      body: { reason } satisfies components["schemas"]["SuspendUserRequest"],
+    }),
 
   /** Lifts a user's suspension. Requires `capabilities:manage`. */
   unsuspend: (userId: string) =>
     api.DELETE("/api/users/{id}/suspension", { params: { path: { id: userId } } }),
+
+  /** Returns a user's suspensions, newest first. Requires `capabilities:manage`. */
+  listSuspensions: (userId: string) =>
+    api.GET("/api/users/{id}/suspensions", { params: { path: { id: userId } } }),
 
   /** Returns capabilities assigned to a user. */
   listCapabilities: (userId: string) =>
