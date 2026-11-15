@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
+import type { ArtistInfo } from "@/api/artists";
 import {
   AUDIO_KINDS,
   PERFORMANCE_TAG_KINDS,
@@ -11,21 +12,21 @@ import {
   type PerformanceTagKind,
   type VideoKind,
 } from "@/api/performances";
+import type { SongSummary } from "@/api/songs";
 import { tagsApi } from "@/api/tags";
 import { ConfirmDialog } from "@/components/confirm-dialog";
-import { useArtists } from "@/hooks/api/artists";
 import { filterCatalogKeys } from "@/hooks/api/filter-catalog";
 import { performanceKeys, usePerformance } from "@/hooks/api/performances";
-import { useSongs } from "@/hooks/api/songs";
 import { tagKeys, useTags } from "@/hooks/api/tags";
 import { failureMessage } from "@/lib/error-message";
 import { formatDate, formatStreamTime, hasStreamPosition, parseStreamTime } from "@/lib/format";
 import { applyAll } from "@/lib/staging";
 import { useAuthStore } from "@/store/auth";
 
+import { ArtistPicker, SongPicker } from "../components/entity-pickers";
 import { MediaEditSection, type StagingMediaItem } from "../components/media-edit-section";
 import { MediaList } from "../components/media-list";
-import { ItemPicker, TagPicker, type TagAssignment } from "../components/pickers";
+import { TagPicker, type TagAssignment } from "../components/pickers";
 import { parseStreamPosition } from "../components/stream-position";
 import { resolveTagAssignments } from "../components/tag-utils";
 import { PlayersDialog } from "./players-dialog";
@@ -47,8 +48,8 @@ export function PerformanceDetailPanel({
   const [editStreamNumber, setEditStreamNumber] = useState("");
   const [editPerformanceNumber, setEditPerformanceNumber] = useState("");
   const [editStreamTimeInput, setEditStreamTimeInput] = useState("");
-  const [editSongIds, setEditSongIds] = useState<string[]>([]);
-  const [editSingerIds, setEditSingerIds] = useState<string[]>([]);
+  const [editSongs, setEditSongs] = useState<SongSummary[]>([]);
+  const [editSingers, setEditSingers] = useState<ArtistInfo[]>([]);
   const [editTags, setEditTags] = useState<TagAssignment<PerformanceTagKind>[]>([]);
   const [editLyrics, setEditLyrics] = useState("");
   const [stagingAddAudio, setStagingAddAudio] = useState<StagingMediaItem<AudioKind>[]>([]);
@@ -72,8 +73,6 @@ export function PerformanceDetailPanel({
   );
 
   const { data: performanceDetail } = usePerformance(performance?.id ?? "", !isCreating);
-  const { data: allSongs } = useSongs({ per_page: 200 }, isFormOpen);
-  const { data: allArtists } = useArtists({ per_page: 200 }, isFormOpen);
   const { data: allTags } = useTags(isFormOpen);
 
   const createMutation = useMutation({
@@ -90,8 +89,8 @@ export function PerformanceDetailPanel({
         stream_number: streamPosition.stream_number,
         performance_number: streamPosition.position_number,
         stream_time: parseStreamTime(editStreamTimeInput) ?? undefined,
-        song_ids: editSongIds,
-        singer_ids: editSingerIds,
+        song_ids: editSongs.map((song) => song.id),
+        singer_ids: editSingers.map((singer) => singer.id),
         tags: resolvedTags,
         title: editTitle.trim() !== "" ? editTitle.trim() : null,
         lyrics: editLyrics.trim() !== "" ? editLyrics.trim() : null,
@@ -143,8 +142,8 @@ export function PerformanceDetailPanel({
         stream_number: streamPosition.stream_number,
         performance_number: streamPosition.position_number,
         stream_time: parseStreamTime(editStreamTimeInput) ?? undefined,
-        song_ids: editSongIds,
-        singer_ids: editSingerIds,
+        song_ids: editSongs.map((song) => song.id),
+        singer_ids: editSingers.map((singer) => singer.id),
         tags: resolvedTags,
         title: editTitle.trim() !== "" ? editTitle.trim() : null,
       });
@@ -226,8 +225,8 @@ export function PerformanceDetailPanel({
     setEditStreamTimeInput(
       performanceDetail.stream_time != null ? formatStreamTime(performanceDetail.stream_time) : "",
     );
-    setEditSongIds(performanceDetail.songs.map((song) => song.id));
-    setEditSingerIds(performanceDetail.singers.map((singer) => singer.id));
+    setEditSongs(performanceDetail.songs);
+    setEditSingers(performanceDetail.singers);
     setEditTags(
       performanceDetail.tags.map((tag) => ({
         type: "existing" as const,
@@ -254,20 +253,6 @@ export function PerformanceDetailPanel({
     setPendingVideoKindChanges(new Map());
     setIsEditing(false);
     setFormError(null);
-  }
-
-  function toggleSong(songId: string) {
-    setEditSongIds((previous) =>
-      previous.includes(songId) ? previous.filter((id) => id !== songId) : [...previous, songId],
-    );
-  }
-
-  function toggleSinger(singerId: string) {
-    setEditSingerIds((previous) =>
-      previous.includes(singerId)
-        ? previous.filter((id) => id !== singerId)
-        : [...previous, singerId],
-    );
   }
 
   function addExistingTag(tagId: string) {
@@ -440,33 +425,8 @@ export function PerformanceDetailPanel({
               }}
             />
           </div>
-          <ItemPicker
-            label="Songs"
-            allItems={allSongs?.items ?? []}
-            selectedIds={editSongIds}
-            onToggle={toggleSong}
-            searchPlaceholder="Search songs…"
-            getLabel={(song) => song.title}
-            renderDropdownItem={(song) => (
-              <>
-                {song.title}
-                {song.artists.length > 0 && (
-                  <span className="admin-item-sub">
-                    {" "}
-                    — {song.artists.map((artist) => artist.name).join(", ")}
-                  </span>
-                )}
-              </>
-            )}
-          />
-          <ItemPicker
-            label="Singers"
-            allItems={allArtists?.items ?? []}
-            selectedIds={editSingerIds}
-            onToggle={toggleSinger}
-            searchPlaceholder="Search singers…"
-            getLabel={(artist) => artist.name}
-          />
+          <SongPicker label="Songs" selected={editSongs} onChange={setEditSongs} />
+          <ArtistPicker label="Singers" selected={editSingers} onChange={setEditSingers} />
           <TagPicker
             allTags={allTags ?? []}
             selected={editTags}

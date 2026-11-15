@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
+import type { ArtistInfo } from "@/api/artists";
 import {
   SONG_IMAGE_KINDS,
   SONG_TAG_KINDS,
@@ -11,16 +12,16 @@ import {
 } from "@/api/songs";
 import { tagsApi } from "@/api/tags";
 import { ConfirmDialog } from "@/components/confirm-dialog";
-import { useArtists } from "@/hooks/api/artists";
 import { filterCatalogKeys } from "@/hooks/api/filter-catalog";
 import { songKeys, useSong } from "@/hooks/api/songs";
 import { tagKeys, useTags } from "@/hooks/api/tags";
 import { failureMessage } from "@/lib/error-message";
 import { applyAll } from "@/lib/staging";
 
+import { ArtistPicker } from "../components/entity-pickers";
 import { ImageEditSection, type StagingImageItem } from "../components/image-edit-section";
 import { ImageList } from "../components/image-list";
-import { ItemPicker, TagPicker, type TagAssignment } from "../components/pickers";
+import { TagPicker, type TagAssignment } from "../components/pickers";
 import { resolveTagAssignments } from "../components/tag-utils";
 
 export function SongDetailPanel({
@@ -34,7 +35,7 @@ export function SongDetailPanel({
   const [isEditing, setIsEditing] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [editTitle, setEditTitle] = useState("");
-  const [editArtistIds, setEditArtistIds] = useState<string[]>([]);
+  const [editArtists, setEditArtists] = useState<ArtistInfo[]>([]);
   const [editTags, setEditTags] = useState<TagAssignment<SongTagKind>[]>([]);
   const [stagingAddImages, setStagingAddImages] = useState<StagingImageItem<SongImageKind>[]>([]);
   const [pendingRemoveIds, setPendingRemoveIds] = useState<Set<string>>(new Set());
@@ -47,7 +48,6 @@ export function SongDetailPanel({
   const isFormOpen = isCreating || isEditing;
 
   const { data: songDetail } = useSong(song?.id ?? "", !isCreating);
-  const { data: allArtists } = useArtists({ per_page: 200 }, isFormOpen);
   const { data: allTags } = useTags(isFormOpen);
 
   const createMutation = useMutation({
@@ -60,7 +60,7 @@ export function SongDetailPanel({
       });
       const { data, error: apiError } = await songsApi.create({
         title: editTitle.trim(),
-        artist_ids: editArtistIds,
+        artist_ids: editArtists.map((artist) => artist.id),
         tags: resolvedTags,
       });
       if (apiError) throw apiError;
@@ -97,7 +97,7 @@ export function SongDetailPanel({
       });
       const { error: apiError } = await songsApi.update(song.id, {
         title: editTitle.trim(),
-        artist_ids: editArtistIds,
+        artist_ids: editArtists.map((artist) => artist.id),
         tags: resolvedTags,
       });
       if (apiError) throw apiError;
@@ -146,7 +146,7 @@ export function SongDetailPanel({
   function startEditing() {
     if (!songDetail) return;
     setEditTitle(songDetail.title);
-    setEditArtistIds(songDetail.artists.map((artist) => artist.id));
+    setEditArtists(songDetail.artists);
     setEditTags(
       songDetail.tags.map((tag) => ({
         type: "existing" as const,
@@ -167,14 +167,6 @@ export function SongDetailPanel({
     setPendingImageKindChanges(new Map());
     setIsEditing(false);
     setFormError(null);
-  }
-
-  function toggleArtist(artistId: string) {
-    setEditArtistIds((previous) =>
-      previous.includes(artistId)
-        ? previous.filter((id) => id !== artistId)
-        : [...previous, artistId],
-    );
   }
 
   function addExistingTag(tagId: string) {
@@ -247,14 +239,7 @@ export function SongDetailPanel({
               }}
             />
           </div>
-          <ItemPicker
-            label="Artists"
-            allItems={allArtists?.items ?? []}
-            selectedIds={editArtistIds}
-            onToggle={toggleArtist}
-            searchPlaceholder="Search artists…"
-            getLabel={(artist) => artist.name}
-          />
+          <ArtistPicker label="Artists" selected={editArtists} onChange={setEditArtists} />
           <TagPicker
             allTags={allTags ?? []}
             selected={editTags}

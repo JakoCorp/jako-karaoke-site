@@ -9,6 +9,7 @@ export type ArtistSortField = components["schemas"]["ArtistSort"];
 /** Query parameters of the artist list endpoint. */
 export type ArtistListParams = QueryOf<"list_artists">;
 
+export type ArtistInfo = components["schemas"]["ArtistInfo"];
 export type ArtistSummary = components["schemas"]["ArtistSummary"];
 export type ArtistResponse = components["schemas"]["ArtistResponse"];
 export type ArtistLinkInfo = components["schemas"]["ArtistLinkInfo"];

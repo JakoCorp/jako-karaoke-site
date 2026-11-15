@@ -7,20 +7,11 @@ import type { WithoutPaging } from "@/api/types";
 
 export const artistKeys = {
   all: () => ["artists"] as const,
-  list: (params?: ArtistListParams) => ["artists", "list", params] as const,
   detail: (id: string) => ["artists", "detail", id] as const,
 };
 
-export function useArtists(params?: ArtistListParams, enabled = true) {
-  return useQuery({
-    queryKey: artistKeys.list(params),
-    queryFn: async () => unwrap(await artistsApi.list(params)),
-    enabled,
-  });
-}
-
 /** Infinite scroll query for the artists list. Appends pages as the user scrolls. */
-export function useInfiniteArtists(params?: WithoutPaging<ArtistListParams>) {
+export function useInfiniteArtists(params?: WithoutPaging<ArtistListParams>, enabled = true) {
   const ARTISTS_PER_PAGE = 24;
 
   return useInfiniteQuery({
@@ -32,6 +23,7 @@ export function useInfiniteArtists(params?: WithoutPaging<ArtistListParams>) {
       const fetched = allPages.length * ARTISTS_PER_PAGE;
       return fetched < lastPage.total ? allPages.length + 1 : undefined;
     },
+    enabled,
   });
 }
 
