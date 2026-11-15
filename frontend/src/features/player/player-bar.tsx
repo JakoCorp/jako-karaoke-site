@@ -256,6 +256,7 @@ export function MusicPlayer() {
         duration={duration}
         seek={seek}
         getAudioSource={getAudioSource}
+        sleepRemaining={remaining}
       />
     </div>
   );

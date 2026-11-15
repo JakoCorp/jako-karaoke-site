@@ -7,6 +7,7 @@ import { usePlayerStore } from "@/store/player";
 
 interface Props {
   remaining: number | null;
+  align?: "start" | "end";
 }
 
 const PRESETS = [
@@ -16,7 +17,7 @@ const PRESETS = [
   { label: "60 min", ms: 60 * 60 * 1000 },
 ] as const;
 
-export function SleepTimerPopover({ remaining }: Props) {
+export function SleepTimerPopover({ remaining, align = "end" }: Props) {
   const sleepTimerEndsAt = usePlayerStore((s) => s.sleepTimerEndsAt);
   const sleepTimerTrackEnd = usePlayerStore((s) => s.sleepTimerTrackEnd);
   const setSleepTimer = usePlayerStore((s) => s.setSleepTimer);
@@ -54,7 +55,12 @@ export function SleepTimerPopover({ remaining }: Props) {
         )}
       </Popover.Trigger>
       <Popover.Portal>
-        <Popover.Positioner side="top" align="end" sideOffset={8}>
+        <Popover.Positioner
+          side="top"
+          align={align}
+          sideOffset={8}
+          className="player-popover-layer"
+        >
           <Popover.Popup className="player-sleep-popup">
             {isActive && (
               <Popover.Close className="btn w-full btn-secondary" onClick={clearSleepTimer}>

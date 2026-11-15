@@ -12,7 +12,12 @@ export function PlaylistPickerPopover({ performanceId, children }: Props) {
     <Popover.Root>
       <Popover.Trigger render={children} />
       <Popover.Portal>
-        <Popover.Positioner side="bottom" align="start" sideOffset={6}>
+        <Popover.Positioner
+          side="bottom"
+          align="start"
+          sideOffset={6}
+          className="player-popover-layer"
+        >
           <Popover.Popup className="playlist-picker-popup">
             <PlaylistPickerContent performanceId={performanceId} />
           </Popover.Popup>
