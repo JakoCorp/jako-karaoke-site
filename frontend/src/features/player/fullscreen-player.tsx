@@ -1,5 +1,7 @@
 import { Dialog } from "@base-ui/react";
 import {
+  InfoIcon,
+  MusicNotesPlusIcon,
   PauseIcon,
   PlayIcon,
   RepeatIcon,
@@ -13,13 +15,17 @@ import {
   XIcon,
 } from "@phosphor-icons/react";
 import { Suspense, lazy, useState } from "react";
+import { useNavigate } from "react-router";
 
+import { PlaylistPickerPopover } from "@/features/playlists";
 import { usePerformance } from "@/hooks/api/performances";
 import { resolveAssetUrl } from "@/lib/asset-url";
 import { formatDuration } from "@/lib/format";
 import { selectCurrent, selectHasNext, selectHasPrev, usePlayerStore } from "@/store/player";
 import { useVisualizerStore } from "@/store/visualizer";
 
+import { QueuePopup } from "./queue-popup";
+import { SleepTimerPopover } from "./sleep-timer-popover";
 import { useSpectrogramAvailable } from "./visualizer/use-spectrogram-available";
 import { VisualizerToggles } from "./visualizer/visualizer-toggles";
 
@@ -35,6 +41,7 @@ interface FullscreenPlayerProps {
   duration: number;
   seek: (time: number) => void;
   getAudioSource: () => AudioNode | null;
+  sleepRemaining: number | null;
 }
 
 export function FullscreenPlayer({
@@ -44,7 +51,9 @@ export function FullscreenPlayer({
   duration,
   seek,
   getAudioSource,
+  sleepRemaining,
 }: FullscreenPlayerProps) {
+  const navigate = useNavigate();
   const [isSeeking, setIsSeeking] = useState(false);
   const [seekValue, setSeekValue] = useState(0);
   const spectrogramAvailable = useSpectrogramAvailable();
@@ -211,6 +220,35 @@ export function FullscreenPlayer({
                 >
                   {repeatMode === "one" ? <RepeatOnceIcon size={20} /> : <RepeatIcon size={20} />}
                 </button>
+              </div>
+
+              <div className="player-fullscreen-actions">
+                <PlaylistPickerPopover performanceId={current.id}>
+                  <button
+                    type="button"
+                    className="player-btn"
+                    aria-label="Add to playlist"
+                    data-tooltip="Add to playlist"
+                  >
+                    <MusicNotesPlusIcon size={20} />
+                  </button>
+                </PlaylistPickerPopover>
+
+                <button
+                  type="button"
+                  className="player-btn"
+                  aria-label="Performance info"
+                  data-tooltip="Performance info"
+                  onClick={() => {
+                    onClose();
+                    void navigate(`/performance/${current.id}`);
+                  }}
+                >
+                  <InfoIcon size={20} />
+                </button>
+
+                <QueuePopup align="start" />
+                <SleepTimerPopover remaining={sleepRemaining} align="start" />
               </div>
 
               <div className="player-fullscreen-volume">

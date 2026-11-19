@@ -10,8 +10,12 @@ function sourceLabel(source: QueueSource): string {
   return "";
 }
 
+interface QueuePopupProps {
+  align?: "start" | "end";
+}
+
 /** Popover panel showing the current queue. Clicking an item jumps to it. */
-export function QueuePopup() {
+export function QueuePopup({ align = "end" }: QueuePopupProps) {
   const queue = usePlayerStore((s) => s.queue);
   const queueIndex = usePlayerStore((s) => s.queueIndex);
   const queueSource = usePlayerStore((s) => s.queueSource);
@@ -25,7 +29,12 @@ export function QueuePopup() {
         <QueueIcon size={20} />
       </Popover.Trigger>
       <Popover.Portal>
-        <Popover.Positioner side="top" align="end" sideOffset={8}>
+        <Popover.Positioner
+          side="top"
+          align={align}
+          sideOffset={8}
+          className="player-popover-layer"
+        >
           <Popover.Popup className="player-queue-popup">
             <div className="player-queue-header">
               {queue.length} track{queue.length !== 1 ? "s" : ""}

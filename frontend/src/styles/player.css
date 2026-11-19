@@ -255,6 +255,10 @@
   outline: none;
 }
 
+@utility player-popover-layer {
+  z-index: 105;
+}
+
 @utility player-fullscreen-header {
   position: relative;
   display: flex;
@@ -385,6 +389,18 @@
   align-items: center;
   justify-content: center;
   gap: 1.5rem;
+}
+
+@utility player-fullscreen-actions {
+  position: absolute;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+
+  @media (max-width: 640px) {
+    position: static;
+  }
 }
 
 @utility player-fullscreen-volume {
