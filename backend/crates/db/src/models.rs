@@ -16,6 +16,7 @@ pub mod soundbite_play;
 pub mod tag;
 pub mod user;
 pub mod user_settings;
+pub mod user_suspension;
 
 pub use artist::{Artist, ArtistLink, NewArtist, NewArtistLink, UpdateArtist};
 pub use asset::{Asset, NewExternalAsset, NewInternalAsset};
@@ -35,3 +36,4 @@ pub use soundbite_play::{
 pub use tag::{NewTag, Tag, TagWithKind};
 pub use user::{NewUser, User, UserSummary};
 pub use user_settings::UserSettings;
+pub use user_suspension::UserSuspensionRow;

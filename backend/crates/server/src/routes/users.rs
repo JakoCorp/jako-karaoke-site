@@ -19,7 +19,10 @@ use api_types::{
     playlists::{PlaylistEntry, PlaylistKind, PlaylistResponse},
     plays::{UserPerformancePlayEntry, UserSoundbitePlayEntry},
     soundbites::SoundbiteResponse,
-    users::{AdminUserSummary, GrantCapabilityRequest, UpdateUserRequest, UserSummary},
+    users::{
+        AdminUserSummary, GrantCapabilityRequest, SuspendUserRequest, SuspensionResponse,
+        UpdateUserRequest, UserSummary,
+    },
 };
 use db::{
     error::DbError,
@@ -46,6 +49,7 @@ use crate::{
         update_user,
         suspend_user,
         unsuspend_user,
+        list_user_suspensions,
         list_user_playlists,
         get_user_playlists_containing_performance,
         favorites::performances::list_user_favorite_performances,
@@ -71,6 +75,8 @@ use crate::{
         UserSummary,
         AdminUserSummary,
         PagedResponse<AdminUserSummary>,
+        SuspendUserRequest,
+        SuspensionResponse,
         UpdateUserRequest,
         GrantCapabilityRequest,
         PlaylistResponse,
@@ -93,6 +99,7 @@ pub fn router() -> Router<AppState> {
         .route("/", get(search_users))
         .route("/{id}", patch(update_user))
         .route("/{id}/suspension", put(suspend_user).delete(unsuspend_user))
+        .route("/{id}/suspensions", get(list_user_suspensions))
         .route("/{id}/playlists", get(list_user_playlists))
         .route(
             "/{id}/playlists/containing/{performance_id}",
@@ -149,6 +156,20 @@ fn can_view_private(auth: &Option<AuthUser>, user_id: Uuid) -> bool {
             || u.capabilities
                 .contains(capabilities::PLAYLISTS_VIEW_PRIVATE)
     })
+}
+
+const MAX_SUSPENSION_REASON_CHARS: usize = 500;
+
+fn validate_suspension_reason(reason: &str) -> Result<(), ApiError> {
+    if reason.trim().is_empty() {
+        return Err(ApiError::BadRequest("reason must not be blank".to_string()));
+    }
+    if reason.chars().count() > MAX_SUSPENSION_REASON_CHARS {
+        return Err(ApiError::BadRequest(format!(
+            "reason must be at most {MAX_SUSPENSION_REASON_CHARS} characters"
+        )));
+    }
+    Ok(())
 }
 
 #[derive(Deserialize, utoipa::IntoParams)]
@@ -258,12 +279,14 @@ pub(crate) async fn update_user(
     put,
     path = "/api/users/{id}/suspension",
     params(("id" = Uuid, Path, description = "User ID")),
+    request_body = SuspendUserRequest,
     responses(
         (status = 200, description = "Suspended user, their sessions are ended", body = AdminUserSummary),
-        (status = 400, description = "Cannot suspend yourself", body = ErrorResponse),
+        (status = 400, description = "Blank or overlong reason, or suspending yourself", body = ErrorResponse),
         (status = 401, description = "Unauthorized", body = ErrorResponse),
         (status = 403, description = "Forbidden", body = ErrorResponse),
         (status = 404, description = "User not found", body = ErrorResponse),
+        (status = 409, description = "User is already suspended", body = ErrorResponse),
     ),
     tag = "users",
     security(("session" = []))
@@ -272,6 +295,7 @@ pub(crate) async fn suspend_user(
     State(state): State<AppState>,
     auth: AuthUser,
     Path(id): Path<Uuid>,
+    Json(body): Json<SuspendUserRequest>,
 ) -> Result<Json<AdminUserSummary>, ApiError> {
     if !auth
         .capabilities
@@ -282,9 +306,18 @@ pub(crate) async fn suspend_user(
     if auth.user_id == id {
         return Err(ApiError::BadRequest("cannot suspend yourself".into()));
     }
+    let reason = body.reason.trim();
+    validate_suspension_reason(reason)?;
 
     let mut tx = state.pool.begin().await.map_err(DbError::Sqlx)?;
+    let existing = queries::users::get_by_id_for_update(&mut tx, id)
+        .await?
+        .ok_or(ApiError::NotFound)?;
+    if existing.suspended_at.is_some() {
+        return Err(ApiError::Conflict("user is already suspended".into()));
+    }
     let user = queries::users::suspend(&mut tx, id).await?;
+    queries::user_suspensions::create(&mut tx, id, auth.user_id, reason).await?;
     queries::sessions::delete_for_user(&mut *tx, id).await?;
     tx.commit().await.map_err(DbError::Sqlx)?;
 
@@ -315,9 +348,45 @@ pub(crate) async fn unsuspend_user(
     {
         return Err(ApiError::Forbidden);
     }
-    let mut conn = state.pool.acquire().await.map_err(DbError::Sqlx)?;
-    let user = queries::users::unsuspend(&mut conn, id).await?;
+    let mut tx = state.pool.begin().await.map_err(DbError::Sqlx)?;
+    let user = queries::users::unsuspend(&mut tx, id).await?;
+    queries::user_suspensions::lift(&mut tx, id, auth.user_id).await?;
+    tx.commit().await.map_err(DbError::Sqlx)?;
+
     Ok(Json(convert::admin_user_summary(user.into())))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/users/{id}/suspensions",
+    params(("id" = Uuid, Path, description = "User ID")),
+    responses(
+        (status = 200, description = "Suspensions of this user, newest first", body = Vec<SuspensionResponse>),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden", body = ErrorResponse),
+        (status = 404, description = "User not found", body = ErrorResponse),
+    ),
+    tag = "users",
+    security(("session" = []))
+)]
+pub(crate) async fn list_user_suspensions(
+    State(state): State<AppState>,
+    auth: AuthUser,
+    Path(id): Path<Uuid>,
+) -> Result<Json<Vec<SuspensionResponse>>, ApiError> {
+    if !auth
+        .capabilities
+        .contains(capabilities::CAPABILITIES_MANAGE)
+    {
+        return Err(ApiError::Forbidden);
+    }
+    queries::users::get_by_id(&state.pool, id)
+        .await?
+        .ok_or(ApiError::NotFound)?;
+    let rows = queries::user_suspensions::list_for_user(&state.pool, id).await?;
+    Ok(Json(
+        rows.into_iter().map(convert::suspension_response).collect(),
+    ))
 }
 
 #[utoipa::path(
