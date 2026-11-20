@@ -6,7 +6,7 @@
 
 Runs the full stack server.
 
-A `data/` folder is created at the repo root and mounted into the compose services (`data/storage` for uploaded media, managed by the `data_db` named volume for MariaDB).
+A `data/` folder is created at the repo root and mounted into the compose services (`data/storage` for uploaded media, `data/backups` for backups, managed by the `data_db` named volume for MariaDB).
 
 #### Environment
 
@@ -24,6 +24,7 @@ Create a `.env` file at the repo root with the following:
 | `API_DOMAIN` | Public domain for the backend. Defaults to `api.localhost`. |
 | `BACKEND_URL` | Overrides the derived `https://${API_DOMAIN}` if set. |
 | `BACKEND_RUST_LOG` | Overrides logger settings for the `backend` if set. |
+| `GIT_COMMIT` | Commit hash built into the backend image and recorded in backups. Defaults to `unknown`. Usually passed on the command line (see Run). |
 
 <!-- markdownlint-disable MD033 -->
 <details>
@@ -69,11 +70,32 @@ mkcert -key-file nginx/certs/origin.key -cert-file nginx/certs/origin.crt localh
 #### Run
 
 ```bash
-docker compose up --build
+GIT_COMMIT=$(git rev-parse HEAD) docker compose up --build
 ```
+
+`GIT_COMMIT` can be left out, but backups then record the commit as `unknown`.
 
 Add the `debug` profile to also run `cadvisor` (container resource monitoring, exposed at `127.0.0.1:8080`):
 
 ```bash
 docker compose --profile debug up --build
 ```
+
+### Backups
+
+A backup is one zip file in `data/backups`, named `jako-backup-<UTC timestamp>-<short commit>.zip`. It holds the database, every uploaded file and the commit of the running build. Copy the file anywhere to export it.
+
+Backups contain user data (usernames and OAuth provider IDs), so store and share them with care. Login sessions are not included, so restoring logs everyone out.
+
+```bash
+# Create and list backups while the server runs
+docker compose exec backend backup create
+docker compose exec backend backup list
+
+# Restore a backup (a file name in data/backups, a path, or latest)
+docker compose stop backend
+docker compose run --rm backend backup restore latest --yes
+docker compose up -d backend
+```
+
+Restore replaces the whole database and every uploaded file. It first saves a backup of the current state, unless `--no-safety-backup` is passed. A backup can only be restored by a build whose migrations match it. When they do not, the restore stops before changing anything and names the commit to check out.
