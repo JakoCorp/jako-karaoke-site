@@ -11,7 +11,10 @@ services:
     restart: "no"
 
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      args:
+        - GIT_COMMIT=${GIT_COMMIT:-unknown}
     image: jako-karaoke/backend:latest
     restart: unless-stopped
     depends_on:
@@ -21,11 +24,13 @@ services:
     #   - "3000:3000" # For debugging if needed, do not expose in production
     volumes:
       - ./data/storage:/data/storage
+      - ./data/backups:/data/backups
     environment:
       - DATABASE_URL=mysql://root:${DB_ROOT_PASSWORD}@db:3306/jako
 
       - STORAGE_PATH=/data/storage
       - STORAGE_BASE_URL=${STORAGE_BASE_URL}
+      - BACKUP_PATH=/data/backups
 
       - TWITCH_CLIENT_ID=${TWITCH_CLIENT_ID}
       - TWITCH_CLIENT_SECRET=${TWITCH_CLIENT_SECRET}
