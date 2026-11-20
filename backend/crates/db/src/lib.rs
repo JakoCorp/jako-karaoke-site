@@ -38,6 +38,18 @@ pub async fn connect(database_url: &str) -> Result<MySqlPool> {
     Ok(pool)
 }
 
+/// Connects to an existing MySQL database without running migrations.
+///
+/// # Errors
+///
+/// Returns [`error::DbError`] if the connection cannot be established.
+pub async fn connect_existing(database_url: &str) -> Result<MySqlPool> {
+    Ok(sqlx::mysql::MySqlPoolOptions::new()
+        .max_connections(2)
+        .connect(database_url)
+        .await?)
+}
+
 /// Creates the target database if it does not already exist.
 async fn ensure_database(database_url: &str) -> Result<()> {
     let (server_url, db_name) = split_database_url(database_url);
