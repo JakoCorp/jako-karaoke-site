@@ -1,5 +1,6 @@
 pub(crate) mod assets;
 pub(crate) mod auth;
+pub mod backups;
 pub mod capabilities;
 pub mod config;
 pub(crate) mod convert;
