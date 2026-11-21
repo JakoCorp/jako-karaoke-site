@@ -21,6 +21,7 @@ use crate::config::Config;
 const SCHEMA_ONLY_TABLES: &[&str] = &["sessions", "pending_oauth"];
 const FILE_PREFIX: &str = "jako-backup-";
 const FILE_EXTENSION: &str = ".zip";
+const SCHEDULED_SUFFIX: &str = "-scheduled";
 const TIMESTAMP_FORMAT: &str = "%Y%m%dT%H%M%SZ";
 
 /// Errors returned by backup operations.
@@ -42,13 +43,36 @@ pub enum BackupError {
 
 type Result<T> = std::result::Result<T, BackupError>;
 
+/// How a backup was started, recorded in its file name.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum BackupKind {
+    /// Taken on request or before a restore. Never deleted automatically.
+    Manual,
+    /// Taken by the backup schedule and deleted once expired.
+    Scheduled,
+}
+
 /// A backup archive in the backup directory.
 pub struct BackupEntry {
     pub path: PathBuf,
+    pub kind: BackupKind,
     /// Archive size in bytes.
     pub size: u64,
     /// `None` when the manifest cannot be read.
     pub manifest: Option<Manifest>,
+}
+
+impl BackupEntry {
+    /// Whether this is a scheduled backup taken before `cutoff`.
+    ///
+    /// Backups with an unreadable manifest never expire.
+    pub fn is_expired(&self, cutoff: DateTime<Utc>) -> bool {
+        self.kind == BackupKind::Scheduled
+            && self
+                .manifest
+                .as_ref()
+                .is_some_and(|manifest| manifest.created_at < cutoff)
+    }
 }
 
 /// Options for [`restore`].
@@ -69,13 +93,13 @@ pub struct RestoreReport {
 
 /// Writes a backup to the backup directory and returns its path.
 ///
-/// Archives are named `jako-backup-<UTC timestamp>-<short commit>.zip`.
+/// Archives are named `jako-backup-<UTC timestamp>-<short commit>[-scheduled].zip`.
 ///
 /// # Errors
 ///
 /// Returns [`BackupError::Invalid`] if the backup directory is inside the storage directory,
 /// and other variants if the dump or the archive fails.
-pub async fn create(config: &Config, pool: &MySqlPool) -> Result<PathBuf> {
+pub async fn create(config: &Config, pool: &MySqlPool, kind: BackupKind) -> Result<PathBuf> {
     let backup_dir = PathBuf::from(&config.backup_path);
     if std::path::absolute(&backup_dir)?.starts_with(std::path::absolute(&config.storage_path)?) {
         return Err(BackupError::Invalid(
@@ -85,7 +109,7 @@ pub async fn create(config: &Config, pool: &MySqlPool) -> Result<PathBuf> {
     fs::create_dir_all(&backup_dir).await?;
 
     let created_at = Utc::now();
-    let dest = backup_dir.join(file_name(created_at, &config.commit));
+    let dest = backup_dir.join(file_name(created_at, &config.commit, kind));
     if fs::try_exists(&dest).await? {
         return Err(BackupError::Invalid(format!(
             "{} already exists",
@@ -108,6 +132,23 @@ pub async fn create(config: &Config, pool: &MySqlPool) -> Result<PathBuf> {
 pub async fn list(config: &Config) -> Result<Vec<BackupEntry>> {
     let backup_dir = PathBuf::from(&config.backup_path);
     blocking(move || list_dir(&backup_dir)).await
+}
+
+/// Deletes the scheduled backups taken before `cutoff` and returns their paths.
+///
+/// # Errors
+///
+/// Returns [`BackupError::Backup`] if the directory cannot be read and [`BackupError::Io`] if a
+/// backup cannot be deleted.
+pub async fn prune(config: &Config, cutoff: DateTime<Utc>) -> Result<Vec<PathBuf>> {
+    let mut deleted = Vec::new();
+    for entry in list(config).await? {
+        if entry.is_expired(cutoff) {
+            fs::remove_file(&entry.path).await?;
+            deleted.push(entry.path);
+        }
+    }
+    Ok(deleted)
 }
 
 /// Finds a backup by `latest`, a file name in the backup directory, or a path.
@@ -184,7 +225,7 @@ pub async fn restore(
 ) -> Result<RestoreReport> {
     let manifest = inspect(archive_path).await?;
     let safety_backup = if options.safety_backup {
-        Some(create(config, pool).await?)
+        Some(create(config, pool, BackupKind::Manual).await?)
     } else {
         None
     };
@@ -302,15 +343,12 @@ fn list_dir(backup_dir: &Path) -> backup::Result<Vec<BackupEntry>> {
     let mut backups = Vec::new();
     for entry in entries {
         let entry = entry?;
-        let is_backup = entry
-            .file_name()
-            .to_str()
-            .is_some_and(|name| name.starts_with(FILE_PREFIX) && name.ends_with(FILE_EXTENSION));
-        if !is_backup {
+        let Some(kind) = entry.file_name().to_str().and_then(backup_kind) else {
             continue;
-        }
+        };
         let path = entry.path();
         backups.push(BackupEntry {
+            kind,
             size: entry.metadata()?.len(),
             manifest: archive::read_manifest(&path).ok(),
             path,
@@ -330,16 +368,32 @@ async fn blocking<T: Send + 'static>(
     Ok(result?)
 }
 
-fn file_name(created_at: DateTime<Utc>, commit: &str) -> String {
+fn file_name(created_at: DateTime<Utc>, commit: &str, kind: BackupKind) -> String {
     let short_commit: String = commit
         .chars()
         .filter(char::is_ascii_alphanumeric)
         .take(7)
         .collect();
+    let suffix = match kind {
+        BackupKind::Manual => "",
+        BackupKind::Scheduled => SCHEDULED_SUFFIX,
+    };
     format!(
-        "{FILE_PREFIX}{}-{short_commit}{FILE_EXTENSION}",
+        "{FILE_PREFIX}{}-{short_commit}{suffix}{FILE_EXTENSION}",
         created_at.format(TIMESTAMP_FORMAT)
     )
+}
+
+/// Returns the kind of a backup from its file name, or `None` if it is not a backup.
+fn backup_kind(file_name: &str) -> Option<BackupKind> {
+    let stem = file_name
+        .strip_prefix(FILE_PREFIX)?
+        .strip_suffix(FILE_EXTENSION)?;
+    Some(if stem.ends_with(SCHEDULED_SUFFIX) {
+        BackupKind::Scheduled
+    } else {
+        BackupKind::Manual
+    })
 }
 
 fn same_location(left: &str, right: &str) -> bool {

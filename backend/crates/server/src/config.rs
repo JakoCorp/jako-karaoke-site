@@ -2,6 +2,13 @@
 
 use std::env;
 
+use chrono::TimeDelta;
+use croner::Cron;
+
+const DEFAULT_PORT: u16 = 3000;
+const DEFAULT_BACKUP_SCHEDULE: &str = "0 3 * * *";
+const DEFAULT_BACKUP_KEEP_DAYS: u32 = 14;
+
 /// Runtime configuration for the server.
 ///
 /// All fields are populated from environment variables by [`Config::from_env`].
@@ -17,6 +24,8 @@ pub struct Config {
     pub storage_base_url: String,
     /// Directory where backup archives are written. Defaults to `backups`.
     pub backup_path: String,
+    /// Scheduled backups, `None` unless enabled.
+    pub backup_schedule: Option<BackupSchedule>,
     /// Source commit of this build, recorded in backups. Defaults to `unknown`.
     pub commit: String,
     /// Twitch OAuth application client ID.
@@ -40,6 +49,15 @@ pub struct Config {
     ///
     /// Must never be enabled in production.
     pub dev_auth: bool,
+}
+
+/// When scheduled backups run and how long they are kept.
+#[derive(Clone, Debug)]
+pub struct BackupSchedule {
+    /// Cron expression evaluated in UTC.
+    pub cron: Cron,
+    /// Age after which scheduled backups are deleted, `None` keeps them all.
+    pub retention: Option<TimeDelta>,
 }
 
 /// Errors that can occur when loading [`Config`].
@@ -68,18 +86,23 @@ impl Config {
     /// `PORT` defaults to `3000` if unset.
     /// `FRONTEND_URL` defaults to `/`.
     /// `BACKUP_PATH` defaults to `backups`.
+    /// `BACKUP_SCHEDULE` defaults to `0 3 * * *` and `BACKUP_KEEP_DAYS` to `14`, and both are
+    /// only read when `BACKUP_SCHEDULE_ENABLED` is set.
     /// `GIT_COMMIT` defaults to `unknown`.
     /// `GOOGLE_API_KEY` is optional.
     ///
     /// # Errors
     ///
     /// Returns [`ConfigError::Missing`] for any required variable that is absent,
-    /// or [`ConfigError::Invalid`] if `PORT` cannot be parsed as a `u16`.
+    /// or [`ConfigError::Invalid`] if `PORT`, `BACKUP_SCHEDULE` or `BACKUP_KEEP_DAYS` cannot be
+    /// parsed.
     pub fn from_env() -> Result<Self, ConfigError> {
-        let port = env::var("PORT")
-            .unwrap_or_else(|_| "3000".into())
-            .parse::<u16>()
-            .map_err(|_| ConfigError::Invalid("PORT"))?;
+        let port = match optional("PORT") {
+            Some(port) => port
+                .parse::<u16>()
+                .map_err(|_| ConfigError::Invalid("PORT"))?,
+            None => DEFAULT_PORT,
+        };
 
         Ok(Config {
             database_url: env::var("DATABASE_URL")
@@ -90,10 +113,8 @@ impl Config {
             storage_base_url: env::var("STORAGE_BASE_URL")
                 .map_err(|_| ConfigError::Missing("STORAGE_BASE_URL"))?,
             backup_path: env::var("BACKUP_PATH").unwrap_or_else(|_| "backups".into()),
-            commit: env::var("GIT_COMMIT")
-                .ok()
-                .filter(|commit| !commit.is_empty())
-                .unwrap_or_else(|| "unknown".into()),
+            backup_schedule: backup_schedule()?,
+            commit: optional("GIT_COMMIT").unwrap_or_else(|| "unknown".into()),
             twitch_client_id: env::var("TWITCH_CLIENT_ID")
                 .map_err(|_| ConfigError::Missing("TWITCH_CLIENT_ID"))?,
             twitch_client_secret: env::var("TWITCH_CLIENT_SECRET")
@@ -102,14 +123,37 @@ impl Config {
                 .map_err(|_| ConfigError::Missing("DISCORD_CLIENT_ID"))?,
             discord_client_secret: env::var("DISCORD_CLIENT_SECRET")
                 .map_err(|_| ConfigError::Missing("DISCORD_CLIENT_SECRET"))?,
-            google_api_key: env::var("GOOGLE_API_KEY")
-                .ok()
-                .filter(|key| !key.is_empty()),
+            google_api_key: optional("GOOGLE_API_KEY"),
             base_url: env::var("BASE_URL").map_err(|_| ConfigError::Missing("BASE_URL"))?,
             frontend_url: env::var("FRONTEND_URL").unwrap_or_else(|_| "/".into()),
-            dev_auth: env::var("DEV_AUTH")
-                .map(|v| v == "true" || v == "1")
-                .unwrap_or(false),
+            dev_auth: flag("DEV_AUTH"),
         })
     }
+}
+
+fn backup_schedule() -> Result<Option<BackupSchedule>, ConfigError> {
+    if !flag("BACKUP_SCHEDULE_ENABLED") {
+        return Ok(None);
+    }
+
+    let cron = optional("BACKUP_SCHEDULE")
+        .as_deref()
+        .unwrap_or(DEFAULT_BACKUP_SCHEDULE)
+        .parse::<Cron>()
+        .map_err(|_| ConfigError::Invalid("BACKUP_SCHEDULE"))?;
+    let keep_days = optional("BACKUP_KEEP_DAYS")
+        .map_or(Ok(DEFAULT_BACKUP_KEEP_DAYS), |days| days.parse::<u32>())
+        .map_err(|_| ConfigError::Invalid("BACKUP_KEEP_DAYS"))?;
+    let retention = (keep_days > 0).then(|| TimeDelta::days(i64::from(keep_days)));
+    Ok(Some(BackupSchedule { cron, retention }))
+}
+
+/// Reads a variable, treating an empty value as unset.
+fn optional(name: &str) -> Option<String> {
+    env::var(name).ok().filter(|value| !value.is_empty())
+}
+
+/// Reads a boolean variable, which is on when set to `true` or `1`.
+fn flag(name: &str) -> bool {
+    env::var(name).is_ok_and(|value| value == "true" || value == "1")
 }
