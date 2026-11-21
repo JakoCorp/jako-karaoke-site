@@ -25,6 +25,9 @@ Create a `.env` file at the repo root with the following:
 | `BACKEND_URL` | Overrides the derived `https://${API_DOMAIN}` if set. |
 | `BACKEND_RUST_LOG` | Overrides logger settings for the `backend` if set. |
 | `GIT_COMMIT` | Commit hash built into the backend image and recorded in backups. Defaults to `unknown`. Usually passed on the command line (see Run). |
+| `BACKUP_SCHEDULE_ENABLED` | Set to `true` to take scheduled backups (see Backups). Defaults to off. |
+| `BACKUP_SCHEDULE` | Cron expression in UTC for scheduled backups. Defaults to `0 3 * * *`. |
+| `BACKUP_KEEP_DAYS` | Days a scheduled backup is kept. `0` keeps them all. Defaults to `14`. |
 
 <!-- markdownlint-disable MD033 -->
 <details>
@@ -42,6 +45,11 @@ DISCORD_CLIENT_SECRET=
 
 # Optional
 GOOGLE_API_KEY=
+
+# Scheduled backups (optional)
+BACKUP_SCHEDULE_ENABLED=
+BACKUP_SCHEDULE=
+BACKUP_KEEP_DAYS=
 
 # Defaults to *.localhost for local development
 SITE_DOMAIN=
@@ -99,3 +107,7 @@ docker compose up -d backend
 ```
 
 Restore replaces the whole database and every uploaded file. It first saves a backup of the current state, unless `--no-safety-backup` is passed. A backup can only be restored by a build whose migrations match it. When they do not, the restore stops before changing anything and names the commit to check out.
+
+#### Scheduled backups
+
+With `BACKUP_SCHEDULE_ENABLED=true`, the backend takes a backup on the `BACKUP_SCHEDULE` cron expression (UTC, daily at 03:00 by default). Scheduled backups end in `-scheduled.zip`, and those older than `BACKUP_KEEP_DAYS` (14 by default) are deleted after each new one. Backups from `backup create` and the safety backups taken by a restore are never deleted automatically. A run missed while the backend is down is skipped.

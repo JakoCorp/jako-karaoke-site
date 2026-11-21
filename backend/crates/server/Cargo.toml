@@ -30,6 +30,7 @@ backup = { workspace = true }
 chrono = { workspace = true }
 clap = { workspace = true }
 cookie = { workspace = true }
+croner = { workspace = true }
 db = { workspace = true }
 getrandom = { workspace = true }
 hex = { workspace = true }

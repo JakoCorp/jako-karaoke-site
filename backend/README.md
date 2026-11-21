@@ -13,6 +13,9 @@ Configuration is read from environment variables at startup. For local developme
 | `STORAGE_PATH` | Absolute path where uploaded media files are stored on disk |
 | `STORAGE_BASE_URL` | Public base HTTP/HTTPS URL that maps to `STORAGE_PATH` |
 | `BACKUP_PATH` | Directory where the `backup` command writes archives. Defaults to `backups`. Must not be inside `STORAGE_PATH`. |
+| `BACKUP_SCHEDULE_ENABLED` | Set to `true` or `1` to take backups on `BACKUP_SCHEDULE`. Defaults to off. |
+| `BACKUP_SCHEDULE` | Cron expression in UTC for scheduled backups (e.g. `0 3 * * *` or `@daily`). Defaults to `0 3 * * *`. |
+| `BACKUP_KEEP_DAYS` | Days a scheduled backup is kept before it is deleted. `0` keeps them all. Defaults to `14`. |
 | `GIT_COMMIT` | Commit hash of the build, recorded in backups. Defaults to `unknown`. |
 | `BASE_URL` | Public base HTTP/HTTPS URL of this backend server. Used to build OAuth callback URLs. |
 | `FRONTEND_URL` | Public base HTTP/HTTPS URL of frontend app. Used for CORS and redirects. |
