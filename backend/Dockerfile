@@ -23,7 +23,7 @@ COPY Cargo.toml Cargo.lock ./
 COPY crates ./crates
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
-    cargo build --release --bin server
+    cargo build --release --bin server --bin backup
 
 # Runtime
 FROM debian:trixie-20260623-slim AS runtime
@@ -36,13 +36,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-COPY --from=builder /app/target/release/server /usr/local/bin/
+COPY --from=builder /app/target/release/server /app/target/release/backup /usr/local/bin/
 COPY docker-entrypoint.sh /usr/local/bin/
 
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
+ARG GIT_COMMIT=unknown
+
 EXPOSE 3000
 ENV RUST_LOG=info
+ENV GIT_COMMIT=$GIT_COMMIT
 
 ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["server"]

@@ -11,9 +11,12 @@ license = "AGPL-3.0-only"
 api-types = { path = "crates/api-types" }
 axum = { version = "0.8", features = ["macros", "multipart"] }
 axum-extra = { version = "0.12", features = ["cookie", "query"] }
+backup = { path = "crates/backup" }
 chrono = { version = "0.4", features = ["serde"] }
+clap = { version = "4", features = ["derive"] }
 cookie = "0.18"
 db = { path = "crates/db" }
+futures-util = "0.3"
 getrandom = "0.4"
 hex = "0.4"
 lofty = "0.25"
@@ -31,6 +34,7 @@ sqlx = { version = "0.9", features = [
     "macros",
     "uuid",
 ] }
+tempfile = "3"
 thiserror = "2"
 time = "0.3"
 tokio = { version = "1", features = ["full"] }
@@ -40,3 +44,4 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 utoipa = { version = "6", features = ["chrono", "uuid"] }
 utoipa-swagger-ui = { version = "10", features = ["axum"] }
 uuid = { version = "1", features = ["v4", "v7", "serde"] }
+zip = { version = "9", default-features = false, features = ["deflate-flate2-zlib-rs"] }

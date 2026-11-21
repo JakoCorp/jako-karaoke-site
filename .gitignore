@@ -52,6 +52,7 @@ dist/
 
 # Misc
 /data/
+/backend/backups/
 
 # Generated
 frontend/src/api/generated.ts

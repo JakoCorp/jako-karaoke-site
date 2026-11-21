@@ -12,6 +12,8 @@ Configuration is read from environment variables at startup. For local developme
 | `DATABASE_URL` | MariaDB connection string (e.g. `mysql://user:pass@host/dbname`) |
 | `STORAGE_PATH` | Absolute path where uploaded media files are stored on disk |
 | `STORAGE_BASE_URL` | Public base HTTP/HTTPS URL that maps to `STORAGE_PATH` |
+| `BACKUP_PATH` | Directory where the `backup` command writes archives. Defaults to `backups`. Must not be inside `STORAGE_PATH`. |
+| `GIT_COMMIT` | Commit hash of the build, recorded in backups. Defaults to `unknown`. |
 | `BASE_URL` | Public base HTTP/HTTPS URL of this backend server. Used to build OAuth callback URLs. |
 | `FRONTEND_URL` | Public base HTTP/HTTPS URL of frontend app. Used for CORS and redirects. |
 | `TWITCH_CLIENT_ID` | Twitch OAuth application client ID |
@@ -71,6 +73,7 @@ For further information or if it has changed, [see their documentation](https://
 | `server` | Axum HTTP server, route handlers, auth, and middleware |
 | `db` | Database models, queries, and migrations |
 | `api-types` | Shared request and response types |
+| `backup` | Logical MariaDB dump and zip archive format used by backups |
 
 The API documentation is at `{BASE_URL}/docs`.
 

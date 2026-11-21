@@ -1,6 +1,9 @@
 services:
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      args:
+        GIT_COMMIT: ${GIT_COMMIT:-unknown}
     ports:
       - "3000:3000"
     depends_on:
@@ -8,10 +11,12 @@ services:
         condition: service_healthy
     volumes:
       - ./data/storage:/data/storage
+      - ./data/backups:/data/backups
     environment:
       DATABASE_URL: mysql://root:password@db:3306/jako
       STORAGE_PATH: /data/storage
       STORAGE_BASE_URL: http://localhost:3000/files
+      BACKUP_PATH: /data/backups
       TWITCH_CLIENT_ID: dev_placeholder
       TWITCH_CLIENT_SECRET: dev_placeholder
       DISCORD_CLIENT_ID: dev_placeholder
