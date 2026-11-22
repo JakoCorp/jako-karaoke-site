@@ -61,7 +61,7 @@ async fn main() {
         discord_oauth,
         http_client,
     };
-    tasks::spawn_background_tasks(state.pool.clone());
+    tasks::spawn_background_tasks(state.pool.clone(), &state.config);
 
     let app = routes::build_router(state);
     let addr = format!("0.0.0.0:{}", config.port);

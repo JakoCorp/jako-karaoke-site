@@ -14,7 +14,7 @@ use std::process;
 
 use clap::{Parser, Subcommand};
 use db::MySqlPool;
-use server::backups::{self, RestoreOptions};
+use server::backups::{self, BackupKind, RestoreOptions};
 use server::config::Config;
 
 #[derive(Parser)]
@@ -52,7 +52,7 @@ async fn main() {
     match cli.command {
         Command::Create => {
             let pool = connect(&config).await;
-            let path = backups::create(&config, &pool)
+            let path = backups::create(&config, &pool, BackupKind::Manual)
                 .await
                 .unwrap_or_else(|error| fail(error));
             println!("created: {}", path.display());
