@@ -15,6 +15,10 @@ pub struct Config {
     pub storage_path: String,
     /// Public base URL prepended to stored file paths when building asset storage URLs.
     pub storage_base_url: String,
+    /// Directory where backup archives are written. Defaults to `backups`.
+    pub backup_path: String,
+    /// Source commit of this build, recorded in backups. Defaults to `unknown`.
+    pub commit: String,
     /// Twitch OAuth application client ID.
     pub twitch_client_id: String,
     /// Twitch OAuth application client secret.
@@ -63,6 +67,8 @@ impl Config {
     ///
     /// `PORT` defaults to `3000` if unset.
     /// `FRONTEND_URL` defaults to `/`.
+    /// `BACKUP_PATH` defaults to `backups`.
+    /// `GIT_COMMIT` defaults to `unknown`.
     /// `GOOGLE_API_KEY` is optional.
     ///
     /// # Errors
@@ -83,6 +89,11 @@ impl Config {
                 .map_err(|_| ConfigError::Missing("STORAGE_PATH"))?,
             storage_base_url: env::var("STORAGE_BASE_URL")
                 .map_err(|_| ConfigError::Missing("STORAGE_BASE_URL"))?,
+            backup_path: env::var("BACKUP_PATH").unwrap_or_else(|_| "backups".into()),
+            commit: env::var("GIT_COMMIT")
+                .ok()
+                .filter(|commit| !commit.is_empty())
+                .unwrap_or_else(|| "unknown".into()),
             twitch_client_id: env::var("TWITCH_CLIENT_ID")
                 .map_err(|_| ConfigError::Missing("TWITCH_CLIENT_ID"))?,
             twitch_client_secret: env::var("TWITCH_CLIENT_SECRET")

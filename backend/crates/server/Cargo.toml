@@ -18,11 +18,17 @@ path = "src/bin/export_spec.rs"
 name = "set-admin"
 path = "src/bin/set_admin.rs"
 
+[[bin]]
+name = "backup"
+path = "src/bin/backup.rs"
+
 [dependencies]
 api-types = { workspace = true }
 axum = { workspace = true }
 axum-extra = { workspace = true }
+backup = { workspace = true }
 chrono = { workspace = true }
+clap = { workspace = true }
 cookie = { workspace = true }
 db = { workspace = true }
 getrandom = { workspace = true }
@@ -43,3 +49,6 @@ tracing-subscriber = { workspace = true }
 utoipa = { workspace = true }
 utoipa-swagger-ui = { workspace = true }
 uuid = { workspace = true }
+
+[dev-dependencies]
+sqlx = { workspace = true }

@@ -90,6 +90,73 @@ async fn internal_and_external_assets_roundtrip(pool: MySqlPool) {
 }
 
 #[sqlx::test(migrator = "db::MIGRATOR")]
+async fn rebase_storage_rewrites_matching_prefixes_only(pool: MySqlPool) {
+    let mut conn = pool.acquire().await.unwrap();
+    let moved = assets::create_internal(
+        &mut conn,
+        &NewInternalAsset {
+            storage_url: "https://old_host/files/images/a.png".to_string(),
+            internal_path: Some("/data/storage/images/a.png".to_string()),
+            ..internal_asset("c")
+        },
+    )
+    .await
+    .unwrap();
+    let lookalike = assets::create_internal(
+        &mut conn,
+        &NewInternalAsset {
+            storage_url: "https://oldXhost/files/b.png".to_string(),
+            internal_path: Some("/data/storage2/b.png".to_string()),
+            ..internal_asset("d")
+        },
+    )
+    .await
+    .unwrap();
+    let external = assets::create_external(
+        &mut conn,
+        &NewExternalAsset {
+            title: None,
+            credits: None,
+            source_url: None,
+            external_url: "https://old_host/files/c.png".to_string(),
+            length: None,
+        },
+    )
+    .await
+    .unwrap();
+
+    assets::rebase_storage(
+        &mut conn,
+        "https://old_host/files/",
+        "https://new.example.com/files",
+        "/data/storage",
+        "/srv/storage/",
+    )
+    .await
+    .unwrap();
+
+    let by_ids = assets::get_by_ids(&pool, &[moved.id, lookalike.id, external.id])
+        .await
+        .unwrap();
+    assert_eq!(
+        by_ids[&moved.id].storage_url.as_deref(),
+        Some("https://new.example.com/files/images/a.png")
+    );
+    assert_eq!(
+        by_ids[&lookalike.id].storage_url.as_deref(),
+        Some("https://oldXhost/files/b.png")
+    );
+    assert_eq!(
+        by_ids[&external.id].external_url.as_deref(),
+        Some("https://old_host/files/c.png")
+    );
+    assert_eq!(
+        assets::list_internal_paths(&pool).await.unwrap(),
+        ["/data/storage2/b.png", "/srv/storage/images/a.png"]
+    );
+}
+
+#[sqlx::test(migrator = "db::MIGRATOR")]
 async fn reference_count_follows_join_rows(pool: MySqlPool) {
     let mut conn = pool.acquire().await.unwrap();
     let asset = assets::create_internal(&mut conn, &internal_asset("b"))

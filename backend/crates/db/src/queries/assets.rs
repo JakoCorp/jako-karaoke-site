@@ -142,6 +142,55 @@ pub async fn create_external(conn: &mut MySqlConnection, new: &NewExternalAsset)
     .map_err(DbError::from)
 }
 
+/// Returns the internal path of every stored asset.
+pub async fn list_internal_paths(
+    executor: impl Executor<'_, Database = MySql>,
+) -> Result<Vec<String>> {
+    sqlx::query_scalar::<_, String>(
+        "SELECT internal_path FROM assets WHERE internal_path IS NOT NULL ORDER BY internal_path",
+    )
+    .fetch_all(executor)
+    .await
+    .map_err(DbError::from)
+}
+
+/// Moves stored assets to a new storage location by rewriting their URL and path prefixes.
+///
+/// Prefixes match whole path segments and trailing slashes are ignored.
+pub async fn rebase_storage(
+    conn: &mut MySqlConnection,
+    old_base_url: &str,
+    new_base_url: &str,
+    old_path: &str,
+    new_path: &str,
+) -> Result<()> {
+    for (sql, old, new) in [
+        (
+            "UPDATE assets SET storage_url = CONCAT(?, SUBSTRING(storage_url, CHAR_LENGTH(?) + 1)) \
+             WHERE LEFT(storage_url, CHAR_LENGTH(?)) = ?",
+            old_base_url,
+            new_base_url,
+        ),
+        (
+            "UPDATE assets SET internal_path = CONCAT(?, SUBSTRING(internal_path, CHAR_LENGTH(?) + 1)) \
+             WHERE LEFT(internal_path, CHAR_LENGTH(?)) = ?",
+            old_path,
+            new_path,
+        ),
+    ] {
+        let old = format!("{}/", old.trim_end_matches('/'));
+        let new = format!("{}/", new.trim_end_matches('/'));
+        sqlx::query(sql)
+            .bind(&new)
+            .bind(&old)
+            .bind(&old)
+            .bind(&old)
+            .execute(&mut *conn)
+            .await?;
+    }
+    Ok(())
+}
+
 /// Deletes an asset record by ID. Returns `true` if a row was deleted.
 pub async fn delete(executor: impl Executor<'_, Database = MySql>, id: Uuid) -> Result<bool> {
     sqlx::query("DELETE FROM assets WHERE id = ?")
